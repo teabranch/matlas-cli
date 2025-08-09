@@ -96,6 +96,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-${{ matrix.go-version }}-
 
+      - name: Sync vendor
+        run: |
+          go mod tidy
+          go mod vendor
+
       - name: Download Dependencies
         run: go mod download
 
