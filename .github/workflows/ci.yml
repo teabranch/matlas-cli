@@ -1,0 +1,384 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop, 'feature/*', 'fix/*' ]
+  pull_request:
+    branches: [ main, develop ]
+  release:
+    types: [ published ]
+
+env:
+  GO_VERSION: '1.24.5'
+  GOLANGCI_LINT_VERSION: 'v1.56.0'
+
+jobs:
+  # ==============================================================================
+  # Code Quality and Security
+  # ==============================================================================
+  
+  lint:
+    name: 🔍 Code Quality & Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Cache Go Modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download Dependencies
+        run: go mod download
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          args: --timeout=5m --config=.golangci.yml
+
+      - name: Check Code Formatting
+        run: |
+          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+            echo "❌ Code is not properly formatted. Run 'gofmt -s -w .'"
+            gofmt -s -l .
+            exit 1
+          fi
+          echo "✅ Code is properly formatted"
+
+      - name: Check Go Modules
+        run: |
+          go mod tidy
+          if ! git diff --exit-code go.mod go.sum; then
+            echo "❌ go.mod or go.sum is not up to date. Run 'go mod tidy'"
+            exit 1
+          fi
+          echo "✅ Go modules are up to date"
+
+  security:
+    name: 🛡️ Security Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Install Gosec
+        run: go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+
+      - name: Run Gosec Security Scanner
+        run: gosec -fmt sarif -out gosec-results.sarif ./...
+
+      - name: Upload Gosec Results to GitHub Security Tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: gosec-results.sarif
+
+      - name: Run Nancy Vulnerability Scanner
+        run: |
+          go list -json -deps ./... | docker run --rm -i sonatypecommunity/nancy:latest sleuth --loud
+
+  # ==============================================================================
+  # Testing Matrix
+  # ==============================================================================
+  
+  test:
+    name: 🧪 Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go-version: ['1.23', '1.24.5']
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Cache Go Modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ matrix.go-version }}-
+
+      - name: Download Dependencies
+        run: go mod download
+
+      - name: Run Unit Tests
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Upload Coverage to Codecov
+        if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.24.5'
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.out
+          flags: unittests
+          name: codecov-umbrella
+
+  integration-test:
+    name: 🔧 Integration Tests
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' && 
+      contains(github.event.pull_request.labels.*.name, 'integration-tests') ||
+      github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build Application
+        run: go build -o matlas .
+
+      - name: Run Integration Tests (Safe Mode)
+        env:
+          ATLAS_PUBLIC_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
+          ATLAS_PRIVATE_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
+          ATLAS_PROJECT_ID: ${{ secrets.ATLAS_TEST_PROJECT_ID }}
+          ATLAS_ORG_ID: ${{ secrets.ATLAS_TEST_ORG_ID }}
+        run: |
+          if [ -n "$ATLAS_PUBLIC_KEY" ] && [ -n "$ATLAS_PRIVATE_KEY" ]; then
+            echo "🧪 Running integration tests with Atlas credentials"
+            ./scripts/run-integration-tests-safe.sh all
+          else
+            echo "⚠️ Skipping integration tests - Atlas credentials not available"
+            echo "To enable integration tests, add Atlas credentials to repository secrets"
+          fi
+
+  e2e-test:
+    name: 🚀 End-to-End Tests
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' && 
+      contains(github.event.pull_request.labels.*.name, 'e2e-tests') ||
+      github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build Application
+        run: go build -o matlas .
+
+      - name: Run E2E Tests
+        env:
+          ATLAS_PUBLIC_KEY: ${{ secrets.ATLAS_PUBLIC_KEY }}
+          ATLAS_PRIVATE_KEY: ${{ secrets.ATLAS_PRIVATE_KEY }}
+          ATLAS_PROJECT_ID: ${{ secrets.ATLAS_TEST_PROJECT_ID }}
+          ATLAS_ORG_ID: ${{ secrets.ATLAS_TEST_ORG_ID }}
+        run: |
+          if [ -n "$ATLAS_PUBLIC_KEY" ] && [ -n "$ATLAS_PRIVATE_KEY" ]; then
+            echo "🚀 Running E2E tests with Atlas credentials"
+            ./scripts/run-e2e-tests.sh all
+          else
+            echo "⚠️ Skipping E2E tests - Atlas credentials not available"
+          fi
+
+  # ==============================================================================
+  # Build and Release
+  # ==============================================================================
+  
+  build:
+    name: 🏗️ Build Artifacts
+    runs-on: ubuntu-latest
+    needs: [lint, security, test]
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            arch: amd64
+            goos: linux
+            goarch: amd64
+          - os: linux
+            arch: arm64
+            goos: linux
+            goarch: arm64
+          - os: darwin
+            arch: amd64
+            goos: darwin
+            goarch: amd64
+          - os: darwin
+            arch: arm64
+            goos: darwin
+            goarch: arm64
+          - os: windows
+            arch: amd64
+            goos: windows
+            goarch: amd64
+            ext: .exe
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Cache Go Modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+
+      - name: Build Binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          VERSION=${GITHUB_REF_NAME:-dev}
+          COMMIT=$(git rev-parse --short HEAD)
+          BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          go build \
+            -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.buildTime=${BUILD_TIME}" \
+            -o "matlas-${VERSION}-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }}" \
+            .
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: matlas-${{ matrix.os }}-${{ matrix.arch }}
+          path: matlas-*
+          retention-days: 90
+
+
+
+  # ==============================================================================
+  # Release Management
+  # ==============================================================================
+  
+  release:
+    name: 📦 Create Release
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.event_name == 'release' && github.event.action == 'published'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Create Release Assets
+        run: |
+          mkdir -p release-assets
+          for dir in artifacts/*/; do
+            cd "$dir"
+            for file in matlas-*; do
+              if [[ "$file" == *.exe ]]; then
+                zip "../../release-assets/${file%.exe}.zip" "$file"
+              else
+                tar -czf "../../release-assets/${file}.tar.gz" "$file"
+              fi
+            done
+            cd - > /dev/null
+          done
+          
+          # Generate checksums
+          cd release-assets
+          sha256sum * > checksums.txt
+          cd ..
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release-assets/*
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+
+  # ==============================================================================
+  # Deployment and Notifications
+  # ==============================================================================
+  
+  deploy:
+    name: 🚀 Deploy Documentation
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Generate Documentation
+        run: |
+          go build -o matlas .
+          ./matlas help --format markdown > docs/cli-reference.md
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: success()
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          publish_branch: gh-pages
+          enable_jekyll: true
+
+  notify:
+    name: 📢 Notifications
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    if: always() && (github.ref == 'refs/heads/main' || github.event_name == 'pull_request')
+    steps:
+      - name: Notify on Success
+        if: ${{ needs.test.result == 'success' && needs.build.result == 'success' }}
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          channel: '#atlas-cli'
+          text: '✅ matlas-cli CI/CD pipeline completed successfully!'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify on Failure
+        if: ${{ needs.test.result == 'failure' || needs.build.result == 'failure' }}
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#atlas-cli'
+          text: '❌ matlas-cli CI/CD pipeline failed!'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }} 

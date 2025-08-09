@@ -1,0 +1,68 @@
+# Set default behavior to automatically normalize line endings
+* text=auto eol=lf
+
+# Source code files
+*.go text eol=lf
+*.mod text eol=lf
+*.sum text eol=lf
+
+# Documentation files
+*.md text eol=lf
+*.txt text eol=lf
+
+# Configuration files
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.toml text eol=lf
+*.ini text eol=lf
+*.cfg text eol=lf
+
+# Shell scripts
+*.sh text eol=lf
+*.bash text eol=lf
+*.zsh text eol=lf
+
+
+
+# Makefile
+Makefile text eol=lf
+*.mk text eol=lf
+
+# Certificate files
+*.crt text eol=lf
+*.pem text eol=lf
+
+# Binary files (explicitly mark as binary to avoid text processing)
+*.exe binary
+*.zip binary
+*.tar.gz binary
+*.tgz binary
+*.jar binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+
+# Archive files
+*.tar binary
+*.gz binary
+*.bz2 binary
+*.xz binary
+*.7z binary
+
+# Exclude files from exports
+.gitattributes export-ignore
+.gitignore export-ignore
+.github/ export-ignore
+test/ export-ignore
+scripts/ export-ignore
+docs/ export-ignore
+examples/ export-ignore
+
+# Mark generated files
+# These files are automatically generated and should not be manually edited
+go.sum linguist-generated=true
+vendor/ linguist-vendored=true 

@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Run formatters
+printf "\n\e[34mRunning gofumpt...\e[0m\n"
+gofumpt -l -w .
+
+# Run vet
+printf "\n\e[34mRunning go vet...\e[0m\n"
+go vet ./...
+
+# Run linter
+printf "\n\e[34mRunning golangci-lint...\e[0m\n"
+golangci-lint run
+
+printf "\n\e[32mPre-commit checks passed.\e[0m\n" 

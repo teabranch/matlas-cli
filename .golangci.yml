@@ -1,0 +1,208 @@
+# =============================================================================
+# golangci-lint configuration for matlas-cli
+# =============================================================================
+
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+  uniq-by-line: true
+  sort-results: true
+
+linters-settings:
+  # Error and Security Analysis
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    exclude-functions:
+      - io/ioutil.ReadFile
+      - io.Copy(*bytes.Buffer)
+      - io.Copy(os.Stdout)
+
+  gosec:
+    severity: medium
+    confidence: medium
+    includes:
+      - G101 # Look for hard coded credentials
+      - G102 # Bind to all interfaces
+      - G103 # Audit the use of unsafe block
+      - G104 # Audit errors not checked
+      - G106 # Audit the use of ssh.InsecureIgnoreHostKey
+      - G107 # Url provided to HTTP request as taint input
+      - G108 # Profiling endpoint automatically exposed on /debug/pprof
+      - G109 # Potential Integer overflow made by strconv.Atoi result conversion to int16/32
+      - G110 # Potential DoS vulnerability via decompression bomb
+      - G201 # SQL query construction using format string
+      - G202 # SQL query construction using string concatenation
+      - G203 # Use of unescaped data in HTML templates
+      - G204 # Audit use of command execution
+      - G301 # Poor file permissions used when creating a directory
+      - G302 # Poor file permissions used with chmod
+      - G303 # Creating tempfile using a predictable path
+      - G304 # File path provided as taint input
+      - G305 # File traversal when extracting zip/tar archive
+      - G306 # Poor file permissions used when writing to a new file
+      - G307 # Deferring a method which returns an error
+      - G401 # Detect the usage of DES, RC4, MD5 or SHA1
+      - G402 # Look for bad TLS connection settings
+      - G403 # Ensure minimum RSA key length of 2048 bits
+      - G404 # Insecure random number source (rand)
+      - G501 # Import blocklist: crypto/md5
+      - G502 # Import blocklist: crypto/des
+      - G503 # Import blocklist: crypto/rc4
+      - G504 # Import blocklist: net/http/cgi
+      - G505 # Import blocklist: crypto/sha1
+      - G601 # Implicit memory aliasing of items from a range statement
+
+  govet:
+    check-shadowing: true
+    enable-all: true
+    disable:
+      - fieldalignment # Too noisy for this project
+
+  revive:
+    severity: warning
+    rules:
+      - name: exported
+        severity: error
+      - name: unreachable-code
+        severity: error
+      - name: redefines-builtin-id
+        severity: error
+
+  # Code Quality
+  gocyclo:
+    min-complexity: 15
+
+  gocognit:
+    min-complexity: 20
+
+  dupl:
+    threshold: 100
+
+  goconst:
+    min-len: 2
+    min-occurrences: 3
+
+  misspell:
+    locale: US
+
+  unparam:
+    check-exported: false
+
+  unused:
+    check-exported: false
+
+  # Formatting and Style
+  goimports:
+    local-prefixes: github.com/teabranch/matlas-cli
+
+  gofumpt:
+    lang-version: "1.24"
+    extra-rules: false
+
+  whitespace:
+    multi-if: false
+    multi-func: false
+
+  # Performance
+  prealloc:
+    simple: true
+    range-loops: true
+    for-loops: false
+
+  # Documentation
+  godot:
+    scope: declarations
+    capital: false
+
+linters:
+  disable-all: true
+  enable:
+    # Error and Bug Detection
+    - errcheck        # Checks for unchecked errors
+    - gosimple        # Linter for Go source code that specializes in simplifying a code
+    - govet           # Vet examines Go source code and reports suspicious constructs
+    - ineffassign     # Detects when assignments to existing variables are not used
+    - staticcheck     # Staticcheck is a go vet on steroids, applying a ton of static analysis checks
+    - typecheck       # Like the front-end of a Go compiler, parses and type-checks Go code
+    - unused          # Checks Go code for unused constants, variables, functions and types
+
+    # Security
+    - gosec           # Inspects source code for security problems
+
+    # Code Quality
+    - dupl            # Tool for code clone detection
+    - gocognit        # Computes and checks the cognitive complexity of functions
+    - goconst         # Finds repeated strings that could be replaced by a constant
+    - gocyclo         # Computes and checks the cyclomatic complexity of functions
+    - godot           # Check if comments end in a period
+    - revive          # Fast, configurable, extensible, flexible, and beautiful linter for Go
+
+    # Performance
+    - prealloc        # Finds slice declarations that could potentially be preallocated
+
+    # Style and Formatting
+    - gofumpt         # Gofumpt checks whether code was gofumpt-ed
+    - goimports       # Goimports does everything that gofmt does. Additionally it fixes imports
+    - misspell        # Finds commonly misspelled English words in comments
+    - unconvert       # Remove unnecessary type conversions
+    - unparam         # Reports unused function parameters
+    - whitespace      # Tool for detection of leading and trailing whitespace
+
+    # Specific Checks
+    - bodyclose       # Checks whether HTTP response body is closed successfully
+    - rowserrcheck    # Checks whether Err of rows is checked successfully
+    - sqlclosecheck   # Checks that sql.Rows and sql.Stmt are closed
+
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - unparam
+
+    # Exclude some staticcheck messages
+    - linters:
+        - staticcheck
+      text: "SA9003:"
+
+    # Exclude lll issues for long lines with go:generate
+    - linters:
+        - lll
+      source: "^//go:generate "
+
+    # Exclude certain gosec rules for test files
+    - path: _test\.go
+      text: "G404:" # Insecure random number source (rand)
+
+    # Exclude certain gosec rules for main.go
+    - path: main\.go
+      text: "G104:" # Errors unhandled for some acceptable cases in main
+
+  # Show only new issues created after git revision or git tag
+  # new-from-rev: HEAD~1
+
+  # Maximum issues count per one linter. Set to 0 to disable
+  max-issues-per-linter: 0
+
+  # Maximum count of issues with the same text. Set to 0 to disable
+  max-same-issues: 0
+
+  # Show only new issues created in git patch with set file path
+  # new-from-patch: path/to/patch/file
+
+severity:
+  default-severity: error
+  case-sensitive: false 

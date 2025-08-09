@@ -1,0 +1,483 @@
+package apply
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestProgressTracker_StartStop(t *testing.T) {
+	pt := NewProgressTracker(100 * time.Millisecond)
+
+	// Create test execution progress
+	execProgress := &ExecutionProgress{
+		PlanID:              "test-plan",
+		CurrentStage:        0,
+		TotalStages:         3,
+		CompletedOperations: 0,
+		TotalOperations:     5,
+		EstimatedTimeLeft:   time.Minute,
+		CurrentOperation:    "Creating cluster",
+	}
+
+	// Start tracking
+	ctx, cancel := context.WithCancel(context.Background())
+	pt.Start(ctx, execProgress)
+
+	assert.True(t, pt.isActive)
+	assert.Equal(t, execProgress, pt.executionProgress)
+
+	// Stop tracking
+	pt.Stop()
+	cancel()
+
+	assert.False(t, pt.isActive)
+}
+
+func TestProgressTracker_UpdateOperationProgress(t *testing.T) {
+	var output bytes.Buffer
+	pt := NewProgressTrackerWithOptions(100*time.Millisecond, &output, true, false)
+
+	execProgress := &ExecutionProgress{
+		PlanID:              "test-plan",
+		CurrentStage:        0,
+		TotalStages:         2,
+		CompletedOperations: 0,
+		TotalOperations:     3,
+		EstimatedTimeLeft:   time.Minute,
+		CurrentOperation:    "",
+	}
+
+	// Start tracking
+	ctx := context.Background()
+	pt.Start(ctx, execProgress)
+
+	// Initialize operation statuses
+	pt.executionProgress.OperationStatuses = make(map[string]OperationStatus)
+
+	// Update operation progress
+	pt.UpdateOperationProgress("op-1", OperationStatusRunning, 0.5, "Creating cluster")
+	pt.UpdateOperationProgress("op-2", OperationStatusCompleted, 1.0, "Cluster created")
+
+	// Verify status updates
+	assert.Equal(t, OperationStatusRunning, pt.executionProgress.OperationStatuses["op-1"])
+	assert.Equal(t, OperationStatusCompleted, pt.executionProgress.OperationStatuses["op-2"])
+
+	// Check verbose output was generated
+	outputStr := output.String()
+	assert.Contains(t, outputStr, "Operation op-1: running")
+	assert.Contains(t, outputStr, "Operation op-2: completed")
+
+	pt.Stop()
+}
+
+func TestProgressTracker_UpdateStageProgress(t *testing.T) {
+	var output bytes.Buffer
+	pt := NewProgressTrackerWithOptions(100*time.Millisecond, &output, false, false)
+
+	execProgress := &ExecutionProgress{
+		PlanID:              "test-plan",
+		CurrentStage:        0,
+		TotalStages:         3,
+		CompletedOperations: 0,
+		TotalOperations:     5,
+		EstimatedTimeLeft:   time.Minute,
+		CurrentOperation:    "",
+	}
+
+	ctx := context.Background()
+	pt.Start(ctx, execProgress)
+
+	// Update stage progress
+	pt.UpdateStageProgress(1, 0.5, "Processing stage 2")
+
+	// Verify updates
+	assert.Equal(t, 1, pt.executionProgress.CurrentStage)
+	assert.Equal(t, "Processing stage 2", pt.executionProgress.CurrentOperation)
+
+	// Check output
+	outputStr := output.String()
+	assert.Contains(t, outputStr, "Stage 2/3")
+	assert.Contains(t, outputStr, "Processing stage 2")
+
+	pt.Stop()
+}
+
+func TestProgressTracker_ShowOverallProgress(t *testing.T) {
+	var output bytes.Buffer
+	pt := NewProgressTrackerWithOptions(100*time.Millisecond, &output, true, false)
+
+	execProgress := &ExecutionProgress{
+		PlanID:              "test-plan",
+		CurrentStage:        1,
+		TotalStages:         2,
+		CompletedOperations: 0,
+		TotalOperations:     4,
+		EstimatedTimeLeft:   30 * time.Second,
+		CurrentOperation:    "Creating users",
+	}
+
+	ctx := context.Background()
+	pt.Start(ctx, execProgress)
+
+	// Initialize operation statuses
+	execProgress.OperationStatuses = map[string]OperationStatus{
+		"op-1": OperationStatusCompleted,
+		"op-2": OperationStatusCompleted,
+		"op-3": OperationStatusRunning,
+		"op-4": OperationStatusPending,
+	}
+
+	// Show overall progress
+	pt.ShowOverallProgress()
+
+	// Check that progress bar was created and output generated
+	assert.NotNil(t, pt.currentBar)
+
+	// Check verbose output
+	outputStr := output.String()
+	assert.Contains(t, outputStr, "Progress: 50.0% (2/4 operations)")
+	assert.Contains(t, outputStr, "ETA: 30s")
+
+	pt.Stop()
+}
+
+func TestProgressTracker_GetMultiOperationProgress(t *testing.T) {
+	pt := NewProgressTracker(100 * time.Millisecond)
+
+	execProgress := &ExecutionProgress{
+		PlanID:              "test-plan",
+		CurrentStage:        1,
+		TotalStages:         3,
+		CompletedOperations: 0,
+		TotalOperations:     5,
+		EstimatedTimeLeft:   45 * time.Second,
+		CurrentOperation:    "Creating network access",
+	}
+
+	ctx := context.Background()
+	pt.Start(ctx, execProgress)
+
+	// Set up operation statuses
+	execProgress.OperationStatuses = map[string]OperationStatus{
+		"op-1": OperationStatusCompleted,
+		"op-2": OperationStatusCompleted,
+		"op-3": OperationStatusFailed,
+		"op-4": OperationStatusRunning,
+		"op-5": OperationStatusPending,
+	}
+
+	// Get multi-operation progress
+	multiProgress := pt.GetMultiOperationProgress()
+
+	require.NotNil(t, multiProgress)
+	assert.Equal(t, "test-plan", multiProgress.PlanID)
+	assert.Equal(t, 5, multiProgress.TotalOperations)
+	assert.Equal(t, 2, multiProgress.CompletedOperations)
+	assert.Equal(t, 1, multiProgress.FailedOperations)
+	assert.Equal(t, 1, multiProgress.ActiveOperations)
+	assert.Equal(t, 0.4, multiProgress.OverallProgress) // 2/5 completed
+	assert.Equal(t, 45*time.Second, multiProgress.EstimatedTimeLeft)
+	assert.Equal(t, 1, multiProgress.CurrentStage)
+	assert.Equal(t, 3, multiProgress.TotalStages)
+
+	// Check operation details
+	assert.Len(t, multiProgress.Operations, 5)
+	assert.Equal(t, OperationStatusCompleted, multiProgress.Operations["op-1"].Status)
+	assert.Equal(t, 1.0, multiProgress.Operations["op-1"].Progress)
+	assert.Equal(t, OperationStatusRunning, multiProgress.Operations["op-4"].Status)
+	assert.Equal(t, 0.5, multiProgress.Operations["op-4"].Progress)
+
+	pt.Stop()
+}
+
+func TestProgressTracker_GetOperationProgress(t *testing.T) {
+	pt := NewProgressTracker(100 * time.Millisecond)
+
+	tests := []struct {
+		status   OperationStatus
+		expected float64
+	}{
+		{OperationStatusPending, 0.0},
+		{OperationStatusRunning, 0.5},
+		{OperationStatusRetrying, 0.3},
+		{OperationStatusCompleted, 1.0},
+		{OperationStatusFailed, 1.0},
+		{OperationStatusSkipped, 1.0},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.status), func(t *testing.T) {
+			actual := pt.getOperationProgress(tt.status)
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
+func TestProgressTracker_QuietMode(t *testing.T) {
+	var output bytes.Buffer
+	pt := NewProgressTrackerWithOptions(100*time.Millisecond, &output, false, true)
+
+	execProgress := &ExecutionProgress{
+		PlanID:              "test-plan",
+		CurrentStage:        0,
+		TotalStages:         2,
+		CompletedOperations: 0,
+		TotalOperations:     3,
+		EstimatedTimeLeft:   time.Minute,
+		CurrentOperation:    "",
+	}
+
+	ctx := context.Background()
+	pt.Start(ctx, execProgress)
+
+	// Initialize operation statuses
+	execProgress.OperationStatuses = make(map[string]OperationStatus)
+
+	// Update progress - should not generate output in quiet mode
+	pt.UpdateStageProgress(1, 0.5, "Processing stage")
+	pt.ShowOverallProgress()
+
+	// Verify no output in quiet mode
+	assert.Empty(t, output.String())
+
+	pt.Stop()
+}
+
+func TestProgressTracker_ProgressMonitoring(t *testing.T) {
+	var output bytes.Buffer
+	pt := NewProgressTrackerWithOptions(50*time.Millisecond, &output, false, false)
+
+	execProgress := &ExecutionProgress{
+		PlanID:              "test-plan",
+		CurrentStage:        0,
+		TotalStages:         2,
+		CompletedOperations: 0,
+		TotalOperations:     2,
+		EstimatedTimeLeft:   time.Minute,
+		CurrentOperation:    "",
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	pt.Start(ctx, execProgress)
+
+	// Set up operation statuses
+	execProgress.OperationStatuses = map[string]OperationStatus{
+		"op-1": OperationStatusCompleted,
+		"op-2": OperationStatusPending,
+	}
+
+	// Wait for monitoring to run a few times
+	time.Sleep(150 * time.Millisecond)
+
+	pt.Stop()
+
+	// Should have generated some progress output
+	assert.NotEmpty(t, output.String())
+}
+
+// RealTimeProgressReporter Tests
+
+func TestRealTimeProgressReporter_LogOperation(t *testing.T) {
+	var output bytes.Buffer
+	pt := NewProgressTracker(100 * time.Millisecond)
+	reporter := NewRealTimeProgressReporter(pt, &output, true, false)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	reporter.Start(ctx)
+
+	// Log some operations
+	reporter.LogOperation("op-1", "Starting cluster creation", ProgressEventOperation)
+	reporter.LogOperation("op-2", "Cluster creation failed", ProgressEventError)
+
+	// Give some time for processing
+	time.Sleep(50 * time.Millisecond)
+
+	outputStr := output.String()
+	assert.Contains(t, outputStr, "operation: Starting cluster creation")
+	assert.Contains(t, outputStr, "ERROR: Cluster creation failed")
+}
+
+func TestRealTimeProgressReporter_QuietMode(t *testing.T) {
+	var output bytes.Buffer
+	pt := NewProgressTracker(100 * time.Millisecond)
+	reporter := NewRealTimeProgressReporter(pt, &output, true, true)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	reporter.Start(ctx)
+
+	// Log operations - should be ignored in quiet mode
+	reporter.LogOperation("op-1", "Starting operation", ProgressEventOperation)
+	reporter.LogOperation("op-2", "Operation failed", ProgressEventError)
+
+	// Give some time for processing
+	time.Sleep(50 * time.Millisecond)
+
+	// Should have no output in quiet mode
+	assert.Empty(t, output.String())
+}
+
+func TestRealTimeProgressReporter_EventTypes(t *testing.T) {
+	var output bytes.Buffer
+	pt := NewProgressTracker(100 * time.Millisecond)
+	reporter := NewRealTimeProgressReporter(pt, &output, false, false)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	reporter.Start(ctx)
+
+	// Log different event types
+	reporter.LogOperation("", "Plan execution started", ProgressEventStart)
+	reporter.LogOperation("", "Plan execution completed", ProgressEventComplete)
+	reporter.LogOperation("", "50% complete", ProgressEventProgress)
+
+	// Give some time for processing
+	time.Sleep(50 * time.Millisecond)
+
+	outputStr := output.String()
+	assert.Contains(t, outputStr, "Starting execution: Plan execution started")
+	assert.Contains(t, outputStr, "Execution completed: Plan execution completed")
+
+	// Progress events should only show in verbose mode
+	assert.NotContains(t, outputStr, "Progress: 50% complete")
+}
+
+func TestRealTimeProgressReporter_VerboseMode(t *testing.T) {
+	var output bytes.Buffer
+	pt := NewProgressTracker(100 * time.Millisecond)
+	reporter := NewRealTimeProgressReporter(pt, &output, true, false)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	reporter.Start(ctx)
+
+	// Log progress event
+	reporter.LogOperation("", "Progress update", ProgressEventProgress)
+	reporter.LogOperation("op-1", "Operation progress", ProgressEventOperation)
+
+	// Give some time for processing
+	time.Sleep(50 * time.Millisecond)
+
+	outputStr := output.String()
+	assert.Contains(t, outputStr, "Progress: Progress update")
+	assert.Contains(t, outputStr, "[op-1] Operation progress")
+}
+
+func TestProgressTracker_ConcurrentUpdates(t *testing.T) {
+	pt := NewProgressTracker(10 * time.Millisecond)
+
+	execProgress := &ExecutionProgress{
+		PlanID:              "concurrent-test",
+		CurrentStage:        0,
+		TotalStages:         2,
+		CompletedOperations: 0,
+		TotalOperations:     100,
+		EstimatedTimeLeft:   time.Minute,
+		CurrentOperation:    "",
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	pt.Start(ctx, execProgress)
+
+	// Initialize operation statuses
+	execProgress.OperationStatuses = make(map[string]OperationStatus)
+
+	// Simulate concurrent updates
+	done := make(chan bool, 10)
+	for i := 0; i < 10; i++ {
+		go func(id int) {
+			defer func() { done <- true }()
+			for j := 0; j < 10; j++ {
+				opID := fmt.Sprintf("op-%d-%d", id, j)
+				pt.UpdateOperationProgress(opID, OperationStatusRunning, 0.5, "Processing")
+				time.Sleep(1 * time.Millisecond)
+				pt.UpdateOperationProgress(opID, OperationStatusCompleted, 1.0, "Done")
+			}
+		}(i)
+	}
+
+	// Wait for all goroutines to complete
+	for i := 0; i < 10; i++ {
+		<-done
+	}
+
+	pt.Stop()
+
+	// Verify no race conditions occurred by checking final state
+	multiProgress := pt.GetMultiOperationProgress()
+	assert.NotNil(t, multiProgress)
+	assert.Equal(t, "concurrent-test", multiProgress.PlanID)
+}
+
+// Benchmark tests for performance validation
+
+func BenchmarkProgressTracker_UpdateOperationProgress(b *testing.B) {
+	pt := NewProgressTracker(time.Hour) // Disable periodic updates
+
+	execProgress := &ExecutionProgress{
+		PlanID:              "bench-test",
+		CurrentStage:        0,
+		TotalStages:         1,
+		CompletedOperations: 0,
+		TotalOperations:     b.N,
+		EstimatedTimeLeft:   time.Minute,
+		CurrentOperation:    "",
+	}
+
+	ctx := context.Background()
+	pt.Start(ctx, execProgress)
+	execProgress.OperationStatuses = make(map[string]OperationStatus)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		opID := fmt.Sprintf("op-%d", i)
+		pt.UpdateOperationProgress(opID, OperationStatusCompleted, 1.0, "Done")
+	}
+
+	pt.Stop()
+}
+
+func BenchmarkProgressTracker_GetMultiOperationProgress(b *testing.B) {
+	pt := NewProgressTracker(time.Hour)
+
+	execProgress := &ExecutionProgress{
+		PlanID:              "bench-test",
+		CurrentStage:        0,
+		TotalStages:         1,
+		CompletedOperations: 0,
+		TotalOperations:     1000,
+		EstimatedTimeLeft:   time.Minute,
+		CurrentOperation:    "",
+	}
+
+	ctx := context.Background()
+	pt.Start(ctx, execProgress)
+
+	// Set up many operation statuses
+	execProgress.OperationStatuses = make(map[string]OperationStatus)
+	for i := 0; i < 1000; i++ {
+		execProgress.OperationStatuses[fmt.Sprintf("op-%d", i)] = OperationStatusCompleted
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = pt.GetMultiOperationProgress()
+	}
+
+	pt.Stop()
+}

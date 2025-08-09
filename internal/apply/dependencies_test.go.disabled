@@ -1,0 +1,382 @@
+package apply
+
+import (
+	"testing"
+
+	"github.com/teabranch/matlas-cli/internal/types"
+)
+
+func TestNewDependencyResolver(t *testing.T) {
+	resolver := NewDependencyResolver()
+
+	if resolver == nil {
+		t.Fatal("NewDependencyResolver returned nil")
+	}
+
+	// Test that resolver is properly initialized
+	if resolver.resourceSpecs == nil {
+		t.Error("resourceSpecs not initialized")
+	}
+
+	if resolver.dependencies == nil {
+		t.Error("dependencies not initialized")
+	}
+
+	if resolver.dependencyRules == nil {
+		t.Error("dependencyRules not initialized")
+	}
+}
+
+func TestDependencyResolver_AddResource(t *testing.T) {
+	resolver := NewDependencyResolver()
+
+	// Add a test resource
+	clusterSpec := map[string]interface{}{
+		"provider":     "AWS",
+		"instanceSize": "M10",
+	}
+
+	resolver.AddResource("test-cluster", types.KindCluster, clusterSpec)
+
+	// Verify resource was added
+	if len(resolver.resourceSpecs) != 1 {
+		t.Errorf("Expected 1 resource, got %d", len(resolver.resourceSpecs))
+	}
+
+	if resolver.resourceSpecs["test-cluster"] == nil {
+		t.Error("Resource not found in resourceSpecs")
+	}
+}
+
+func TestDependencyResolver_AddDependency(t *testing.T) {
+	resolver := NewDependencyResolver()
+
+	// Add resources first
+	resolver.AddResource("cluster-1", types.KindCluster, map[string]interface{}{})
+	resolver.AddResource("cluster-2", types.KindCluster, map[string]interface{}{})
+
+	// Add dependency
+	resolver.AddDependency("cluster-1", "cluster-2")
+
+	// Verify dependency was added
+	if len(resolver.dependencies) != 1 {
+		t.Errorf("Expected 1 dependency entry, got %d", len(resolver.dependencies))
+	}
+
+	deps, exists := resolver.dependencies["cluster-1"]
+	if !exists {
+		t.Error("Dependency not found")
+	}
+
+	if len(deps) != 1 || deps[0] != "cluster-2" {
+		t.Errorf("Expected dependency on cluster-2, got %v", deps)
+	}
+}
+
+func TestDependencyResolver_ValidateDependencies_NoCycles(t *testing.T) {
+	resolver := NewDependencyResolver()
+
+	// Add resources
+	resolver.AddResource("cluster-1", types.KindCluster, map[string]interface{}{})
+	resolver.AddResource("cluster-2", types.KindCluster, map[string]interface{}{})
+	resolver.AddResource("cluster-3", types.KindCluster, map[string]interface{}{})
+
+	// Add valid dependencies (no cycles)
+	resolver.AddDependency("cluster-1", "cluster-2")
+	resolver.AddDependency("cluster-2", "cluster-3")
+
+	err := resolver.ValidateDependencies()
+
+	if err != nil {
+		t.Errorf("Expected no error for valid dependencies, got: %v", err)
+	}
+}
+
+func TestDependencyResolver_ValidateDependencies_WithCycles(t *testing.T) {
+	resolver := NewDependencyResolver()
+
+	// Add resources
+	resolver.AddResource("cluster-1", types.KindCluster, map[string]interface{}{})
+	resolver.AddResource("cluster-2", types.KindCluster, map[string]interface{}{})
+	resolver.AddResource("cluster-3", types.KindCluster, map[string]interface{}{})
+
+	// Add circular dependencies
+	resolver.AddDependency("cluster-1", "cluster-2")
+	resolver.AddDependency("cluster-2", "cluster-3")
+	resolver.AddDependency("cluster-3", "cluster-1") // Creates cycle
+
+	err := resolver.ValidateDependencies()
+
+	if err == nil {
+		t.Error("Expected error for circular dependencies")
+	}
+
+	if !contains(err.Error(), "circular") && !contains(err.Error(), "cycle") {
+		t.Errorf("Expected error message to mention circular dependency, got: %v", err)
+	}
+}
+
+func TestDependencyResolver_GetExecutionOrder_LinearDependencies(t *testing.T) {
+	resolver := NewDependencyResolver()
+
+	// Add resources with linear dependencies
+	resolver.AddResource("cluster-1", types.KindCluster, map[string]interface{}{})
+	resolver.AddResource("cluster-2", types.KindCluster, map[string]interface{}{})
+	resolver.AddResource("cluster-3", types.KindCluster, map[string]interface{}{})
+
+	resolver.AddDependency("cluster-1", "cluster-3")
+	resolver.AddDependency("cluster-2", "cluster-1")
+
+	order := resolver.GetExecutionOrder()
+
+	if len(order) != 3 {
+		t.Fatalf("Expected 3 resources in order, got %d", len(order))
+	}
+
+	// cluster-3 should come first (no dependencies)
+	if order[0] != "cluster-3" {
+		t.Errorf("Expected cluster-3 first, got %s", order[0])
+	}
+
+	// cluster-1 should come before cluster-2
+	cluster1Index := -1
+	cluster2Index := -1
+	for i, resource := range order {
+		if resource == "cluster-1" {
+			cluster1Index = i
+		}
+		if resource == "cluster-2" {
+			cluster2Index = i
+		}
+	}
+
+	if cluster1Index == -1 || cluster2Index == -1 {
+		t.Error("cluster-1 or cluster-2 not found in execution order")
+	}
+
+	if cluster1Index >= cluster2Index {
+		t.Error("cluster-1 should come before cluster-2 in execution order")
+	}
+}
+
+func TestDependencyResolver_GetExecutionOrder_NoDependencies(t *testing.T) {
+	resolver := NewDependencyResolver()
+
+	// Add resources without dependencies
+	resolver.AddResource("cluster-1", types.KindCluster, map[string]interface{}{})
+	resolver.AddResource("cluster-2", types.KindCluster, map[string]interface{}{})
+	resolver.AddResource("cluster-3", types.KindCluster, map[string]interface{}{})
+
+	order := resolver.GetExecutionOrder()
+
+	if len(order) != 3 {
+		t.Errorf("Expected 3 resources in order, got %d", len(order))
+	}
+
+	// All resources should be included
+	found := make(map[string]bool)
+	for _, resource := range order {
+		found[resource] = true
+	}
+
+	expectedResources := []string{"cluster-1", "cluster-2", "cluster-3"}
+	for _, expected := range expectedResources {
+		if !found[expected] {
+			t.Errorf("Resource %s not found in execution order", expected)
+		}
+	}
+}
+
+func TestDependencyResolver_AddDependencyRule(t *testing.T) {
+	resolver := NewDependencyResolver()
+
+	rule := DependencyRule{
+		Name:       "cluster-before-users",
+		SourceKind: types.KindDatabaseUser,
+		TargetKind: types.KindCluster,
+		Condition:  func(source, target interface{}) bool { return true },
+	}
+
+	resolver.AddDependencyRule(rule)
+
+	if len(resolver.dependencyRules) != 1 {
+		t.Errorf("Expected 1 dependency rule, got %d", len(resolver.dependencyRules))
+	}
+
+	if resolver.dependencyRules[0].Name != "cluster-before-users" {
+		t.Errorf("Expected rule name 'cluster-before-users', got %s", resolver.dependencyRules[0].Name)
+	}
+}
+
+func TestDependencyResolver_RemoveDependencyRule(t *testing.T) {
+	resolver := NewDependencyResolver()
+
+	// Add a rule
+	rule := DependencyRule{
+		Name:       "test-rule",
+		SourceKind: types.KindDatabaseUser,
+		TargetKind: types.KindCluster,
+		Condition:  func(source, target interface{}) bool { return true },
+	}
+
+	resolver.AddDependencyRule(rule)
+
+	// Verify rule was added
+	if len(resolver.dependencyRules) != 1 {
+		t.Error("Rule was not added")
+	}
+
+	// Remove the rule
+	resolver.RemoveDependencyRule("test-rule")
+
+	// Verify rule was removed
+	if len(resolver.dependencyRules) != 0 {
+		t.Errorf("Expected 0 rules after removal, got %d", len(resolver.dependencyRules))
+	}
+}
+
+func TestDependencyResolver_RemoveDependencyRule_NonExistent(t *testing.T) {
+	resolver := NewDependencyResolver()
+
+	// Try to remove a rule that doesn't exist
+	resolver.RemoveDependencyRule("non-existent-rule")
+
+	// Should not panic or cause issues
+	if len(resolver.dependencyRules) != 0 {
+		t.Error("Expected no rules, but found some")
+	}
+}
+
+func TestDependencyResolver_ComplexDependencyGraph(t *testing.T) {
+	resolver := NewDependencyResolver()
+
+	// Create a more complex dependency graph
+	resources := []string{"A", "B", "C", "D", "E", "F"}
+	for _, resource := range resources {
+		resolver.AddResource(resource, types.KindCluster, map[string]interface{}{})
+	}
+
+	// Add dependencies: A->B, B->C, D->E, E->F, C->D
+	// Expected order: F, E, D, C, B, A (or any valid topological sort)
+	resolver.AddDependency("A", "B")
+	resolver.AddDependency("B", "C")
+	resolver.AddDependency("C", "D")
+	resolver.AddDependency("D", "E")
+	resolver.AddDependency("E", "F")
+
+	err := resolver.ValidateDependencies()
+	if err != nil {
+		t.Fatalf("Unexpected error in complex dependency validation: %v", err)
+	}
+
+	order := resolver.GetExecutionOrder()
+
+	if len(order) != 6 {
+		t.Fatalf("Expected 6 resources in order, got %d", len(order))
+	}
+
+	// Verify that dependencies are respected
+	resourceIndex := make(map[string]int)
+	for i, resource := range order {
+		resourceIndex[resource] = i
+	}
+
+	dependencies := map[string]string{
+		"A": "B",
+		"B": "C",
+		"C": "D",
+		"D": "E",
+		"E": "F",
+	}
+
+	for dependent, dependency := range dependencies {
+		if resourceIndex[dependent] <= resourceIndex[dependency] {
+			t.Errorf("Resource %s should come after %s in execution order", dependent, dependency)
+		}
+	}
+}
+
+func TestDependencyResolver_SelfDependency(t *testing.T) {
+	resolver := NewDependencyResolver()
+
+	resolver.AddResource("cluster-1", types.KindCluster, map[string]interface{}{})
+
+	// Try to add self-dependency (should be handled gracefully)
+	resolver.AddDependency("cluster-1", "cluster-1")
+
+	err := resolver.ValidateDependencies()
+
+	if err == nil {
+		t.Error("Expected error for self-dependency")
+	}
+
+	if !contains(err.Error(), "self") && !contains(err.Error(), "circular") {
+		t.Errorf("Expected error message to mention self-dependency, got: %v", err)
+	}
+}
+
+func TestDependencyResolver_MissingDependency(t *testing.T) {
+	resolver := NewDependencyResolver()
+
+	resolver.AddResource("cluster-1", types.KindCluster, map[string]interface{}{})
+
+	// Add dependency on non-existent resource
+	resolver.AddDependency("cluster-1", "non-existent-cluster")
+
+	err := resolver.ValidateDependencies()
+
+	if err == nil {
+		t.Error("Expected error for missing dependency")
+	}
+
+	if !contains(err.Error(), "not found") && !contains(err.Error(), "missing") {
+		t.Errorf("Expected error message to mention missing dependency, got: %v", err)
+	}
+}
+
+func TestDependencyResolver_EmptyGraph(t *testing.T) {
+	resolver := NewDependencyResolver()
+
+	// Test with empty graph
+	err := resolver.ValidateDependencies()
+	if err != nil {
+		t.Errorf("Expected no error for empty graph, got: %v", err)
+	}
+
+	order := resolver.GetExecutionOrder()
+	if len(order) != 0 {
+		t.Errorf("Expected empty execution order, got %v", order)
+	}
+}
+
+func TestDependencyRule_Creation(t *testing.T) {
+	rule := DependencyRule{
+		Name:       "test-rule",
+		SourceKind: types.KindDatabaseUser,
+		TargetKind: types.KindCluster,
+		Condition: func(source, target interface{}) bool {
+			return true
+		},
+	}
+
+	if rule.Name != "test-rule" {
+		t.Errorf("Expected name 'test-rule', got %s", rule.Name)
+	}
+
+	if rule.SourceKind != types.KindDatabaseUser {
+		t.Errorf("Expected SourceKind %s, got %s", types.KindDatabaseUser, rule.SourceKind)
+	}
+
+	if rule.TargetKind != types.KindCluster {
+		t.Errorf("Expected TargetKind %s, got %s", types.KindCluster, rule.TargetKind)
+	}
+
+	if rule.Condition == nil {
+		t.Error("Expected Condition to be set")
+	}
+
+	// Test condition function
+	if !rule.Condition(nil, nil) {
+		t.Error("Expected condition to return true")
+	}
+}

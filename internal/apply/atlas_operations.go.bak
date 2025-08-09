@@ -1,0 +1,558 @@
+package apply
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/teabranch/matlas-cli/internal/services/atlas"
+	"github.com/teabranch/matlas-cli/internal/types"
+	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
+)
+
+// AtlasOperationExecutor implements the actual Atlas API operations for the executor
+type AtlasOperationExecutor struct {
+	clustersService      *atlas.ClustersService
+	usersService         *atlas.DatabaseUsersService
+	networkAccessService *atlas.NetworkAccessListsService
+	projectsService      *atlas.ProjectsService
+}
+
+// NewAtlasOperationExecutor creates a new Atlas operation executor
+func NewAtlasOperationExecutor(
+	clustersService *atlas.ClustersService,
+	usersService *atlas.DatabaseUsersService,
+	networkAccessService *atlas.NetworkAccessListsService,
+	projectsService *atlas.ProjectsService,
+) *AtlasOperationExecutor {
+	return &AtlasOperationExecutor{
+		clustersService:      clustersService,
+		usersService:         usersService,
+		networkAccessService: networkAccessService,
+		projectsService:      projectsService,
+	}
+}
+
+// Cluster Operations
+
+func (aoe *AtlasOperationExecutor) CreateCluster(ctx context.Context, operation *PlannedOperation, result *OperationResult) error {
+	// Extract cluster configuration from operation
+	clusterConfig, ok := operation.Desired.(*types.ClusterConfig)
+	if !ok {
+		return fmt.Errorf("invalid cluster configuration type")
+	}
+
+	result.Metadata["operation"] = "createCluster"
+	result.Metadata["resourceName"] = operation.ResourceName
+	result.Metadata["clusterName"] = clusterConfig.Metadata.Name
+
+	// Build Atlas cluster request
+	clusterRequest := &admin.ClusterDescription20240805{
+		Name: &clusterConfig.Metadata.Name,
+	}
+
+	// Set cluster tier if specified
+	if clusterConfig.InstanceSize != "" {
+		clusterRequest.InstanceSizeName = &clusterConfig.InstanceSize
+	}
+
+	// Set provider settings
+	if clusterConfig.Provider != "" && clusterConfig.Region != "" {
+		providerSettings := &admin.ClusterProviderSettings{
+			ProviderName: &clusterConfig.Provider,
+			RegionName:   &clusterConfig.Region,
+		}
+		if clusterConfig.InstanceSize != "" {
+			providerSettings.InstanceSizeName = &clusterConfig.InstanceSize
+		}
+		clusterRequest.ProviderSettings = providerSettings
+	}
+
+	// Set backup enabled
+	if clusterConfig.BackupEnabled != nil {
+		clusterRequest.BackupEnabled = clusterConfig.BackupEnabled
+	}
+
+	// Set cluster type
+	if clusterConfig.ClusterType != "" {
+		clusterRequest.ClusterType = &clusterConfig.ClusterType
+	}
+
+	// Extract project ID from operation metadata or use a default approach
+	projectID := getProjectIDFromOperation(operation)
+	if projectID == "" {
+		return fmt.Errorf("project ID not found in operation")
+	}
+
+	// Create the cluster using Atlas service
+	startTime := time.Now()
+	createdCluster, err := aoe.createClusterViaAPI(ctx, projectID, clusterRequest)
+	if err != nil {
+		result.Metadata["error"] = err.Error()
+		result.Metadata["duration"] = time.Since(startTime).String()
+		return fmt.Errorf("failed to create cluster %s: %w", clusterConfig.Name, err)
+	}
+
+	// Store result metadata
+	result.Metadata["clusterId"] = *createdCluster.Id
+	result.Metadata["clusterState"] = *createdCluster.StateName
+	result.Metadata["duration"] = time.Since(startTime).String()
+	result.ResourceID = *createdCluster.Id
+
+	return nil
+}
+
+func (aoe *AtlasOperationExecutor) UpdateCluster(ctx context.Context, operation *PlannedOperation, result *OperationResult) error {
+	clusterConfig, ok := operation.Desired.(*types.ClusterConfig)
+	if !ok {
+		return fmt.Errorf("invalid cluster configuration type")
+	}
+
+	result.Metadata["operation"] = "updateCluster"
+	result.Metadata["resourceName"] = operation.ResourceName
+	result.Metadata["clusterName"] = clusterConfig.Name
+
+	projectID := getProjectIDFromOperation(operation)
+	if projectID == "" {
+		return fmt.Errorf("project ID not found in operation")
+	}
+
+	// Get current cluster state
+	currentCluster, err := aoe.clustersService.Get(ctx, projectID, clusterConfig.Name)
+	if err != nil {
+		return fmt.Errorf("failed to get current cluster state: %w", err)
+	}
+
+	// Build update request based on differences
+	updateRequest := &admin.ClusterDescription20240805{
+		Name: &clusterConfig.Name,
+	}
+
+	// Update instance size if changed
+	if clusterConfig.InstanceSizeName != "" &&
+		(currentCluster.InstanceSizeName == nil || *currentCluster.InstanceSizeName != clusterConfig.InstanceSizeName) {
+		updateRequest.InstanceSizeName = &clusterConfig.InstanceSizeName
+	}
+
+	// Update backup settings if changed
+	if clusterConfig.BackupEnabled != nil &&
+		(currentCluster.BackupEnabled == nil || *currentCluster.BackupEnabled != *clusterConfig.BackupEnabled) {
+		updateRequest.BackupEnabled = clusterConfig.BackupEnabled
+	}
+
+	startTime := time.Now()
+	updatedCluster, err := aoe.updateClusterViaAPI(ctx, projectID, clusterConfig.Name, updateRequest)
+	if err != nil {
+		result.Metadata["error"] = err.Error()
+		result.Metadata["duration"] = time.Since(startTime).String()
+		return fmt.Errorf("failed to update cluster %s: %w", clusterConfig.Name, err)
+	}
+
+	result.Metadata["clusterId"] = *updatedCluster.Id
+	result.Metadata["clusterState"] = *updatedCluster.StateName
+	result.Metadata["duration"] = time.Since(startTime).String()
+	result.ResourceID = *updatedCluster.Id
+
+	return nil
+}
+
+func (aoe *AtlasOperationExecutor) DeleteCluster(ctx context.Context, operation *PlannedOperation, result *OperationResult) error {
+	// Get cluster name from current state
+	var clusterName string
+	if current, ok := operation.Current.(*types.ClusterConfig); ok {
+		clusterName = current.Name
+	} else {
+		clusterName = operation.ResourceName
+	}
+
+	result.Metadata["operation"] = "deleteCluster"
+	result.Metadata["resourceName"] = operation.ResourceName
+	result.Metadata["clusterName"] = clusterName
+
+	projectID := getProjectIDFromOperation(operation)
+	if projectID == "" {
+		return fmt.Errorf("project ID not found in operation")
+	}
+
+	startTime := time.Now()
+	err := aoe.deleteClusterViaAPI(ctx, projectID, clusterName)
+	if err != nil {
+		result.Metadata["error"] = err.Error()
+		result.Metadata["duration"] = time.Since(startTime).String()
+		return fmt.Errorf("failed to delete cluster %s: %w", clusterName, err)
+	}
+
+	result.Metadata["duration"] = time.Since(startTime).String()
+	result.ResourceID = clusterName
+
+	return nil
+}
+
+// Database User Operations
+
+func (aoe *AtlasOperationExecutor) CreateDatabaseUser(ctx context.Context, operation *PlannedOperation, result *OperationResult) error {
+	userConfig, ok := operation.Desired.(*types.DatabaseUserConfig)
+	if !ok {
+		return fmt.Errorf("invalid database user configuration type")
+	}
+
+	result.Metadata["operation"] = "createDatabaseUser"
+	result.Metadata["resourceName"] = operation.ResourceName
+	result.Metadata["username"] = userConfig.Username
+	result.Metadata["databaseName"] = userConfig.DatabaseName
+
+	projectID := getProjectIDFromOperation(operation)
+	if projectID == "" {
+		return fmt.Errorf("project ID not found in operation")
+	}
+
+	// Build Atlas database user request
+	userRequest := &admin.CloudDatabaseUser{
+		Username:     &userConfig.Username,
+		DatabaseName: &userConfig.DatabaseName,
+		Password:     userConfig.Password,
+	}
+
+	// Convert roles
+	if len(userConfig.Roles) > 0 {
+		roles := make([]admin.DatabaseUserRole, len(userConfig.Roles))
+		for i, role := range userConfig.Roles {
+			atlasRole := admin.DatabaseUserRole{
+				RoleName:     &role.Role,
+				DatabaseName: &role.Database,
+			}
+			roles[i] = atlasRole
+		}
+		userRequest.Roles = &roles
+	}
+
+	// Set scopes if specified
+	if len(userConfig.Scopes) > 0 {
+		scopes := make([]admin.UserScope, len(userConfig.Scopes))
+		for i, scope := range userConfig.Scopes {
+			atlasScope := admin.UserScope{
+				Name: &scope.Name,
+				Type: admin.PtrString(string(scope.Type)),
+			}
+			scopes[i] = atlasScope
+		}
+		userRequest.Scopes = &scopes
+	}
+
+	startTime := time.Now()
+	createdUser, err := aoe.usersService.Create(ctx, projectID, userRequest)
+	if err != nil {
+		result.Metadata["error"] = err.Error()
+		result.Metadata["duration"] = time.Since(startTime).String()
+		return fmt.Errorf("failed to create database user %s: %w", userConfig.Username, err)
+	}
+
+	result.Metadata["userId"] = *createdUser.Username
+	result.Metadata["duration"] = time.Since(startTime).String()
+	result.ResourceID = fmt.Sprintf("%s:%s", userConfig.DatabaseName, userConfig.Username)
+
+	return nil
+}
+
+func (aoe *AtlasOperationExecutor) UpdateDatabaseUser(ctx context.Context, operation *PlannedOperation, result *OperationResult) error {
+	userConfig, ok := operation.Desired.(*types.DatabaseUserConfig)
+	if !ok {
+		return fmt.Errorf("invalid database user configuration type")
+	}
+
+	result.Metadata["operation"] = "updateDatabaseUser"
+	result.Metadata["resourceName"] = operation.ResourceName
+	result.Metadata["username"] = userConfig.Username
+	result.Metadata["databaseName"] = userConfig.DatabaseName
+
+	projectID := getProjectIDFromOperation(operation)
+	if projectID == "" {
+		return fmt.Errorf("project ID not found in operation")
+	}
+
+	// Build update request
+	updateRequest := &admin.CloudDatabaseUser{
+		Username:     &userConfig.Username,
+		DatabaseName: &userConfig.DatabaseName,
+	}
+
+	// Update password if provided
+	if userConfig.Password != nil {
+		updateRequest.Password = userConfig.Password
+	}
+
+	// Update roles
+	if len(userConfig.Roles) > 0 {
+		roles := make([]admin.DatabaseUserRole, len(userConfig.Roles))
+		for i, role := range userConfig.Roles {
+			atlasRole := admin.DatabaseUserRole{
+				RoleName:     &role.Role,
+				DatabaseName: &role.Database,
+			}
+			roles[i] = atlasRole
+		}
+		updateRequest.Roles = &roles
+	}
+
+	startTime := time.Now()
+	updatedUser, err := aoe.usersService.Update(ctx, projectID, userConfig.DatabaseName, userConfig.Username, updateRequest)
+	if err != nil {
+		result.Metadata["error"] = err.Error()
+		result.Metadata["duration"] = time.Since(startTime).String()
+		return fmt.Errorf("failed to update database user %s: %w", userConfig.Username, err)
+	}
+
+	result.Metadata["userId"] = *updatedUser.Username
+	result.Metadata["duration"] = time.Since(startTime).String()
+	result.ResourceID = fmt.Sprintf("%s:%s", userConfig.DatabaseName, userConfig.Username)
+
+	return nil
+}
+
+func (aoe *AtlasOperationExecutor) DeleteDatabaseUser(ctx context.Context, operation *PlannedOperation, result *OperationResult) error {
+	var username, databaseName string
+
+	if current, ok := operation.Current.(*types.DatabaseUserConfig); ok {
+		username = current.Username
+		databaseName = current.DatabaseName
+	} else {
+		// Try to extract from resource name (format: database:username)
+		// This is a fallback approach
+		return fmt.Errorf("cannot determine database user details for deletion")
+	}
+
+	result.Metadata["operation"] = "deleteDatabaseUser"
+	result.Metadata["resourceName"] = operation.ResourceName
+	result.Metadata["username"] = username
+	result.Metadata["databaseName"] = databaseName
+
+	projectID := getProjectIDFromOperation(operation)
+	if projectID == "" {
+		return fmt.Errorf("project ID not found in operation")
+	}
+
+	startTime := time.Now()
+	err := aoe.usersService.Delete(ctx, projectID, databaseName, username)
+	if err != nil {
+		result.Metadata["error"] = err.Error()
+		result.Metadata["duration"] = time.Since(startTime).String()
+		return fmt.Errorf("failed to delete database user %s: %w", username, err)
+	}
+
+	result.Metadata["duration"] = time.Since(startTime).String()
+	result.ResourceID = fmt.Sprintf("%s:%s", databaseName, username)
+
+	return nil
+}
+
+// Network Access Operations
+
+func (aoe *AtlasOperationExecutor) CreateNetworkAccess(ctx context.Context, operation *PlannedOperation, result *OperationResult) error {
+	accessConfig, ok := operation.Desired.(*types.NetworkAccessConfig)
+	if !ok {
+		return fmt.Errorf("invalid network access configuration type")
+	}
+
+	result.Metadata["operation"] = "createNetworkAccess"
+	result.Metadata["resourceName"] = operation.ResourceName
+	result.Metadata["ipAddress"] = accessConfig.IPAddress
+
+	projectID := getProjectIDFromOperation(operation)
+	if projectID == "" {
+		return fmt.Errorf("project ID not found in operation")
+	}
+
+	// Build Atlas network access request
+	accessRequest := &admin.NetworkPermissionEntry{
+		IpAddress: &accessConfig.IPAddress,
+	}
+
+	// Set CIDR block if specified
+	if accessConfig.CIDRBlock != "" {
+		accessRequest.CidrBlock = &accessConfig.CIDRBlock
+	}
+
+	// Set comment if specified
+	if accessConfig.Comment != "" {
+		accessRequest.Comment = &accessConfig.Comment
+	}
+
+	startTime := time.Now()
+	createdAccess, err := aoe.networkAccessService.Create(ctx, projectID, accessRequest)
+	if err != nil {
+		result.Metadata["error"] = err.Error()
+		result.Metadata["duration"] = time.Since(startTime).String()
+		return fmt.Errorf("failed to create network access for %s: %w", accessConfig.IPAddress, err)
+	}
+
+	result.Metadata["accessId"] = *createdAccess.IpAddress
+	result.Metadata["duration"] = time.Since(startTime).String()
+	result.ResourceID = *createdAccess.IpAddress
+
+	return nil
+}
+
+func (aoe *AtlasOperationExecutor) UpdateNetworkAccess(ctx context.Context, operation *PlannedOperation, result *OperationResult) error {
+	accessConfig, ok := operation.Desired.(*types.NetworkAccessConfig)
+	if !ok {
+		return fmt.Errorf("invalid network access configuration type")
+	}
+
+	result.Metadata["operation"] = "updateNetworkAccess"
+	result.Metadata["resourceName"] = operation.ResourceName
+	result.Metadata["ipAddress"] = accessConfig.IPAddress
+
+	projectID := getProjectIDFromOperation(operation)
+	if projectID == "" {
+		return fmt.Errorf("project ID not found in operation")
+	}
+
+	// Build update request
+	updateRequest := &admin.NetworkPermissionEntry{
+		IpAddress: &accessConfig.IPAddress,
+	}
+
+	if accessConfig.CIDRBlock != "" {
+		updateRequest.CidrBlock = &accessConfig.CIDRBlock
+	}
+
+	if accessConfig.Comment != "" {
+		updateRequest.Comment = &accessConfig.Comment
+	}
+
+	startTime := time.Now()
+	updatedAccess, err := aoe.networkAccessService.Update(ctx, projectID, accessConfig.IPAddress, updateRequest)
+	if err != nil {
+		result.Metadata["error"] = err.Error()
+		result.Metadata["duration"] = time.Since(startTime).String()
+		return fmt.Errorf("failed to update network access for %s: %w", accessConfig.IPAddress, err)
+	}
+
+	result.Metadata["accessId"] = *updatedAccess.IpAddress
+	result.Metadata["duration"] = time.Since(startTime).String()
+	result.ResourceID = *updatedAccess.IpAddress
+
+	return nil
+}
+
+func (aoe *AtlasOperationExecutor) DeleteNetworkAccess(ctx context.Context, operation *PlannedOperation, result *OperationResult) error {
+	var ipAddress string
+
+	if current, ok := operation.Current.(*types.NetworkAccessConfig); ok {
+		ipAddress = current.IPAddress
+	} else {
+		ipAddress = operation.ResourceName
+	}
+
+	result.Metadata["operation"] = "deleteNetworkAccess"
+	result.Metadata["resourceName"] = operation.ResourceName
+	result.Metadata["ipAddress"] = ipAddress
+
+	projectID := getProjectIDFromOperation(operation)
+	if projectID == "" {
+		return fmt.Errorf("project ID not found in operation")
+	}
+
+	startTime := time.Now()
+	err := aoe.networkAccessService.Delete(ctx, projectID, ipAddress)
+	if err != nil {
+		result.Metadata["error"] = err.Error()
+		result.Metadata["duration"] = time.Since(startTime).String()
+		return fmt.Errorf("failed to delete network access for %s: %w", ipAddress, err)
+	}
+
+	result.Metadata["duration"] = time.Since(startTime).String()
+	result.ResourceID = ipAddress
+
+	return nil
+}
+
+// Helper functions for Atlas API calls
+
+func (aoe *AtlasOperationExecutor) createClusterViaAPI(ctx context.Context, projectID string, clusterRequest *admin.ClusterDescription20240805) (*admin.ClusterDescription20240805, error) {
+	// For now, we don't have a direct create method in the clusters service
+	// This would need to be implemented in the Atlas service layer
+	// For demonstration, returning an error indicating this needs implementation
+	return nil, fmt.Errorf("cluster creation API not yet implemented in clusters service")
+}
+
+func (aoe *AtlasOperationExecutor) updateClusterViaAPI(ctx context.Context, projectID, clusterName string, updateRequest *admin.ClusterDescription20240805) (*admin.ClusterDescription20240805, error) {
+	// Similar to create, update operations need to be implemented in the Atlas service layer
+	return nil, fmt.Errorf("cluster update API not yet implemented in clusters service")
+}
+
+func (aoe *AtlasOperationExecutor) deleteClusterViaAPI(ctx context.Context, projectID, clusterName string) error {
+	// Delete operations also need implementation in the Atlas service layer
+	return fmt.Errorf("cluster deletion API not yet implemented in clusters service")
+}
+
+// Utility functions
+
+func getProjectIDFromOperation(operation *PlannedOperation) string {
+	// Try to extract project ID from operation metadata
+	if projectID, exists := operation.Metadata["projectId"]; exists {
+		if pid, ok := projectID.(string); ok {
+			return pid
+		}
+	}
+
+	// Try to extract from operation context or configuration
+	// This is a placeholder - in practice, this would come from the plan context
+	// or be passed through the operation metadata
+	return ""
+}
+
+// Configuration validation helpers
+
+func validateAtlasClusterConfig(config *types.ClusterConfig) error {
+	if config.Name == "" {
+		return fmt.Errorf("cluster name is required")
+	}
+
+	if config.ProviderSettings != nil {
+		if config.ProviderSettings.ProviderName == "" {
+			return fmt.Errorf("provider name is required")
+		}
+		if config.ProviderSettings.RegionName == "" {
+			return fmt.Errorf("region name is required")
+		}
+	}
+
+	return nil
+}
+
+func validateAtlasDatabaseUserConfig(config *types.DatabaseUserConfig) error {
+	if config.Username == "" {
+		return fmt.Errorf("username is required")
+	}
+
+	if config.DatabaseName == "" {
+		return fmt.Errorf("database name is required")
+	}
+
+	if len(config.Roles) == 0 {
+		return fmt.Errorf("at least one role is required")
+	}
+
+	// Validate role formats
+	for _, role := range config.Roles {
+		if role.Role == "" {
+			return fmt.Errorf("role name is required")
+		}
+		if role.Database == "" {
+			return fmt.Errorf("role database is required")
+		}
+	}
+
+	return nil
+}
+
+func validateAtlasNetworkAccessConfig(config *types.NetworkAccessConfig) error {
+	if config.IPAddress == "" && config.CIDRBlock == "" {
+		return fmt.Errorf("either IP address or CIDR block is required")
+	}
+
+	// Additional validation for IP format could be added here
+
+	return nil
+}
