@@ -7,77 +7,28 @@ version: "2"
 run:
   timeout: 5m
   tests: true
-  modules-download-mode: vendor
-
-output:
-  format: colored-line-number
-  print-issued-lines: false
 
 linters:
   enable:
-    # Error and Bug Detection
-    - errcheck        # Checks for unchecked errors
-    - govet           # Vet examines Go source code and reports suspicious constructs
-    - ineffassign     # Detects when assignments to existing variables are not used
-    - staticcheck     # Staticcheck is a go vet on steroids, applying a ton of static analysis checks
-    - unused          # Checks Go code for unused constants, variables, functions and types
-
-    # Security
-    - gosec           # Inspects source code for security problems
-
-    # Code Quality
-    - dupl            # Tool for code clone detection
-    - gocognit        # Computes and checks the cognitive complexity of functions
-    - goconst         # Finds repeated strings that could be replaced by a constant
-    - gocyclo         # Computes and checks the cyclomatic complexity of functions
-    - revive          # Fast, configurable, extensible, flexible, and beautiful linter for Go
-
-    # Performance
-    - prealloc        # Finds slice declarations that could potentially be preallocated
-
-    # Style and Formatting
-    - misspell        # Finds commonly misspelled English words in comments
-    - unconvert       # Remove unnecessary type conversions
-    - unparam         # Reports unused function parameters
-    - whitespace      # Tool for detection of leading and trailing whitespace
-
-    # Specific Checks
-    - bodyclose       # Checks whether HTTP response body is closed successfully
-    - rowserrcheck    # Checks whether Err of rows is checked successfully
-    - sqlclosecheck   # Checks that sql.Rows and sql.Stmt are closed
-
-  disable:
-    - godot           # Temporarily disabled due to configuration issues
-
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-
-  gosec:
-    severity: medium
-    confidence: medium
-
-  gocyclo:
-    min-complexity: 15
-
-  gocognit:
-    min-complexity: 20
-
-  dupl:
-    threshold: 100
-
-  goconst:
-    min-len: 2
-    min-occurrences: 3
-
-  misspell:
-    locale: US
-
-  prealloc:
-    simple: true
-    range-loops: true
-    for-loops: false
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gosec
+    - dupl
+    - gocognit
+    - goconst
+    - gocyclo
+    - revive
+    - prealloc
+    - misspell
+    - unconvert
+    - unparam
+    - whitespace
+    - bodyclose
+    - rowserrcheck
+    - sqlclosecheck
 
 issues:
   max-issues-per-linter: 0
