@@ -1,3 +1,4 @@
+version: 1
 # =============================================================================
 # golangci-lint configuration for matlas-cli
 # =============================================================================
@@ -6,7 +7,7 @@ run:
   timeout: 5m
   issues-exit-code: 1
   tests: true
-  modules-download-mode: readonly
+  modules-download-mode: vendor
   allow-parallel-runners: true
 
 output:
