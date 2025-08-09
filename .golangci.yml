@@ -13,8 +13,8 @@ run:
 
 output:
   formats:
-    - format: colored-line-number
-      path: stdout
+    stdout:
+      format: colored-line-number
   print-issued-lines: true
   print-linter-name: true
   uniq-by-line: true
