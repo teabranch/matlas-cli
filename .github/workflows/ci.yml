@@ -20,6 +20,7 @@ jobs:
   lint:
     name: 🔍 Code Quality & Linting
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -73,6 +74,7 @@ jobs:
   test:
     name: 🧪 Tests
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -108,6 +110,7 @@ jobs:
   integration-test:
     name: 🔧 Integration Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     if: |
       github.event_name == 'pull_request' && 
       contains(github.event.pull_request.labels.*.name, 'integration-tests') ||
@@ -142,6 +145,7 @@ jobs:
   e2e-test:
     name: 🚀 End-to-End Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     if: |
       github.event_name == 'pull_request' && 
       contains(github.event.pull_request.labels.*.name, 'e2e-tests') ||
@@ -179,6 +183,7 @@ jobs:
   build:
     name: 🏗️ Build Artifacts
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: [lint, test]
     strategy:
       matrix:
@@ -252,6 +257,7 @@ jobs:
   release:
     name: 📦 Create Release
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [build]
     if: github.event_name == 'release' && github.event.action == 'published'
     steps:
@@ -299,6 +305,7 @@ jobs:
   deploy:
     name: 🚀 Deploy Documentation
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: [build]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
