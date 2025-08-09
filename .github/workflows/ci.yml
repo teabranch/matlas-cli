@@ -329,28 +329,3 @@ jobs:
           publish_branch: gh-pages
           enable_jekyll: true
 
-  notify:
-    name: 📢 Notifications
-    runs-on: ubuntu-latest
-    needs: [test, build]
-    if: always() && (github.ref == 'refs/heads/main' || github.event_name == 'pull_request')
-    steps:
-      - name: Notify on Success
-        if: ${{ needs.test.result == 'success' && needs.build.result == 'success' }}
-        uses: 8398a7/action-slack@v3
-        with:
-          status: success
-          channel: '#atlas-cli'
-          text: '✅ matlas-cli CI/CD pipeline completed successfully!'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-      - name: Notify on Failure
-        if: ${{ needs.test.result == 'failure' || needs.build.result == 'failure' }}
-        uses: 8398a7/action-slack@v3
-        with:
-          status: failure
-          channel: '#atlas-cli'
-          text: '❌ matlas-cli CI/CD pipeline failed!'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }} 
