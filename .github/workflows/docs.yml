@@ -36,12 +36,13 @@ jobs:
       - name: Install dependencies
         working-directory: docs
         run: |
-          bundle install --path vendor/bundle --jobs 4 --retry 3
+          bundle config set path 'vendor/bundle'
+          bundle config set without 'development'
+          bundle install --jobs 4 --retry 3
 
       - name: Build site
-        working-directory: docs
         run: |
-          bundle exec jekyll build --baseurl "" --destination ../_site
+          bundle exec jekyll build --source docs --baseurl "" --destination _site
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

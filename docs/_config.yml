@@ -20,11 +20,10 @@ defaults:
 
 # Exclude non-docs content from the site build
 exclude:
-  - "../vendor"
-  - "../scripts"
-  - "../test"
-  - "../cmd"
-  - "../internal"
-  - "../main.go"
-  - "../Makefile"
+  - vendor
+  - node_modules
+  - Gemfile
+  - Gemfile.lock
+  - README.md
+  - _pages/sidebar.md
 
