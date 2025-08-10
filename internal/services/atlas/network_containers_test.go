@@ -220,7 +220,7 @@ func TestNetworkContainersService_validateCIDRSize(t *testing.T) {
 			provider:    "AZURE",
 			cidr:        "10.0.0.0/8",
 			expectError: true,
-			errorMsg:    "Azure network containers require CIDR blocks between /16 and /24",
+			errorMsg:    "azure network containers require CIDR blocks between /16 and /24",
 		},
 	}
 
