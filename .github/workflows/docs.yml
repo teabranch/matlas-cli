@@ -30,13 +30,15 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.2'
+          bundler: '2.5.0'
           bundler-cache: true
           working-directory: docs
 
       - name: Install dependencies
         working-directory: docs
+        env:
+          BUNDLE_PATH: vendor/bundle
         run: |
-          bundle config set path 'vendor/bundle'
           bundle config set without 'development'
           bundle install --jobs 4 --retry 3
 
