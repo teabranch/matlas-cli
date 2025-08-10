@@ -28,6 +28,9 @@ bin/
 # env file  
 .env
 
+# Built documentation site
+_site/
+
 # Editor/IDE
 # .idea/
 # .vscode/
