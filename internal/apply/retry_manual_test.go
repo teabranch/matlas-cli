@@ -194,11 +194,11 @@ func TestRetryManager_ManualRetry_ErrorPatternMatching(t *testing.T) {
 	config := DefaultRetryConfig()
 	config.EnableManualRetry = true
 	config.ManualRetryErrors = []string{"quota", "limit"}
-	
+
 	// Remove "rate limit" from retryable errors so it can trigger manual retry
 	config.RetryableErrors = []string{
 		"timeout",
-		"connection refused", 
+		"connection refused",
 		"temporary failure",
 		"throttling",
 		"service unavailable",

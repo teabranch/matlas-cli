@@ -187,7 +187,7 @@ func TestDependencyResolver_Basic(t *testing.T) {
 	if analysis.TotalDependencies == 0 {
 		t.Error("expected at least one dependency")
 	}
-	
+
 	// Verify the dependency was detected correctly
 	foundDep := false
 	for _, dep := range analysis.Dependencies {
@@ -377,7 +377,7 @@ func TestPlanOptimizer_Basic(t *testing.T) {
 	if result == nil {
 		t.Fatal("expected optimization result but got nil")
 	}
-	
+
 	if result.OriginalPlan != plan {
 		t.Error("expected original plan to match input")
 	}
@@ -440,12 +440,12 @@ func TestPlanOptimizer_ParallelExecution(t *testing.T) {
 	}
 
 	actions := optimizer.optimizeParallelExecution(plan)
-	
+
 	// Should have identified parallel groups
 	if len(actions) == 0 {
 		t.Error("expected parallel execution optimizations")
 	}
-	
+
 	// Check that parallel groups were identified
 	hasParallelGroup := false
 	for _, action := range actions {
@@ -485,12 +485,12 @@ func TestPlanOptimizer_BatchingDetailed(t *testing.T) {
 	}
 
 	actions := optimizer.optimizeBatching(plan)
-	
+
 	// Should have created batching actions
 	if len(actions) == 0 {
 		t.Error("expected batching optimizations for 15 similar operations")
 	}
-	
+
 	// Check that operations were actually batched
 	batchedCount := 0
 	for _, op := range plan.Operations {

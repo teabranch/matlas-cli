@@ -149,10 +149,10 @@ func TestClustersService_Get_InvalidClusterName(t *testing.T) {
 	svc := NewClustersService(client)
 
 	invalidNames := []string{
-		"",                                    // empty name
-		"invalid cluster name with spaces",   // spaces not allowed
-		"cluster-with-special-chars-!@#$%",  // special characters
-		"a",                                  // too short
+		"",                                 // empty name
+		"invalid cluster name with spaces", // spaces not allowed
+		"cluster-with-special-chars-!@#$%", // special characters
+		"a",                                // too short
 	}
 
 	for _, name := range invalidNames {

@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/subosito/gotenv"
-	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
 	atlasclient "github.com/teabranch/matlas-cli/internal/clients/atlas"
+	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
 )
 
 func TestDatabaseUsersService_CRUD(t *testing.T) {

@@ -35,7 +35,7 @@ func (eef *EnhancedErrorFormatter) FormatWithAnalysis(err error) string {
 
 	// Start with basic formatting
 	baseMessage := eef.ErrorFormatter.Format(err)
-	
+
 	// If this is already a clean error message, don't add extra formatting
 	if !strings.Contains(baseMessage, "Error:") && !strings.Contains(err.Error(), "usage") {
 		baseMessage = fmt.Sprintf("Error: %s", baseMessage)

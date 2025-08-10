@@ -33,11 +33,11 @@ type AtlasCommandTestConfig struct {
 
 // AtlasCommandTestEnvironment provides shared test setup for command-level testing
 type AtlasCommandTestEnvironment struct {
-	Config           AtlasCommandTestConfig
-	CreatedClusters  []string // Track created clusters for cleanup
-	CreatedUsers     []string // Track created users for cleanup
+	Config            AtlasCommandTestConfig
+	CreatedClusters   []string // Track created clusters for cleanup
+	CreatedUsers      []string // Track created users for cleanup
 	CreatedNetworkIPs []string // Track created network access for cleanup
-	CreatedProjects  []string // Track created projects for cleanup
+	CreatedProjects   []string // Track created projects for cleanup
 }
 
 func setupAtlasCommandIntegrationTest(t *testing.T) *AtlasCommandTestEnvironment {
@@ -50,14 +50,14 @@ func setupAtlasCommandIntegrationTest(t *testing.T) *AtlasCommandTestEnvironment
 
 	// Load configuration from environment
 	config := AtlasCommandTestConfig{
-		PublicKey:       os.Getenv("ATLAS_PUBLIC_KEY"),
-		PrivateKey:      os.Getenv("ATLAS_PRIVATE_KEY"),
-		OrgID:           os.Getenv("ATLAS_ORG_ID"),
-		ProjectID:       os.Getenv("ATLAS_PROJECT_ID"),
-		TestProjectName: fmt.Sprintf("matlas-test-%d", time.Now().Unix()),
-		BinaryPath:      "./matlas", // Assuming binary is built in project root
-		Timeout:         120 * time.Second, // Atlas operations can be slow
-		TestClusterName: fmt.Sprintf("test-cluster-%d", time.Now().Unix()),
+		PublicKey:        os.Getenv("ATLAS_PUBLIC_KEY"),
+		PrivateKey:       os.Getenv("ATLAS_PRIVATE_KEY"),
+		OrgID:            os.Getenv("ATLAS_ORG_ID"),
+		ProjectID:        os.Getenv("ATLAS_PROJECT_ID"),
+		TestProjectName:  fmt.Sprintf("matlas-test-%d", time.Now().Unix()),
+		BinaryPath:       "./matlas",        // Assuming binary is built in project root
+		Timeout:          120 * time.Second, // Atlas operations can be slow
+		TestClusterName:  fmt.Sprintf("test-cluster-%d", time.Now().Unix()),
 		TestUserUsername: fmt.Sprintf("testuser%d", time.Now().Unix()),
 	}
 
@@ -186,7 +186,7 @@ func TestAtlasCommands_Projects_Integration(t *testing.T) {
 	if env.Config.OrgID != "" {
 		output, err = env.runCommand(t, "atlas", "projects", "create", env.Config.TestProjectName,
 			"--org-id", env.Config.OrgID, "--output", "json")
-		
+
 		if err == nil {
 			// Parse project creation response to get project ID
 			var createResponse map[string]interface{}
@@ -460,4 +460,4 @@ func BenchmarkAtlasCommands_ProjectsList_Integration(b *testing.B) {
 			b.Fatalf("Projects list command failed: %v", err)
 		}
 	}
-} 
+}

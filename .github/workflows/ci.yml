@@ -56,9 +56,10 @@ jobs:
 
       - name: Check Code Formatting
         run: |
-          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+          if [ "$(gofmt -s -l . | grep -v vendor/ | wc -l)" -gt 0 ]; then
             echo "❌ Code is not properly formatted. Run 'gofmt -s -w .'"
-            gofmt -s -l .
+            echo "Files that need formatting:"
+            gofmt -s -l . | grep -v vendor/
             exit 1
           fi
           echo "✅ Code is properly formatted"

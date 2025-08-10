@@ -94,7 +94,7 @@ func TestDiscoveredProjectConverter_ConvertToApplyDocument(t *testing.T) {
 				t.Error("Expected metadata name to be set")
 			}
 
-						// Only require resources for test cases that actually have them
+			// Only require resources for test cases that actually have them
 			if tt.name != "Valid DiscoveredProject" && len(result.Resources) == 0 {
 				t.Errorf("Expected at least one resource in the result for test %s", tt.name)
 			}
