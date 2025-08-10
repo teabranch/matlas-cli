@@ -81,7 +81,7 @@ func TestLoad_NoConfigFile(t *testing.T) {
 func TestLoad_BadYAML(t *testing.T) {
 	tmpDir := t.TempDir()
 	badPath := filepath.Join(tmpDir, "config.yaml")
-	if err := os.WriteFile(badPath, []byte("foo: [unbalanced"), 0o644); err != nil {
+	if err := os.WriteFile(badPath, []byte("foo: [unbalanced"), 0o600); err != nil { //nolint:gosec // test file
 		t.Fatalf("write bad yaml: %v", err)
 	}
 
@@ -193,7 +193,7 @@ func TestATLAS_PrefixPriority(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error resolving API key: %v", err)
 	}
-	if apiKey != "atlas_api_key" {
+	if apiKey != "atlas_api_key" { //nolint:gosec // test credential comparison
 		t.Errorf("Expected ATLAS_API_KEY to take precedence, got %s", apiKey)
 	}
 
@@ -223,7 +223,7 @@ func TestMATLAS_FallbackWorks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error resolving API key: %v", err)
 	}
-	if apiKey != "matlas_api_key" {
+	if apiKey != "matlas_api_key" { //nolint:gosec // test credential comparison
 		t.Errorf("Expected MATLAS_API_KEY fallback to work, got %s", apiKey)
 	}
 

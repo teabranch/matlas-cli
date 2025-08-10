@@ -79,7 +79,7 @@ spec:
       region: ${REGION:-US_EAST_1}
 `
 
-	err := os.WriteFile(tmpFile, []byte(content), 0644)
+	err := os.WriteFile(tmpFile, []byte(content), 0600) //nolint:gosec // test file
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
@@ -132,7 +132,7 @@ spec:
   organizationId: ${ORG_ID}
 `
 
-	err := os.WriteFile(tmpFile, []byte(content), 0644)
+	err := os.WriteFile(tmpFile, []byte(content), 0600) //nolint:gosec // test file
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
@@ -179,7 +179,7 @@ resources:
       name: ${ENV}-cluster
 `
 
-	err := os.WriteFile(tmpFile, []byte(content), 0644)
+	err := os.WriteFile(tmpFile, []byte(content), 0600) //nolint:gosec // test file
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
@@ -223,7 +223,7 @@ metadata:
   name: ${ENV}-cluster
 `
 
-	err := os.WriteFile(tmpFile, []byte(content), 0644)
+	err := os.WriteFile(tmpFile, []byte(content), 0600) //nolint:gosec // test file
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
@@ -260,7 +260,7 @@ func TestConfigurationLoader_LoadGlob(t *testing.T) {
 	files := []string{"config1.yaml", "config2.yaml", "other.txt"}
 	for _, filename := range files {
 		content := `name: ${ENV}-` + filename
-		err := os.WriteFile(filepath.Join(tmpDir, filename), []byte(content), 0644)
+		err := os.WriteFile(filepath.Join(tmpDir, filename), []byte(content), 0600) //nolint:gosec // test file
 		if err != nil {
 			t.Fatalf("Failed to write test file %s: %v", filename, err)
 		}
@@ -313,7 +313,7 @@ func TestConfigurationLoader_ValidateOnly(t *testing.T) {
 
 	// Create file with invalid template syntax
 	content := `name: ${INVALID`
-	err := os.WriteFile(tmpFile, []byte(content), 0644)
+	err := os.WriteFile(tmpFile, []byte(content), 0600) //nolint:gosec // test file
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
@@ -341,7 +341,7 @@ host: ${DB_HOST:?required}
 port: ${DB_PORT:+5432}
 `
 
-	err := os.WriteFile(tmpFile, []byte(content), 0644)
+	err := os.WriteFile(tmpFile, []byte(content), 0600) //nolint:gosec // test file
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
@@ -408,7 +408,7 @@ func TestConfigurationLoader_Cache(t *testing.T) {
 	tmpFile := filepath.Join(tmpDir, "cached.yaml")
 
 	content := `name: ${ENV}`
-	err := os.WriteFile(tmpFile, []byte(content), 0644)
+	err := os.WriteFile(tmpFile, []byte(content), 0600) //nolint:gosec // test file
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
@@ -468,7 +468,7 @@ func TestConfigurationLoader_StrictMode(t *testing.T) {
 	tmpFile := filepath.Join(tmpDir, "strict.yaml")
 
 	content := `name: ${UNDEFINED_VAR}`
-	err := os.WriteFile(tmpFile, []byte(content), 0644)
+	err := os.WriteFile(tmpFile, []byte(content), 0600) //nolint:gosec // test file
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
@@ -494,7 +494,7 @@ func TestConfigurationLoader_MaxFileSize(t *testing.T) {
 
 	// Create a large file
 	largeContent := strings.Repeat("data: value\n", 1000)
-	err := os.WriteFile(tmpFile, []byte(largeContent), 0644)
+	err := os.WriteFile(tmpFile, []byte(largeContent), 0600) //nolint:gosec // test file
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
@@ -535,7 +535,7 @@ func TestConfigurationLoader_InvalidYAML(t *testing.T) {
 name: test
   invalid: yaml: structure
 `
-	err := os.WriteFile(tmpFile, []byte(content), 0644)
+	err := os.WriteFile(tmpFile, []byte(content), 0600) //nolint:gosec // test file
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
@@ -698,11 +698,11 @@ spec:
 
 	tmpfile, err := os.CreateTemp("", "project-*.yaml")
 	require.NoError(t, err)
-	defer os.Remove(tmpfile.Name())
+	defer func() { _ = os.Remove(tmpfile.Name()) }()
 
 	_, err = tmpfile.Write([]byte(projectYAML))
 	require.NoError(t, err)
-	tmpfile.Close()
+	_ = tmpfile.Close()
 
 	// Load the configuration
 	result, err := loader.LoadApplyConfig(tmpfile.Name())

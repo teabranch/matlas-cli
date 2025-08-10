@@ -126,7 +126,7 @@ func TestExpandFilePatterns(t *testing.T) {
 	testFiles := []string{"config1.yaml", "config2.yml", "invalid.txt"}
 	for _, file := range testFiles {
 		filePath := tmpDir + "/" + file
-		err := os.WriteFile(filePath, []byte("test: content"), 0644)
+		err := os.WriteFile(filePath, []byte("test: content"), 0600) //nolint:gosec // test file
 		require.NoError(t, err)
 	}
 
@@ -359,7 +359,7 @@ func BenchmarkExpandFilePatterns(b *testing.B) {
 	// Create test files
 	for i := 0; i < 100; i++ {
 		filePath := tmpDir + "/" + string(rune('a'+i%26)) + ".yaml"
-		err := os.WriteFile(filePath, []byte("test: content"), 0644)
+		err := os.WriteFile(filePath, []byte("test: content"), 0600) //nolint:gosec // test file
 		require.NoError(b, err)
 	}
 

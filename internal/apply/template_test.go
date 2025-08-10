@@ -568,8 +568,8 @@ func TestGetVariable(t *testing.T) {
 	tp.Variables["CUSTOM_VAR"] = "custom_value"
 
 	// Set environment variable for testing
-	os.Setenv("ENV_VAR", "env_value")
-	defer os.Unsetenv("ENV_VAR")
+	_ = os.Setenv("ENV_VAR", "env_value")
+	defer func() { _ = os.Unsetenv("ENV_VAR") }()
 
 	tests := []struct {
 		name     string
@@ -608,8 +608,8 @@ func TestHasVariable(t *testing.T) {
 	tp.Variables["CUSTOM_VAR"] = "custom_value"
 
 	// Set environment variable for testing
-	os.Setenv("ENV_VAR", "env_value")
-	defer os.Unsetenv("ENV_VAR")
+	_ = os.Setenv("ENV_VAR", "env_value")
+	defer func() { _ = os.Unsetenv("ENV_VAR") }()
 
 	tests := []struct {
 		name     string
@@ -645,8 +645,8 @@ func TestHasVariable(t *testing.T) {
 
 func TestGetEnvironmentSnapshot(t *testing.T) {
 	// Set a test environment variable
-	os.Setenv("TEST_SNAPSHOT_VAR", "test_value")
-	defer os.Unsetenv("TEST_SNAPSHOT_VAR")
+	_ = os.Setenv("TEST_SNAPSHOT_VAR", "test_value")
+	defer func() { _ = os.Unsetenv("TEST_SNAPSHOT_VAR") }()
 
 	env := GetEnvironmentSnapshot()
 
@@ -662,13 +662,13 @@ func TestGetEnvironmentSnapshot(t *testing.T) {
 
 func TestFilterEnvironmentVariables(t *testing.T) {
 	// Set test environment variables
-	os.Setenv("ATLAS_TEST_VAR1", "value1")
-	os.Setenv("ATLAS_TEST_VAR2", "value2")
+	_ = os.Setenv("ATLAS_TEST_VAR1", "value1")
+	_ = os.Setenv("ATLAS_TEST_VAR2", "value2")
 
 	// Clean up
 	defer func() {
-		os.Unsetenv("ATLAS_TEST_VAR1")
-		os.Unsetenv("ATLAS_TEST_VAR2")
+		_ = os.Unsetenv("ATLAS_TEST_VAR1")
+		_ = os.Unsetenv("ATLAS_TEST_VAR2")
 	}()
 
 	// Test filtering

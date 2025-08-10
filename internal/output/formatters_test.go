@@ -205,7 +205,7 @@ func TestFormatter_FormatYAML_Error(t *testing.T) {
 	}()
 
 	// This will panic
-	formatter.Format(func() {})
+	_ = formatter.Format(func() {})
 }
 
 // Test with real-world like data structures

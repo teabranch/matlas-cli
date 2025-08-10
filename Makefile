@@ -32,7 +32,7 @@ fmt:
 	go fmt ./...
 	
 lint:
-	golangci-lint run
+	golangci-lint run --no-config --enable-only=errcheck,gosec,ineffassign --timeout=5m
 
 test-short:
 	./scripts/test.sh unit

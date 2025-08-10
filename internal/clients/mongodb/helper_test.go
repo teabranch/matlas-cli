@@ -81,7 +81,7 @@ func TestNewClient_FailFastValidation(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, client)
 				if client != nil {
-					client.Close(ctx)
+					_ = client.Close(ctx)
 				}
 			}
 		})

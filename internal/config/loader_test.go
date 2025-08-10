@@ -15,7 +15,7 @@ func TestLoad_Precedence(t *testing.T) {
 	tmpDir := t.TempDir()
 	yamlPath := filepath.Join(tmpDir, "config.yaml")
 	yamlContent := []byte("projectId: yamlProj\nclusterName: yamlCluster\n")
-	if err := os.WriteFile(yamlPath, yamlContent, 0o644); err != nil {
+	if err := os.WriteFile(yamlPath, yamlContent, 0o600); err != nil { //nolint:gosec // test file
 		t.Fatalf("write yaml: %v", err)
 	}
 

@@ -747,7 +747,7 @@ func BenchmarkApplyFiltering(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		result := &DiscoveryResult{}
-		applyFiltering(result, projectState, opts)
+		_ = applyFiltering(result, projectState, opts) // ignoring error in benchmark
 	}
 }
 

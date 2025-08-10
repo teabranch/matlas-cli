@@ -21,7 +21,7 @@ func TestExpandFilePatternsAdvanced(t *testing.T) {
 	// Create temporary directory for test files
 	tempDir, err := ioutil.TempDir("", "apply-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create test files
 	testFiles := []string{
@@ -34,9 +34,9 @@ func TestExpandFilePatternsAdvanced(t *testing.T) {
 
 	for _, file := range testFiles {
 		fullPath := filepath.Join(tempDir, file)
-		err := os.MkdirAll(filepath.Dir(fullPath), 0755)
+		err := os.MkdirAll(filepath.Dir(fullPath), 0750) //nolint:gosec // test file, safe permissions
 		require.NoError(t, err)
-		err = ioutil.WriteFile(fullPath, []byte("test content"), 0644)
+		err = ioutil.WriteFile(fullPath, []byte("test content"), 0600) //nolint:gosec // test file
 		require.NoError(t, err)
 	}
 
@@ -153,7 +153,7 @@ func TestConfigurationLoadingErrorScenarios(t *testing.T) {
 	// Create temporary directory
 	tempDir, err := ioutil.TempDir("", "apply-config-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	tests := []struct {
 		name        string
@@ -205,7 +205,7 @@ spec:
 		t.Run(tt.name, func(t *testing.T) {
 			// Create test file
 			filePath := filepath.Join(tempDir, tt.fileName)
-			err := ioutil.WriteFile(filePath, []byte(tt.fileContent), 0644)
+			err := ioutil.WriteFile(filePath, []byte(tt.fileContent), 0600) //nolint:gosec // test file
 			require.NoError(t, err)
 
 			// Test loading
@@ -292,7 +292,7 @@ func TestValidateDryRunModes(t *testing.T) {
 func TestFilePatternEdgeCases(t *testing.T) {
 	tempDir, err := ioutil.TempDir("", "apply-edge-test")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	tests := []struct {
 		name        string
@@ -304,7 +304,7 @@ func TestFilePatternEdgeCases(t *testing.T) {
 			name: "stdin and file together",
 			setupFunc: func() []string {
 				configFile := filepath.Join(tempDir, "config.yaml")
-				_ = ioutil.WriteFile(configFile, []byte("test"), 0644)
+				_ = ioutil.WriteFile(configFile, []byte("test"), 0600) //nolint:gosec // test file
 				return []string{"-", configFile}
 			},
 			expectError: false,
@@ -357,12 +357,12 @@ func createTempConfigFile(t *testing.T, content string) string {
 func BenchmarkExpandFilePatternsAdvanced(b *testing.B) {
 	tempDir, err := ioutil.TempDir("", "apply-bench")
 	require.NoError(b, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create many test files
 	for i := 0; i < 100; i++ {
 		fileName := filepath.Join(tempDir, fmt.Sprintf("config%d.yaml", i))
-		err := ioutil.WriteFile(fileName, []byte("test content"), 0644)
+		err := ioutil.WriteFile(fileName, []byte("test content"), 0600) //nolint:gosec // test file
 		require.NoError(b, err)
 	}
 
