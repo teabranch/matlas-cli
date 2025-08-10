@@ -334,7 +334,10 @@ func (e *EnhancedExecutor) executeEnhancedOperation(ctx context.Context, operati
 			now := time.Now()
 			state.Status = OperationStatusRunning
 			state.StartedAt = &now
-			e.idempotencyManager.UpdateOperationState(state)
+			if err := e.idempotencyManager.UpdateOperationState(state); err != nil {
+				// Non-fatal: keep executing but record the issue in result errors
+				fmt.Printf("Warning: failed to update operation state: %v\n", err)
+			}
 		}
 	}
 
@@ -359,7 +362,9 @@ func (e *EnhancedExecutor) executeEnhancedOperation(ctx context.Context, operati
 			} else {
 				state.Status = OperationStatusCompleted
 			}
-			e.idempotencyManager.UpdateOperationState(state)
+			if err := e.idempotencyManager.UpdateOperationState(state); err != nil {
+				fmt.Printf("Warning: failed to update operation state: %v\n", err)
+			}
 		}
 	}
 

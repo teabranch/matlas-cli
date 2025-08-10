@@ -1,3 +1,4 @@
+// Package mongodb contains a light wrapper around the official MongoDB Go driver.
 package mongodb
 
 import (
@@ -84,8 +85,10 @@ func NewClient(ctx context.Context, config *ClientConfig, logger *zap.Logger) (*
 
 	// Configure TLS settings for Atlas
 	if config.TLSEnabled {
-		tlsConfig := &tls.Config{
-			InsecureSkipVerify: config.TLSInsecure,
+		// Note: Allowing TLSInsecure via configuration for local/test scenarios.
+		// Avoid enabling in production environments.
+		tlsConfig := &tls.Config{ //nolint:gosec // configurable for local/test use only
+			InsecureSkipVerify: config.TLSInsecure, //nolint:gosec
 		}
 		clientOptions.SetTLSConfig(tlsConfig)
 	}
@@ -98,7 +101,7 @@ func NewClient(ctx context.Context, config *ClientConfig, logger *zap.Logger) (*
 
 	// Test the connection
 	if err := client.Ping(ctx, readpref.Primary()); err != nil {
-		client.Disconnect(ctx)
+		_ = client.Disconnect(ctx)
 		return nil, fmt.Errorf("failed to ping MongoDB: %w", err)
 	}
 
@@ -153,7 +156,7 @@ func (c *Client) ListCollections(ctx context.Context, dbName string) ([]types.Co
 	if err != nil {
 		return nil, fmt.Errorf("failed to list collections for database %q: %w", dbName, err)
 	}
-	defer cursor.Close(ctx)
+	defer func() { _ = cursor.Close(ctx) }()
 
 	var collections []types.CollectionInfo
 	for cursor.Next(ctx) {
@@ -312,7 +315,8 @@ func (c *Client) CreateIndex(ctx context.Context, dbName, collectionName string,
 			indexOptions.SetSparse(sparse)
 		}
 		if background, ok := opts["background"].(bool); ok {
-			indexOptions.SetBackground(background)
+			// Background option deprecated since MongoDB 4.2; kept for backward compat.
+			indexOptions.SetBackground(background) //nolint:staticcheck
 		}
 		if name, ok := opts["name"].(string); ok {
 			indexOptions.SetName(name)
@@ -360,7 +364,7 @@ func (c *Client) ListIndexes(ctx context.Context, dbName, collectionName string)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list indexes for collection %q in database %q: %w", collectionName, dbName, err)
 	}
-	defer cursor.Close(ctx)
+	defer func() { _ = cursor.Close(ctx) }()
 
 	var indexes []types.IndexInfo
 	for cursor.Next(ctx) {

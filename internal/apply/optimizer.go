@@ -136,9 +136,9 @@ func (po *PlanOptimizer) WithConfig(config OptimizationConfig) *PlanOptimizer {
 	return po
 }
 
-// WithMaxParallelOps sets the maximum parallel operations
-func (po *PlanOptimizer) WithMaxParallelOps(max int) *PlanOptimizer {
-	po.config.MaxParallelOperations = max
+// WithMaxParallelOps sets the maximum parallel operations.
+func (po *PlanOptimizer) WithMaxParallelOps(maxOps int) *PlanOptimizer {
+	po.config.MaxParallelOperations = maxOps
 	return po
 }
 
@@ -255,13 +255,13 @@ func (po *PlanOptimizer) optimizeBatching(plan *Plan) []OptimizationAction {
 		stageTypeGroups[key] = append(stageTypeGroups[key], i)
 	}
 
-		// Apply batching rules
+	// Apply batching rules
 	for _, rule := range po.config.BatchingRules {
 		for _, opIndices := range stageTypeGroups {
 			if len(opIndices) < 2 {
 				continue
 			}
-			
+
 			// Check if operations match the batching rule
 			firstOp := plan.Operations[opIndices[0]]
 			if firstOp.ResourceType != rule.ResourceKind || firstOp.Type != rule.OperationType {
@@ -270,10 +270,10 @@ func (po *PlanOptimizer) optimizeBatching(plan *Plan) []OptimizationAction {
 
 			// Create batches
 			batchCount := 0
-			batchSize := min(rule.MaxBatchSize, len(opIndices))
+			batchSize := intMin(rule.MaxBatchSize, len(opIndices))
 
 			for i := 0; i < len(opIndices); i += batchSize {
-				end := min(i+batchSize, len(opIndices))
+				end := intMin(i+batchSize, len(opIndices))
 				batchOps := opIndices[i:end]
 
 				if len(batchOps) < 2 {
@@ -570,8 +570,8 @@ func getDefaultBatchingRules() []BatchingRule {
 	}
 }
 
-// Helper function for min
-func min(a, b int) int {
+// intMin returns the smaller of two ints.
+func intMin(a, b int) int {
 	if a < b {
 		return a
 	}

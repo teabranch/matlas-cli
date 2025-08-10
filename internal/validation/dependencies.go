@@ -1,3 +1,4 @@
+// Package validation implements schema and cross-resource dependency validation.
 package validation
 
 import (

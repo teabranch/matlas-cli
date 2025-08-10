@@ -39,20 +39,20 @@ type PropertySchema struct {
 
 // SchemaValidationResult contains the result of schema validation
 type SchemaValidationResult struct {
-	Valid     bool                     `json:"valid"`
-	Errors    []SchemaValidationError  `json:"errors,omitempty"`
-	Warnings  []SchemaValidationError  `json:"warnings,omitempty"`
-	Schema    string                   `json:"schema,omitempty"`
+	Valid    bool                    `json:"valid"`
+	Errors   []SchemaValidationError `json:"errors,omitempty"`
+	Warnings []SchemaValidationError `json:"warnings,omitempty"`
+	Schema   string                  `json:"schema,omitempty"`
 }
 
 // SchemaValidationError represents a schema validation error
 type SchemaValidationError struct {
-	Path        string      `json:"path"`
-	Property    string      `json:"property"`
-	Value       interface{} `json:"value"`
-	Expected    string      `json:"expected"`
-	Message     string      `json:"message"`
-	Severity    string      `json:"severity"`
+	Path     string      `json:"path"`
+	Property string      `json:"property"`
+	Value    interface{} `json:"value"`
+	Expected string      `json:"expected"`
+	Message  string      `json:"message"`
+	Severity string      `json:"severity"`
 }
 
 // Error implements the error interface
@@ -107,7 +107,7 @@ func (sv *SchemaValidator) ValidateConfigWithSchema(configData []byte, schemaNam
 
 // ValidateConfigFile validates a configuration file against a schema
 func (sv *SchemaValidator) ValidateConfigFile(filePath, schemaName string) (*SchemaValidationResult, error) {
-	configData, err := os.ReadFile(filePath)
+	configData, err := os.ReadFile(filePath) //nolint:gosec // reading user-specified path is expected for CLI tool
 	if err != nil {
 		return nil, fmt.Errorf("failed to read configuration file: %w", err)
 	}
@@ -117,7 +117,7 @@ func (sv *SchemaValidator) ValidateConfigFile(filePath, schemaName string) (*Sch
 
 // LoadSchema loads a schema from a file
 func (sv *SchemaValidator) LoadSchema(schemaPath, schemaName string) error {
-	schemaData, err := os.ReadFile(schemaPath)
+	schemaData, err := os.ReadFile(schemaPath) //nolint:gosec // reading user-specified path is expected for CLI tool
 	if err != nil {
 		return fmt.Errorf("failed to read schema file: %w", err)
 	}
@@ -145,7 +145,7 @@ func (sv *SchemaValidator) validateObject(obj interface{}, schema *ConfigSchema,
 	if schema.Type == "object" {
 		objMap, ok := obj.(map[string]interface{})
 		if !ok {
-			sv.addError(result, path, "type", obj, "object", 
+			sv.addError(result, path, "type", obj, "object",
 				fmt.Sprintf("Expected object, got %T", obj), "error")
 			return
 		}
@@ -391,7 +391,7 @@ func (sv *SchemaValidator) initializeBuiltinSchemas() {
 						Description: "Resource labels",
 					},
 					"annotations": {
-						Type:        "object", 
+						Type:        "object",
 						Description: "Resource annotations",
 					},
 				},
@@ -493,4 +493,4 @@ func (sv *SchemaValidator) initializeBuiltinSchemas() {
 		},
 		Required: []string{"apiVersion", "kind", "spec"},
 	}
-} 
+}

@@ -1,10 +1,11 @@
+// Package types contains shared domain types used by apply, services and CLI layers.
 package types
 
 import (
 	"fmt"
 )
 
-// APIVersion represents the supported API versions for configuration files
+// APIVersion represents the supported API versions for configuration files.
 type APIVersion string
 
 const (
@@ -13,7 +14,7 @@ const (
 	APIVersionV1       APIVersion = "matlas.mongodb.com/v1"
 )
 
-// ResourceKind represents the type of resource being configured
+// ResourceKind represents the type of resource being configured.
 type ResourceKind string
 
 const (
@@ -24,7 +25,7 @@ const (
 	KindApplyDocument ResourceKind = "ApplyDocument"
 )
 
-// ResourceStatus represents the current status of a resource
+// ResourceStatus represents the current status of a resource.
 type ResourceStatus string
 
 const (

@@ -13,6 +13,7 @@ type DatabaseUsersService struct {
 	client *atlasclient.Client
 }
 
+// NewDatabaseUsersService creates a new DatabaseUsersService.
 func NewDatabaseUsersService(client *atlasclient.Client) *DatabaseUsersService {
 	return &DatabaseUsersService{client: client}
 }

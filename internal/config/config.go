@@ -1,3 +1,4 @@
+// Package config defines the runtime configuration model and helpers.
 package config
 
 import (
@@ -22,6 +23,7 @@ const (
 // specify `--timeout`, `ATLAS_TIMEOUT`, or `timeout` YAML key.
 const DefaultTimeout = 30 * time.Second
 
+// DefaultConfigDir is the default directory under the user's home for matlas config files.
 const DefaultConfigDir = ".matlas"
 
 // Config is the fully-resolved, immutable runtime configuration for a single command invocation.

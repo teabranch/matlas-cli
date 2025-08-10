@@ -51,7 +51,7 @@ func (c *ConfirmationPrompt) Confirm(message string) (bool, error) {
 	}
 
 	// Display the prompt
-	fmt.Fprintf(c.output, "%s [y/N]: ", message)
+	_, _ = fmt.Fprintf(c.output, "%s [y/N]: ", message)
 
 	// Read user input
 	scanner := bufio.NewScanner(c.input)
@@ -100,14 +100,14 @@ func (c *ConfirmationPrompt) ConfirmWithDetails(action string, details []string)
 	}
 
 	// Display the action and details
-	fmt.Fprintf(c.output, "%s\n\n", action)
+	_, _ = fmt.Fprintf(c.output, "%s\n\n", action)
 
 	if len(details) > 0 {
-		fmt.Fprintf(c.output, "Details:\n")
+		_, _ = fmt.Fprintf(c.output, "Details:\n")
 		for _, detail := range details {
-			fmt.Fprintf(c.output, "  - %s\n", detail)
+			_, _ = fmt.Fprintf(c.output, "  - %s\n", detail)
 		}
-		fmt.Fprintf(c.output, "\n")
+		_, _ = fmt.Fprintf(c.output, "\n")
 	}
 
 	return c.Confirm("Do you want to proceed?")
@@ -126,7 +126,7 @@ func (c *ConfirmationPrompt) WarnAndConfirm(warning, action string) (bool, error
 	}
 
 	// Display warning
-	fmt.Fprintf(c.output, "⚠️  WARNING: %s\n\n", warning)
+	_, _ = fmt.Fprintf(c.output, "⚠️  WARNING: %s\n\n", warning)
 
 	return c.Confirm(action)
 }

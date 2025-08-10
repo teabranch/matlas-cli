@@ -62,22 +62,22 @@ func Load(cmd *cobra.Command, explicitPath string) (*Config, error) {
 	v.AutomaticEnv()
 
 	// Explicitly bind environment variables that don't follow the automatic pattern
-	v.BindEnv("projectId", "ATLAS_PROJECT_ID")
-	v.BindEnv("orgId", "ATLAS_ORG_ID")
-	v.BindEnv("clusterName", "ATLAS_CLUSTER_NAME")
-	v.BindEnv("apiKey", "ATLAS_API_KEY")
-	v.BindEnv("publicKey", "ATLAS_PUB_KEY")
+	_ = v.BindEnv("projectId", "ATLAS_PROJECT_ID")
+	_ = v.BindEnv("orgId", "ATLAS_ORG_ID")
+	_ = v.BindEnv("clusterName", "ATLAS_CLUSTER_NAME")
+	_ = v.BindEnv("apiKey", "ATLAS_API_KEY")
+	_ = v.BindEnv("publicKey", "ATLAS_PUB_KEY")
 
 	// ---------- 4. Flags ----------
 	if cmd != nil {
 		// Bind both immediate flags and parent persistent flags.
-		v.BindPFlags(cmd.Flags())
-		v.BindPFlags(cmd.PersistentFlags())
+		_ = v.BindPFlags(cmd.Flags())
+		_ = v.BindPFlags(cmd.PersistentFlags())
 
 		// Map dashed flag names to camelCase keys expected in struct tags.
 		bind := func(key string, name string) {
 			if f := cmd.Flags().Lookup(name); f != nil {
-				v.BindPFlag(key, f)
+				_ = v.BindPFlag(key, f)
 			}
 		}
 		bind("projectId", "project-id")

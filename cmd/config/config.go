@@ -284,7 +284,7 @@ func runValidateConfig(cmd *cobra.Command, configFile, schemaFile string, verbos
 	}
 
 	// Read and parse config file
-	configData, err := os.ReadFile(configFile)
+	configData, err := os.ReadFile(configFile) //nolint:gosec // reading user-specified path is expected for CLI tool
 	if err != nil {
 		return fmt.Errorf("failed to read configuration file: %w", err)
 	}
@@ -462,7 +462,7 @@ func runGenerateTemplate(cmd *cobra.Command, templateType, outputFile, format st
 
 	// Output to file or stdout
 	if outputFile != "" {
-		if err := os.WriteFile(outputFile, output, 0644); err != nil {
+		if err := os.WriteFile(outputFile, output, 0o600); err != nil {
 			return fmt.Errorf("failed to write template to file: %w", err)
 		}
 		fmt.Printf("Template generated: %s\n", outputFile)

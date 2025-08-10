@@ -1,3 +1,4 @@
+// Package main is the entry point for matlas-cli.
 package main
 
 import "github.com/teabranch/matlas-cli/cmd"

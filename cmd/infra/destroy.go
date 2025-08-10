@@ -612,7 +612,9 @@ func getDestroyApproval(plan *apply.Plan, opts *DestroyOptions) error {
 	// Require explicit confirmation for destructive operations
 	fmt.Printf("Type 'destroy' to confirm destruction: ")
 	var confirmation string
-	fmt.Scanln(&confirmation)
+	if _, err := fmt.Scanln(&confirmation); err != nil {
+		return fmt.Errorf("failed to read confirmation: %w", err)
+	}
 
 	if confirmation != "destroy" {
 		return fmt.Errorf("destroy cancelled - confirmation text did not match 'destroy'")
@@ -630,7 +632,9 @@ func getDestroyApproval(plan *apply.Plan, opts *DestroyOptions) error {
 	if hasHighRisk && !opts.Force {
 		fmt.Printf("\nHigh-risk operations detected. Are you absolutely sure? (yes/no): ")
 		var finalConfirmation string
-		fmt.Scanln(&finalConfirmation)
+		if _, err := fmt.Scanln(&finalConfirmation); err != nil {
+			return fmt.Errorf("failed to read final confirmation: %w", err)
+		}
 
 		if strings.ToLower(finalConfirmation) != "yes" {
 			return fmt.Errorf("destroy cancelled by user")

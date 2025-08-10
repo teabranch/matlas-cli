@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
 	atlasclient "github.com/teabranch/matlas-cli/internal/clients/atlas"
+	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
 )
 
 // OrganizationsService provides helpers around Atlas Organizations API.
@@ -13,6 +13,7 @@ type OrganizationsService struct {
 	client *atlasclient.Client
 }
 
+// NewOrganizationsService creates a new OrganizationsService.
 func NewOrganizationsService(client *atlasclient.Client) *OrganizationsService {
 	return &OrganizationsService{client: client}
 }

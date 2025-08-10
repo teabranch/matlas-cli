@@ -1,3 +1,4 @@
+// Package output contains user-facing formatters for CLI output.
 package output
 
 import (
@@ -46,7 +47,9 @@ func (f *CreateResultFormatter) formatCreateResultText(result interface{}, resou
 	}
 
 	// Write success header
-	fmt.Fprintf(f.writer, "✅ %s created successfully!\n\n", capitalizeFirst(resourceType))
+	if _, err := fmt.Fprintf(f.writer, "✅ %s created successfully!\n\n", capitalizeFirst(resourceType)); err != nil {
+		return err
+	}
 
 	// Format based on resource type
 	switch resourceType {
@@ -81,7 +84,7 @@ func (f *CreateResultFormatter) formatCreateResultText(result interface{}, resou
 // formatProjectCreateResult formats project creation results
 func (f *CreateResultFormatter) formatProjectCreateResult(result interface{}) error {
 	w := tabwriter.NewWriter(f.writer, 0, 0, 2, ' ', 0)
-	defer w.Flush()
+	defer func() { _ = w.Flush() }()
 
 	v := reflect.ValueOf(result)
 	if v.Kind() == reflect.Ptr {
@@ -90,16 +93,24 @@ func (f *CreateResultFormatter) formatProjectCreateResult(result interface{}) er
 
 	// Extract key fields
 	if id := getStringField(v, "Id"); id != "" {
-		fmt.Fprintf(w, "Project ID:\t%s\n", id)
+		if _, err := fmt.Fprintf(w, "Project ID:\t%s\n", id); err != nil {
+			return err
+		}
 	}
 	if name := getStringField(v, "Name"); name != "" {
-		fmt.Fprintf(w, "Name:\t%s\n", name)
+		if _, err := fmt.Fprintf(w, "Name:\t%s\n", name); err != nil {
+			return err
+		}
 	}
-	if orgId := getStringField(v, "OrgId"); orgId != "" {
-		fmt.Fprintf(w, "Organization ID:\t%s\n", orgId)
+	if orgID := getStringField(v, "OrgId"); orgID != "" {
+		if _, err := fmt.Fprintf(w, "Organization ID:\t%s\n", orgID); err != nil {
+			return err
+		}
 	}
 	if created := getTimeField(v, "Created"); !created.IsZero() {
-		fmt.Fprintf(w, "Created:\t%s\n", created.Format("2006-01-02 15:04:05 UTC"))
+		if _, err := fmt.Fprintf(w, "Created:\t%s\n", created.Format("2006-01-02 15:04:05 UTC")); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -108,7 +119,7 @@ func (f *CreateResultFormatter) formatProjectCreateResult(result interface{}) er
 // formatClusterCreateResult formats cluster creation results
 func (f *CreateResultFormatter) formatClusterCreateResult(result interface{}) error {
 	w := tabwriter.NewWriter(f.writer, 0, 0, 2, ' ', 0)
-	defer w.Flush()
+	defer func() { _ = w.Flush() }()
 
 	v := reflect.ValueOf(result)
 	if v.Kind() == reflect.Ptr {
@@ -117,35 +128,53 @@ func (f *CreateResultFormatter) formatClusterCreateResult(result interface{}) er
 
 	// Extract key fields
 	if name := getStringField(v, "Name"); name != "" {
-		fmt.Fprintf(w, "Cluster Name:\t%s\n", name)
+		if _, err := fmt.Fprintf(w, "Cluster Name:\t%s\n", name); err != nil {
+			return err
+		}
 	}
 	if clusterType := getStringField(v, "ClusterType"); clusterType != "" {
-		fmt.Fprintf(w, "Type:\t%s\n", clusterType)
+		if _, err := fmt.Fprintf(w, "Type:\t%s\n", clusterType); err != nil {
+			return err
+		}
 	}
 	if version := getStringField(v, "MongoDBMajorVersion", "MongoDBVersion"); version != "" {
-		fmt.Fprintf(w, "MongoDB Version:\t%s\n", version)
+		if _, err := fmt.Fprintf(w, "MongoDB Version:\t%s\n", version); err != nil {
+			return err
+		}
 	}
 	if stateName := getStringField(v, "StateName"); stateName != "" {
-		fmt.Fprintf(w, "Status:\t%s\n", stateName)
+		if _, err := fmt.Fprintf(w, "Status:\t%s\n", stateName); err != nil {
+			return err
+		}
 	}
 
 	// Show provider and region info from replication specs
 	if provider, region := getProviderAndRegion(v); provider != "" {
-		fmt.Fprintf(w, "Provider:\t%s\n", provider)
+		if _, err := fmt.Fprintf(w, "Provider:\t%s\n", provider); err != nil {
+			return err
+		}
 		if region != "" {
-			fmt.Fprintf(w, "Region:\t%s\n", region)
+			if _, err := fmt.Fprintf(w, "Region:\t%s\n", region); err != nil {
+				return err
+			}
 		}
 	}
 
 	// Show connection info if available (mask credentials if present)
 	if connectionStrings := getConnectionStrings(v); len(connectionStrings) > 0 {
-		fmt.Fprintf(w, "\nConnection Strings:\n")
+		if _, err := fmt.Fprintf(w, "\nConnection Strings:\n"); err != nil {
+			return err
+		}
 		for name, uri := range connectionStrings {
-			fmt.Fprintf(w, "  %s:\t%s\n", name, maskConnectionString(uri))
+			if _, err := fmt.Fprintf(w, "  %s:\t%s\n", name, maskConnectionString(uri)); err != nil {
+				return err
+			}
 		}
 	}
 
-	fmt.Fprintf(w, "\n💡 Tip:\tUse 'matlas atlas clusters get %s' to check deployment progress\n", getStringField(v, "Name"))
+	if _, err := fmt.Fprintf(w, "\n💡 Tip:\tUse 'matlas atlas clusters get %s' to check deployment progress\n", getStringField(v, "Name")); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -153,7 +182,7 @@ func (f *CreateResultFormatter) formatClusterCreateResult(result interface{}) er
 // formatUserCreateResult formats database user creation results
 func (f *CreateResultFormatter) formatUserCreateResult(result interface{}) error {
 	w := tabwriter.NewWriter(f.writer, 0, 0, 2, ' ', 0)
-	defer w.Flush()
+	defer func() { _ = w.Flush() }()
 
 	v := reflect.ValueOf(result)
 	if v.Kind() == reflect.Ptr {
@@ -162,28 +191,40 @@ func (f *CreateResultFormatter) formatUserCreateResult(result interface{}) error
 
 	// Extract key fields
 	if username := getStringField(v, "Username"); username != "" {
-		fmt.Fprintf(w, "Username:\t%s\n", username)
+		if _, err := fmt.Fprintf(w, "Username:\t%s\n", username); err != nil {
+			return err
+		}
 	}
 	if dbName := getStringField(v, "DatabaseName"); dbName != "" {
-		fmt.Fprintf(w, "Database:\t%s\n", dbName)
+		if _, err := fmt.Fprintf(w, "Database:\t%s\n", dbName); err != nil {
+			return err
+		}
 	}
 
 	// Format roles nicely
 	if roles := getRoles(v); len(roles) > 0 {
-		fmt.Fprintf(w, "Roles:\t%s\n", strings.Join(roles, ", "))
+		if _, err := fmt.Fprintf(w, "Roles:\t%s\n", strings.Join(roles, ", ")); err != nil {
+			return err
+		}
 	}
 
 	// Show authentication types if not NONE
 	authTypes := getAuthenticationTypes(v)
 	if len(authTypes) > 0 {
-		fmt.Fprintf(w, "Authentication:\t%s\n", strings.Join(authTypes, ", "))
+		if _, err := fmt.Fprintf(w, "Authentication:\t%s\n", strings.Join(authTypes, ", ")); err != nil {
+			return err
+		}
 	}
 
-	if groupId := getStringField(v, "GroupId"); groupId != "" {
-		fmt.Fprintf(w, "Project ID:\t%s\n", groupId)
+	if groupID := getStringField(v, "GroupId"); groupID != "" {
+		if _, err := fmt.Fprintf(w, "Project ID:\t%s\n", groupID); err != nil {
+			return err
+		}
 	}
 
-	fmt.Fprintf(w, "\n💡 Tip:\tUser password is not shown for security reasons\n")
+	if _, err := fmt.Fprintf(w, "\n💡 Tip:\tUser password is not shown for security reasons\n"); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -191,7 +232,7 @@ func (f *CreateResultFormatter) formatUserCreateResult(result interface{}) error
 // formatNetworkCreateResult formats network access entry creation results
 func (f *CreateResultFormatter) formatNetworkCreateResult(result interface{}) error {
 	w := tabwriter.NewWriter(f.writer, 0, 0, 2, ' ', 0)
-	defer w.Flush()
+	defer func() { _ = w.Flush() }()
 
 	// Handle both single entry and slice results
 	v := reflect.ValueOf(result)
@@ -209,30 +250,42 @@ func (f *CreateResultFormatter) formatNetworkCreateResult(result interface{}) er
 
 	// Extract access details
 	if ipAddress := getStringField(v, "IpAddress"); ipAddress != "" {
-		fmt.Fprintf(w, "IP Address:\t%s\n", ipAddress)
+		if _, err := fmt.Fprintf(w, "IP Address:\t%s\n", ipAddress); err != nil {
+			return err
+		}
 	}
 	if cidrBlock := getStringField(v, "CidrBlock"); cidrBlock != "" {
-		fmt.Fprintf(w, "CIDR Block:\t%s\n", cidrBlock)
+		if _, err := fmt.Fprintf(w, "CIDR Block:\t%s\n", cidrBlock); err != nil {
+			return err
+		}
 	}
 	if awsSG := getStringField(v, "AwsSecurityGroup"); awsSG != "" {
-		fmt.Fprintf(w, "AWS Security Group:\t%s\n", awsSG)
+		if _, err := fmt.Fprintf(w, "AWS Security Group:\t%s\n", awsSG); err != nil {
+			return err
+		}
 	}
 	if comment := getStringField(v, "Comment"); comment != "" {
-		fmt.Fprintf(w, "Comment:\t%s\n", comment)
+		if _, err := fmt.Fprintf(w, "Comment:\t%s\n", comment); err != nil {
+			return err
+		}
 	}
-	if groupId := getStringField(v, "GroupId"); groupId != "" {
-		fmt.Fprintf(w, "Project ID:\t%s\n", groupId)
+	if groupID := getStringField(v, "GroupId"); groupID != "" {
+		if _, err := fmt.Fprintf(w, "Project ID:\t%s\n", groupID); err != nil {
+			return err
+		}
 	}
 
-	fmt.Fprintf(w, "\n💡 Tip:\tChanges may take a few minutes to propagate\n")
+	if _, err := fmt.Fprintf(w, "\n💡 Tip:\tChanges may take a few minutes to propagate\n"); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 // formatGenericCreateResult provides a fallback formatter for unknown resource types
-func (f *CreateResultFormatter) formatGenericCreateResult(result interface{}, resourceType string) error {
+func (f *CreateResultFormatter) formatGenericCreateResult(result interface{}, _ string) error {
 	w := tabwriter.NewWriter(f.writer, 0, 0, 2, ' ', 0)
-	defer w.Flush()
+	defer func() { _ = w.Flush() }()
 
 	v := reflect.ValueOf(result)
 	if v.Kind() == reflect.Ptr {
@@ -240,7 +293,9 @@ func (f *CreateResultFormatter) formatGenericCreateResult(result interface{}, re
 	}
 
 	if v.Kind() != reflect.Struct {
-		fmt.Fprintf(w, "Result:\t%v\n", result)
+		if _, err := fmt.Fprintf(w, "Result:\t%v\n", result); err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -258,7 +313,9 @@ func (f *CreateResultFormatter) formatGenericCreateResult(result interface{}, re
 				} else if fieldName == "StateName" {
 					displayName = "Status"
 				}
-				fmt.Fprintf(w, "%s:\t%s\n", displayName, formatFieldValue(value))
+				if _, err := fmt.Fprintf(w, "%s:\t%s\n", displayName, formatFieldValue(value)); err != nil {
+					return err
+				}
 			}
 		}
 	}

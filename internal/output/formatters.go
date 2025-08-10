@@ -52,7 +52,7 @@ func (f *Formatter) formatJSON(data interface{}) error {
 func (f *Formatter) formatYAML(data interface{}) error {
 	encoder := yaml.NewEncoder(f.writer)
 	encoder.SetIndent(2)
-	defer encoder.Close()
+	defer func() { _ = encoder.Close() }()
 	return encoder.Encode(data)
 }
 
@@ -88,22 +88,28 @@ func (f *Formatter) formatTableData(data TableData) error {
 	}
 
 	w := tabwriter.NewWriter(f.writer, 0, 0, 2, ' ', 0)
-	defer w.Flush()
+	defer func() { _ = w.Flush() }()
 
 	// Print headers
 	if len(data.Headers) > 0 {
-		fmt.Fprintln(w, strings.Join(data.Headers, "\t"))
+		if _, err := fmt.Fprintln(w, strings.Join(data.Headers, "\t")); err != nil {
+			return err
+		}
 		// Print separator line
 		separators := make([]string, len(data.Headers))
 		for i := range separators {
 			separators[i] = strings.Repeat("-", len(data.Headers[i]))
 		}
-		fmt.Fprintln(w, strings.Join(separators, "\t"))
+		if _, err := fmt.Fprintln(w, strings.Join(separators, "\t")); err != nil {
+			return err
+		}
 	}
 
 	// Print rows
 	for _, row := range data.Rows {
-		fmt.Fprintln(w, strings.Join(row, "\t"))
+		if _, err := fmt.Fprintln(w, strings.Join(row, "\t")); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -122,7 +128,9 @@ func (f *Formatter) formatTable(data []interface{}) error {
 		if err := f.formatSingleObject(item); err != nil {
 			return err
 		}
-		fmt.Fprintln(f.writer)
+		if _, err := fmt.Fprintln(f.writer); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -147,7 +155,7 @@ func (f *Formatter) formatSingleObject(data interface{}) error {
 	}
 
 	w := tabwriter.NewWriter(f.writer, 0, 0, 2, ' ', 0)
-	defer w.Flush()
+	defer func() { _ = w.Flush() }()
 
 	t := v.Type()
 	for i := 0; i < v.NumField(); i++ {
@@ -169,7 +177,9 @@ func (f *Formatter) formatSingleObject(data interface{}) error {
 
 		// Format the value properly, handling pointers and nil values
 		formattedValue := formatValue(value)
-		fmt.Fprintf(w, "%s:\t%s\n", fieldName, formattedValue)
+		if _, err := fmt.Fprintf(w, "%s:\t%s\n", fieldName, formattedValue); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -199,8 +209,8 @@ func formatValue(v reflect.Value) string {
 			return "[]"
 		}
 		// For non-empty slices, show the count and first few elements
-		elements := make([]string, 0, min(3, v.Len()))
-		for i := 0; i < min(3, v.Len()); i++ {
+		elements := make([]string, 0, intMin(3, v.Len()))
+		for i := 0; i < intMin(3, v.Len()); i++ {
 			elements = append(elements, formatValue(v.Index(i)))
 		}
 		if v.Len() > 3 {
@@ -262,8 +272,8 @@ func formatValue(v reflect.Value) string {
 	}
 }
 
-// min returns the minimum of two integers
-func min(a, b int) int {
+// intMin returns the minimum of two integers
+func intMin(a, b int) int {
 	if a < b {
 		return a
 	}

@@ -2,9 +2,9 @@ package apply
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"math"
-	"math/rand"
 	"sync"
 	"time"
 
@@ -15,10 +15,10 @@ import (
 type RetryDecision string
 
 const (
-	RetryDecisionRetry   RetryDecision = "retry"   // Retry the operation
-	RetryDecisionSkip    RetryDecision = "skip"    // Skip this operation and continue
-	RetryDecisionAbort   RetryDecision = "abort"   // Abort the entire execution
-	RetryDecisionIgnore  RetryDecision = "ignore"  // Ignore the error and mark as successful
+	RetryDecisionRetry  RetryDecision = "retry"  // Retry the operation
+	RetryDecisionSkip   RetryDecision = "skip"   // Skip this operation and continue
+	RetryDecisionAbort  RetryDecision = "abort"  // Abort the entire execution
+	RetryDecisionIgnore RetryDecision = "ignore" // Ignore the error and mark as successful
 )
 
 // ManualRetryCallback is called when manual intervention is needed
@@ -42,12 +42,12 @@ type RetryConfig struct {
 	// Retry decision settings
 	RetryableErrors []string `json:"retryableErrors"`
 	FatalErrors     []string `json:"fatalErrors"`
-	
+
 	// Manual retry support
-	EnableManualRetry      bool                `json:"enableManualRetry"`
-	ManualRetryErrors      []string            `json:"manualRetryErrors"`      // Error patterns that trigger manual intervention
-	InteractiveMode        bool                `json:"interactiveMode"`        // Whether to prompt user interactively
-	ManualRetryCallback    ManualRetryCallback `json:"-"`                      // Callback for manual decisions
+	EnableManualRetry   bool                `json:"enableManualRetry"`
+	ManualRetryErrors   []string            `json:"manualRetryErrors"` // Error patterns that trigger manual intervention
+	InteractiveMode     bool                `json:"interactiveMode"`   // Whether to prompt user interactively
+	ManualRetryCallback ManualRetryCallback `json:"-"`                 // Callback for manual decisions
 }
 
 // OperationRetryPolicy defines retry behavior for specific operation types
@@ -259,8 +259,14 @@ func (rm *RetryManager) calculateDelay(attempt int, policy OperationRetryPolicy)
 	// Add jitter to prevent thundering herd
 	if rm.config.Jitter > 0 {
 		jitterAmount := delay * rm.config.Jitter
-		jitter := (rand.Float64() - 0.5) * 2 * jitterAmount
-		delay += jitter
+		// Use crypto/rand for jitter to satisfy security lint; range [-jitterAmount, +jitterAmount]
+		var rb [8]byte
+		if _, err := rand.Read(rb[:]); err == nil {
+			// Map uint64 to [0,1)
+			u := float64(uint64(rb[0])<<56|uint64(rb[1])<<48|uint64(rb[2])<<40|uint64(rb[3])<<32|uint64(rb[4])<<24|uint64(rb[5])<<16|uint64(rb[6])<<8|uint64(rb[7])) / (1<<64 - 1)
+			jitter := (u - 0.5) * 2 * jitterAmount
+			delay += jitter
+		}
 	}
 
 	// Ensure delay is not negative
@@ -303,16 +309,16 @@ func (rm *RetryManager) shouldRequestManualRetry(err error) bool {
 	if !rm.config.EnableManualRetry {
 		return false
 	}
-	
+
 	errStr := err.Error()
-	
+
 	// Check if this error matches manual retry patterns
 	for _, manualErr := range rm.config.ManualRetryErrors {
 		if contains(errStr, manualErr) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -322,12 +328,12 @@ func (rm *RetryManager) requestManualRetry(ctx context.Context, operation *Plann
 	if rm.config.ManualRetryCallback != nil {
 		return rm.config.ManualRetryCallback(ctx, operation, err, attempt)
 	}
-	
+
 	// If interactive mode is enabled, prompt the user
 	if rm.config.InteractiveMode {
 		return rm.promptUserForDecision(operation, err, attempt)
 	}
-	
+
 	// Default behavior: don't retry
 	return RetryDecisionSkip
 }
@@ -338,7 +344,7 @@ func (rm *RetryManager) promptUserForDecision(operation *PlannedOperation, err e
 	// For now, return a default decision (in production, this would be interactive)
 	fmt.Printf("Operation %s failed (attempt %d): %v\n", operation.ResourceName, attempt, err)
 	fmt.Printf("Options: [r]etry, [s]kip, [a]bort, [i]gnore? ")
-	
+
 	// In a real implementation, this would read from stdin or show a UI prompt
 	// For this implementation, we'll provide a placeholder that defaults to skip
 	// This ensures non-interactive environments don't hang

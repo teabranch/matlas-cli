@@ -37,7 +37,6 @@ require (
 	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
-	golang.org/x/text v0.22.0 // indirect
 )
 
 require (
@@ -48,5 +47,6 @@ require (
 	go.mongodb.org/mongo-driver v1.17.4
 	go.uber.org/zap v1.27.0
 	golang.org/x/term v0.33.0
+	golang.org/x/text v0.22.0
 	gopkg.in/yaml.v3 v3.0.1
 )

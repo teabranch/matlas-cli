@@ -150,7 +150,7 @@ func (pt *ProgressTracker) Stop() {
 }
 
 // UpdateOperationProgress updates progress for a specific operation
-func (pt *ProgressTracker) UpdateOperationProgress(operationID string, status OperationStatus, progress float64, message string) {
+func (pt *ProgressTracker) UpdateOperationProgress(operationID string, status OperationStatus, _ float64, message string) {
 	pt.mu.Lock()
 	defer pt.mu.Unlock()
 
@@ -172,7 +172,7 @@ func (pt *ProgressTracker) UpdateOperationProgress(operationID string, status Op
 }
 
 // UpdateStageProgress updates progress for a specific stage
-func (pt *ProgressTracker) UpdateStageProgress(stage int, progress float64, message string) {
+func (pt *ProgressTracker) UpdateStageProgress(stage int, _ float64, message string) {
 	pt.mu.Lock()
 	defer pt.mu.Unlock()
 
@@ -374,7 +374,7 @@ func (rpr *RealTimeProgressReporter) LogOperation(operationID, message string, e
 	// Immediate output for important events
 	if eventType == ProgressEventError || (rpr.verbose && eventType == ProgressEventOperation) {
 		timestamp := event.Timestamp.Format("15:04:05")
-		fmt.Fprintf(rpr.output, "[%s] %s: %s\n", timestamp, eventType, message)
+		_, _ = fmt.Fprintf(rpr.output, "[%s] %s: %s\n", timestamp, eventType, message)
 	}
 }
 
@@ -405,22 +405,22 @@ func (rpr *RealTimeProgressReporter) handleEvent(event ProgressEvent) {
 
 	switch event.Type {
 	case ProgressEventStart:
-		fmt.Fprintf(rpr.output, "[%s] Starting execution: %s\n", timestamp, event.Message)
+		_, _ = fmt.Fprintf(rpr.output, "[%s] Starting execution: %s\n", timestamp, event.Message)
 	case ProgressEventComplete:
-		fmt.Fprintf(rpr.output, "[%s] Execution completed: %s\n", timestamp, event.Message)
+		_, _ = fmt.Fprintf(rpr.output, "[%s] Execution completed: %s\n", timestamp, event.Message)
 	case ProgressEventError:
-		fmt.Fprintf(rpr.output, "[%s] ERROR: %s\n", timestamp, event.Message)
+		_, _ = fmt.Fprintf(rpr.output, "[%s] ERROR: %s\n", timestamp, event.Message)
 	case ProgressEventOperation:
 		if rpr.verbose {
 			opMsg := event.Message
 			if event.Operation != "" {
 				opMsg = fmt.Sprintf("[%s] %s", event.Operation, event.Message)
 			}
-			fmt.Fprintf(rpr.output, "[%s] %s\n", timestamp, opMsg)
+			_, _ = fmt.Fprintf(rpr.output, "[%s] %s\n", timestamp, opMsg)
 		}
 	case ProgressEventProgress:
 		if rpr.verbose {
-			fmt.Fprintf(rpr.output, "[%s] Progress: %s\n", timestamp, event.Message)
+			_, _ = fmt.Fprintf(rpr.output, "[%s] Progress: %s\n", timestamp, event.Message)
 		}
 	}
 }

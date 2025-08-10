@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
 	atlasclient "github.com/teabranch/matlas-cli/internal/clients/atlas"
+	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
 )
 
 // ClustersService wraps Clusters API operations we support (read-only for now).
@@ -14,6 +14,7 @@ type ClustersService struct {
 	client *atlasclient.Client
 }
 
+// NewClustersService creates a new ClustersService.
 func NewClustersService(client *atlasclient.Client) *ClustersService {
 	return &ClustersService{client: client}
 }
@@ -60,7 +61,7 @@ func (s *ClustersService) Create(ctx context.Context, projectID string, cluster 
 	if projectID == "" || cluster == nil {
 		return nil, fmt.Errorf("projectID and cluster are required")
 	}
-	
+
 	// Validate required cluster fields
 	if cluster.Name == nil || *cluster.Name == "" {
 		return nil, fmt.Errorf("cluster name is required")
@@ -101,7 +102,7 @@ func (s *ClustersService) Delete(ctx context.Context, projectID, clusterName str
 	if projectID == "" || clusterName == "" {
 		return fmt.Errorf("projectID and clusterName are required")
 	}
-	
+
 	return s.client.Do(ctx, func(api *admin.APIClient) error {
 		_, err := api.ClustersApi.DeleteCluster(ctx, projectID, clusterName).Execute()
 		return err

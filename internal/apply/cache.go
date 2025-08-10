@@ -148,9 +148,7 @@ func (c *InMemoryStateCache) Delete(projectID string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if _, exists := c.entries[projectID]; exists {
-		delete(c.entries, projectID)
-	}
+	delete(c.entries, projectID)
 }
 
 // InvalidateByResourceType removes all cached states that contain the specified resource type

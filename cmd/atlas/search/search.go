@@ -261,22 +261,22 @@ func runListSearchIndexes(cmd *cobra.Command, projectID, clusterName, databaseNa
 
 func runGetSearchIndex(cmd *cobra.Command, projectID, clusterName, indexID string) error {
 	// Similar implementation structure as list, but for getting a single index
-	return fmt.Errorf("Atlas Search API not yet available in SDK - see 'matlas atlas search list --help' for alternatives")
+	return fmt.Errorf("atlas search API not yet available in SDK - see 'matlas atlas search list --help' for alternatives")
 }
 
 func runCreateSearchIndex(cmd *cobra.Command, projectID, clusterName, databaseName, collectionName, indexName, indexFile, indexType string) error {
 	// Similar implementation structure as list, but for creating an index
-	return fmt.Errorf("Atlas Search API not yet available in SDK - see 'matlas atlas search list --help' for alternatives")
+	return fmt.Errorf("atlas search API not yet available in SDK - see 'matlas atlas search list --help' for alternatives")
 }
 
 func runUpdateSearchIndex(cmd *cobra.Command, projectID, clusterName, indexID, indexFile string) error {
 	// Similar implementation structure as list, but for updating an index
-	return fmt.Errorf("Atlas Search API not yet available in SDK - see 'matlas atlas search list --help' for alternatives")
+	return fmt.Errorf("atlas search API not yet available in SDK - see 'matlas atlas search list --help' for alternatives")
 }
 
 func runDeleteSearchIndex(cmd *cobra.Command, projectID, clusterName, indexID string, force bool) error {
 	// Similar implementation structure as list, but for deleting an index
-	return fmt.Errorf("Atlas Search API not yet available in SDK - see 'matlas atlas search list --help' for alternatives")
+	return fmt.Errorf("atlas search API not yet available in SDK - see 'matlas atlas search list --help' for alternatives")
 }
 
 // Helper functions for formatting output

@@ -1,0 +1,1921 @@
+internal/services/atlas/network_containers_test.go:22: 22-73 lines are duplicate of `internal/services/atlas/network_peering_test.go:22-73` (dupl)
+func TestNetworkContainersService_CreateNetworkContainer_Validation(t *testing.T) {
+	client, err := atlasclient.NewClient(atlasclient.Config{})
+	require.NoError(t, err)
+
+	service := NewNetworkContainersService(client)
+	ctx := context.Background()
+
+	tests := []struct {
+		name        string
+		projectID   string
+		container   *admin.CloudProviderContainer
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:        "missing project ID",
+			projectID:   "",
+			container:   &admin.CloudProviderContainer{},
+			expectError: true,
+			errorMsg:    "projectID and container are required",
+		},
+		{
+			name:        "nil container",
+			projectID:   "test-project",
+			container:   nil,
+			expectError: true,
+			errorMsg:    "projectID and container are required",
+		},
+		{
+			name:        "empty container",
+			projectID:   "test-project",
+			container:   &admin.CloudProviderContainer{},
+			expectError: true,
+			errorMsg:    "providerName is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := service.CreateNetworkContainer(ctx, tt.projectID, tt.container)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorMsg != "" {
+					assert.Contains(t, err.Error(), tt.errorMsg)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+internal/services/atlas/network_containers_test.go:306: 306-349 lines are duplicate of `internal/services/atlas/network_peering_test.go:149-192` (dupl)
+func TestNetworkContainersService_ValidateNoOverlappingCIDRs(t *testing.T) {
+	client, err := atlasclient.NewClient(atlasclient.Config{})
+	require.NoError(t, err)
+
+	service := NewNetworkContainersService(client)
+	ctx := context.Background()
+
+	tests := []struct {
+		name        string
+		projectID   string
+		newCIDR     string
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:        "invalid CIDR format",
+			projectID:   "test-project",
+			newCIDR:     "invalid-cidr",
+			expectError: true,
+			errorMsg:    "invalid new CIDR",
+		},
+		{
+			name:        "valid CIDR format",
+			projectID:   "test-project",
+			newCIDR:     "10.0.0.0/16",
+			expectError: false, // No error for valid CIDR format
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := service.ValidateNoOverlappingCIDRs(ctx, tt.projectID, tt.newCIDR)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorMsg != "" {
+					assert.Contains(t, err.Error(), tt.errorMsg)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+internal/services/atlas/network_containers_test.go:408: 408-440 lines are duplicate of `internal/services/atlas/network_peering_test.go:276-308` (dupl)
+func TestNetworkContainersService_ParameterValidation(t *testing.T) {
+	client, err := atlasclient.NewClient(atlasclient.Config{})
+	require.NoError(t, err)
+
+	service := NewNetworkContainersService(client)
+	ctx := context.Background()
+
+	// Test empty project IDs
+	t.Run("empty project ID validation", func(t *testing.T) {
+		_, err := service.ListNetworkContainers(ctx, "")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "projectID required")
+
+		_, err = service.GetNetworkContainer(ctx, "", "container-1")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "projectID and containerID are required")
+
+		err = service.DeleteNetworkContainer(ctx, "", "container-1")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "projectID and containerID are required")
+	})
+
+	// Test empty container IDs
+	t.Run("empty container ID validation", func(t *testing.T) {
+		_, err := service.GetNetworkContainer(ctx, "test-project", "")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "projectID and containerID are required")
+
+		err = service.DeleteNetworkContainer(ctx, "test-project", "")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "projectID and containerID are required")
+	})
+}
+internal/services/atlas/network_peering_test.go:22: 22-73 lines are duplicate of `internal/services/atlas/network_containers_test.go:22-73` (dupl)
+func TestNetworkPeeringService_CreatePeeringConnection_Validation(t *testing.T) {
+	client, err := atlasclient.NewClient(atlasclient.Config{})
+	require.NoError(t, err)
+
+	service := NewNetworkPeeringService(client)
+	ctx := context.Background()
+
+	tests := []struct {
+		name        string
+		projectID   string
+		connection  *admin.BaseNetworkPeeringConnectionSettings
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:        "missing project ID",
+			projectID:   "",
+			connection:  &admin.BaseNetworkPeeringConnectionSettings{},
+			expectError: true,
+			errorMsg:    "projectID and connection are required",
+		},
+		{
+			name:        "nil connection",
+			projectID:   "test-project",
+			connection:  nil,
+			expectError: true,
+			errorMsg:    "projectID and connection are required",
+		},
+		{
+			name:        "empty connection",
+			projectID:   "test-project",
+			connection:  &admin.BaseNetworkPeeringConnectionSettings{},
+			expectError: true,
+			errorMsg:    "providerName is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := service.CreatePeeringConnection(ctx, tt.projectID, tt.connection)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorMsg != "" {
+					assert.Contains(t, err.Error(), tt.errorMsg)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+internal/services/atlas/network_peering_test.go:149: 149-192 lines are duplicate of `internal/services/atlas/network_containers_test.go:306-349` (dupl)
+func TestNetworkPeeringService_ValidatePeeringCIDRs(t *testing.T) {
+	client, err := atlasclient.NewClient(atlasclient.Config{})
+	require.NoError(t, err)
+
+	service := NewNetworkPeeringService(client)
+	ctx := context.Background()
+
+	tests := []struct {
+		name        string
+		projectID   string
+		newCIDR     string
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:        "invalid CIDR format",
+			projectID:   "test-project",
+			newCIDR:     "invalid-cidr",
+			expectError: true,
+			errorMsg:    "invalid new CIDR",
+		},
+		{
+			name:        "valid CIDR format",
+			projectID:   "test-project",
+			newCIDR:     "10.0.0.0/16",
+			expectError: false, // No error for valid CIDR format
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := service.ValidatePeeringCIDRs(ctx, tt.projectID, tt.newCIDR)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorMsg != "" {
+					assert.Contains(t, err.Error(), tt.errorMsg)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+internal/services/atlas/network_peering_test.go:276: 276-308 lines are duplicate of `internal/services/atlas/vpc_endpoints_test.go:218-250` (dupl)
+func TestNetworkPeeringService_ParameterValidation(t *testing.T) {
+	client, err := atlasclient.NewClient(atlasclient.Config{})
+	require.NoError(t, err)
+
+	service := NewNetworkPeeringService(client)
+	ctx := context.Background()
+
+	// Test empty project IDs
+	t.Run("empty project ID validation", func(t *testing.T) {
+		_, err := service.ListPeeringConnections(ctx, "")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "projectID required")
+
+		_, err = service.GetPeeringConnection(ctx, "", "peer-1")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "projectID and peerID are required")
+
+		err = service.DeletePeeringConnection(ctx, "", "peer-1")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "projectID and peerID are required")
+	})
+
+	// Test empty peer IDs
+	t.Run("empty peer ID validation", func(t *testing.T) {
+		_, err := service.GetPeeringConnection(ctx, "test-project", "")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "projectID and peerID are required")
+
+		err = service.DeletePeeringConnection(ctx, "test-project", "")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "projectID and peerID are required")
+	})
+}
+internal/services/atlas/vpc_endpoints_test.go:218: 218-250 lines are duplicate of `internal/services/atlas/network_containers_test.go:408-440` (dupl)
+func TestVPCEndpointsService_ParameterValidation(t *testing.T) {
+	client, err := atlasclient.NewClient(atlasclient.Config{})
+	require.NoError(t, err)
+
+	service := NewVPCEndpointsService(client)
+	ctx := context.Background()
+
+	// Test empty project IDs
+	t.Run("empty project ID validation", func(t *testing.T) {
+		_, err := service.ListPrivateEndpoints(ctx, "")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "projectID required")
+
+		_, err = service.GetPrivateEndpoint(ctx, "", "endpoint-1")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "projectID and endpointID are required")
+
+		err = service.DeletePrivateEndpoint(ctx, "", "endpoint-1")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "projectID and endpointID are required")
+	})
+
+	// Test empty endpoint IDs
+	t.Run("empty endpoint ID validation", func(t *testing.T) {
+		_, err := service.GetPrivateEndpoint(ctx, "test-project", "")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "projectID and endpointID are required")
+
+		err = service.DeletePrivateEndpoint(ctx, "test-project", "")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "projectID and endpointID are required")
+	})
+}
+internal/services/database/service_test.go:42: 42-82 lines are duplicate of `internal/services/database/service_test.go:105-145` (dupl)
+func TestService_GetOrCreateClient_Validation(t *testing.T) {
+	service := NewService(zap.NewNop())
+	ctx := context.Background()
+
+	tests := []struct {
+		name     string
+		connInfo *types.ConnectionInfo
+		wantErr  bool
+		errMsg   string
+	}{
+		{
+			name:     "nil connection info",
+			connInfo: nil,
+			wantErr:  true,
+			errMsg:   "connection info is required",
+		},
+		{
+			name: "empty connection string",
+			connInfo: &types.ConnectionInfo{
+				ConnectionString: "",
+			},
+			wantErr: true,
+			errMsg:  "connection info is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, err := service.GetOrCreateClient(ctx, tt.connInfo)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errMsg)
+				assert.Nil(t, client)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, client)
+			}
+		})
+	}
+}
+internal/services/database/service_test.go:105: 105-145 lines are duplicate of `internal/services/database/service_test.go:42-82` (dupl)
+func TestService_ListDatabases_Validation(t *testing.T) {
+	service := NewService(zap.NewNop())
+	ctx := context.Background()
+
+	tests := []struct {
+		name     string
+		connInfo *types.ConnectionInfo
+		wantErr  bool
+		errMsg   string
+	}{
+		{
+			name:     "nil connection info",
+			connInfo: nil,
+			wantErr:  true,
+			errMsg:   "connection info is required",
+		},
+		{
+			name: "empty connection string",
+			connInfo: &types.ConnectionInfo{
+				ConnectionString: "",
+			},
+			wantErr: true,
+			errMsg:  "connection info is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			databases, err := service.ListDatabases(ctx, tt.connInfo)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errMsg)
+				assert.Nil(t, databases)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, databases)
+			}
+		})
+	}
+}
+internal/services/database/service_test.go:371: 371-412 lines are duplicate of `internal/services/database/service_test.go:414-455` (dupl)
+func TestService_CreateDatabase_Validation(t *testing.T) {
+	service := NewService(zap.NewNop())
+	ctx := context.Background()
+
+	tests := []struct {
+		name         string
+		connInfo     *types.ConnectionInfo
+		databaseName string
+		wantErr      bool
+		errMsg       string
+	}{
+		{
+			name:         "nil connection info",
+			connInfo:     nil,
+			databaseName: "testdb",
+			wantErr:      true,
+			errMsg:       "connection info is required",
+		},
+		{
+			name: "empty database name",
+			connInfo: &types.ConnectionInfo{
+				ConnectionString: "mongodb://localhost:27017",
+			},
+			databaseName: "",
+			wantErr:      true,
+			errMsg:       "database name is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := service.CreateDatabase(ctx, tt.connInfo, tt.databaseName)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+internal/services/database/service_test.go:414: 414-455 lines are duplicate of `internal/services/database/service_test.go:371-412` (dupl)
+func TestService_DropDatabase_Validation(t *testing.T) {
+	service := NewService(zap.NewNop())
+	ctx := context.Background()
+
+	tests := []struct {
+		name         string
+		connInfo     *types.ConnectionInfo
+		databaseName string
+		wantErr      bool
+		errMsg       string
+	}{
+		{
+			name:         "nil connection info",
+			connInfo:     nil,
+			databaseName: "testdb",
+			wantErr:      true,
+			errMsg:       "connection info is required",
+		},
+		{
+			name: "empty database name",
+			connInfo: &types.ConnectionInfo{
+				ConnectionString: "mongodb://localhost:27017",
+			},
+			databaseName: "",
+			wantErr:      true,
+			errMsg:       "database name is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := service.DropDatabase(ctx, tt.connInfo, tt.databaseName)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+cmd/discover/discover_test.go:750:17: Error return value is not checked (errcheck)
+		applyFiltering(result, projectState, opts)
+		              ^
+cmd/infra/destroy.go:615:12: Error return value of `fmt.Scanln` is not checked (errcheck)
+	fmt.Scanln(&confirmation)
+	          ^
+cmd/infra/destroy.go:633:13: Error return value of `fmt.Scanln` is not checked (errcheck)
+		fmt.Scanln(&finalConfirmation)
+		          ^
+cmd/infra/helpers_test.go:24:20: Error return value of `os.RemoveAll` is not checked (errcheck)
+	defer os.RemoveAll(tempDir)
+	                  ^
+cmd/infra/helpers_test.go:156:20: Error return value of `os.RemoveAll` is not checked (errcheck)
+	defer os.RemoveAll(tempDir)
+	                  ^
+cmd/infra/helpers_test.go:295:20: Error return value of `os.RemoveAll` is not checked (errcheck)
+	defer os.RemoveAll(tempDir)
+	                  ^
+cmd/infra/helpers_test.go:360:20: Error return value of `os.RemoveAll` is not checked (errcheck)
+	defer os.RemoveAll(tempDir)
+	                  ^
+cmd/infra/show.go:378:15: Error return value of `fmt.Fprintln` is not checked (errcheck)
+		fmt.Fprintln(os.Stdout)
+		            ^
+internal/apply/enhanced_executor.go:337:45: Error return value of `e.idempotencyManager.UpdateOperationState` is not checked (errcheck)
+			e.idempotencyManager.UpdateOperationState(state)
+			                                         ^
+internal/apply/enhanced_executor.go:362:45: Error return value of `e.idempotencyManager.UpdateOperationState` is not checked (errcheck)
+			e.idempotencyManager.UpdateOperationState(state)
+			                                         ^
+internal/apply/loader_test.go:701:17: Error return value of `os.Remove` is not checked (errcheck)
+	defer os.Remove(tmpfile.Name())
+	               ^
+internal/apply/loader_test.go:705:15: Error return value of `tmpfile.Close` is not checked (errcheck)
+	tmpfile.Close()
+	             ^
+internal/apply/template_test.go:571:11: Error return value of `os.Setenv` is not checked (errcheck)
+	os.Setenv("ENV_VAR", "env_value")
+	         ^
+internal/apply/template_test.go:572:19: Error return value of `os.Unsetenv` is not checked (errcheck)
+	defer os.Unsetenv("ENV_VAR")
+	                 ^
+internal/apply/template_test.go:611:11: Error return value of `os.Setenv` is not checked (errcheck)
+	os.Setenv("ENV_VAR", "env_value")
+	         ^
+internal/apply/template_test.go:612:19: Error return value of `os.Unsetenv` is not checked (errcheck)
+	defer os.Unsetenv("ENV_VAR")
+	                 ^
+internal/apply/template_test.go:648:11: Error return value of `os.Setenv` is not checked (errcheck)
+	os.Setenv("TEST_SNAPSHOT_VAR", "test_value")
+	         ^
+internal/apply/template_test.go:649:19: Error return value of `os.Unsetenv` is not checked (errcheck)
+	defer os.Unsetenv("TEST_SNAPSHOT_VAR")
+	                 ^
+internal/apply/template_test.go:665:11: Error return value of `os.Setenv` is not checked (errcheck)
+	os.Setenv("ATLAS_TEST_VAR1", "value1")
+	         ^
+internal/apply/template_test.go:666:11: Error return value of `os.Setenv` is not checked (errcheck)
+	os.Setenv("ATLAS_TEST_VAR2", "value2")
+	         ^
+internal/apply/template_test.go:670:14: Error return value of `os.Unsetenv` is not checked (errcheck)
+		os.Unsetenv("ATLAS_TEST_VAR1")
+		           ^
+internal/apply/template_test.go:671:14: Error return value of `os.Unsetenv` is not checked (errcheck)
+		os.Unsetenv("ATLAS_TEST_VAR2")
+		           ^
+internal/cli/completion.go:130:36: Error return value of `rootCmd.RegisterFlagCompletionFunc` is not checked (errcheck)
+	rootCmd.RegisterFlagCompletionFunc("project-id", projectCompletion)
+	                                  ^
+internal/cli/completion.go:135:34: Error return value of `cmd.RegisterFlagCompletionFunc` is not checked (errcheck)
+			cmd.RegisterFlagCompletionFunc("project-id", projectCompletion)
+			                              ^
+internal/cli/completion.go:138:34: Error return value of `cmd.RegisterFlagCompletionFunc` is not checked (errcheck)
+			cmd.RegisterFlagCompletionFunc("project", projectCompletion)
+			                              ^
+internal/cli/completion.go:164:36: Error return value of `rootCmd.RegisterFlagCompletionFunc` is not checked (errcheck)
+	rootCmd.RegisterFlagCompletionFunc("output", outputCompletion)
+	                                  ^
+internal/cli/completion.go:165:36: Error return value of `rootCmd.RegisterFlagCompletionFunc` is not checked (errcheck)
+	rootCmd.RegisterFlagCompletionFunc("format", outputCompletion)
+	                                  ^
+internal/cli/completion.go:169:34: Error return value of `cmd.RegisterFlagCompletionFunc` is not checked (errcheck)
+			cmd.RegisterFlagCompletionFunc("output", outputCompletion)
+			                              ^
+internal/cli/completion.go:172:34: Error return value of `cmd.RegisterFlagCompletionFunc` is not checked (errcheck)
+			cmd.RegisterFlagCompletionFunc("format", outputCompletion)
+			                              ^
+internal/cli/completion.go:207:36: Error return value of `rootCmd.RegisterFlagCompletionFunc` is not checked (errcheck)
+	rootCmd.RegisterFlagCompletionFunc("config", configCompletion)
+	                                  ^
+internal/cli/completion.go:211:34: Error return value of `cmd.RegisterFlagCompletionFunc` is not checked (errcheck)
+			cmd.RegisterFlagCompletionFunc("config", configCompletion)
+			                              ^
+internal/cli/completion.go:214:34: Error return value of `cmd.RegisterFlagCompletionFunc` is not checked (errcheck)
+			cmd.RegisterFlagCompletionFunc("file", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+			                              ^
+internal/cli/completion.go:268:34: Error return value of `cmd.RegisterFlagCompletionFunc` is not checked (errcheck)
+			cmd.RegisterFlagCompletionFunc("cluster", clusterCompletion)
+			                              ^
+internal/cli/completion.go:271:34: Error return value of `cmd.RegisterFlagCompletionFunc` is not checked (errcheck)
+			cmd.RegisterFlagCompletionFunc("cluster-name", clusterCompletion)
+			                              ^
+internal/cli/completion.go:274:34: Error return value of `cmd.RegisterFlagCompletionFunc` is not checked (errcheck)
+			cmd.RegisterFlagCompletionFunc("database", databaseCompletion)
+			                              ^
+internal/cli/completion.go:277:34: Error return value of `cmd.RegisterFlagCompletionFunc` is not checked (errcheck)
+			cmd.RegisterFlagCompletionFunc("db", databaseCompletion)
+			                              ^
+internal/clients/mongodb/client.go:157:20: Error return value of `cursor.Close` is not checked (errcheck)
+	defer cursor.Close(ctx)
+	                  ^
+internal/clients/mongodb/client.go:364:20: Error return value of `cursor.Close` is not checked (errcheck)
+	defer cursor.Close(ctx)
+	                  ^
+internal/clients/mongodb/helper_test.go:84:18: Error return value of `client.Close` is not checked (errcheck)
+					client.Close(ctx)
+					            ^
+internal/clients/mongodb/methods_unit_test.go:206:18: Error return value of `client.Close` is not checked (errcheck)
+					client.Close(ctx) // Clean up
+					            ^
+internal/output/formatters_test.go:208:18: Error return value of `formatter.Format` is not checked (errcheck)
+	formatter.Format(func() {})
+	                ^
+internal/services/database/documents.go:108:20: Error return value of `cursor.Close` is not checked (errcheck)
+	defer cursor.Close(ctx)
+	                  ^
+internal/services/database/service.go:45:15: Error return value of `client.Close` is not checked (errcheck)
+		client.Close(ctx)
+		            ^
+internal/services/database/temp_user.go:227:11: Error return value of `rand.Read` is not checked (errcheck)
+	rand.Read(randomBytes)
+	         ^
+internal/services/database/temp_user.go:245:12: Error return value of `rand.Read` is not checked (errcheck)
+		rand.Read(randomBytes)
+		         ^
+cmd/atlas/clusters/clusters.go:564:1: cognitive complexity 42 of func `runCreateCluster` is high (> 30) (gocognit)
+func runCreateCluster(cmd *cobra.Command, projectID, clusterName, tier, provider, region string, diskSizeGB int, backupEnabled bool) error {
+^
+cmd/atlas/clusters/clusters.go:792:1: cognitive complexity 74 of func `loadFromAPISpec` is high (> 30) (gocognit)
+func loadFromAPISpec(opts *CreateClusterOptions, apiSpec *APISpecYAML) error {
+^
+cmd/atlas/clusters/clusters.go:1203:1: cognitive complexity 70 of func `runUpdateCluster` is high (> 30) (gocognit)
+func runUpdateCluster(cmd *cobra.Command, projectID, clusterName, tier string, diskSizeGB int, backupEnabled bool, backupChanged bool, tags map[string]string, clearTags bool) error {
+^
+cmd/atlas/projects/projects.go:116:1: cognitive complexity 56 of func `newListCmd` is high (> 30) (gocognit)
+func newListCmd() *cobra.Command {
+^
+cmd/discover/discover.go:225:1: cognitive complexity 59 of func `runDiscover` is high (> 30) (gocognit)
+func runDiscover(cmd *cobra.Command, opts *DiscoverOptions) error {
+^
+cmd/infra/apply.go:385:1: cognitive complexity 43 of func `getProjectID` is high (> 30) (gocognit)
+func getProjectID(configs []*apply.LoadResult, opts *ApplyOptions) string {
+^
+cmd/infra/apply.go:711:1: cognitive complexity 52 of func `convertToDatabaseUserSpec` is high (> 30) (gocognit)
+func convertToDatabaseUserSpec(spec interface{}) types.DatabaseUserSpec {
+^
+cmd/infra/apply.go:1002:1: cognitive complexity 31 of func `expandFilePatterns` is high (> 30) (gocognit)
+func expandFilePatterns(patterns []string) ([]string, error) {
+^
+cmd/infra/destroy.go:173:1: cognitive complexity 79 of func `createDestroyPlan` is high (> 30) (gocognit)
+func createDestroyPlan(ctx context.Context, configs []*apply.LoadResult, services *ServiceClients, cfg *config.Config, opts *DestroyOptions) (*apply.Plan, error) {
+^
+cmd/infra/diff.go:248:1: cognitive complexity 49 of func `displayDiffTable` is high (> 30) (gocognit)
+func displayDiffTable(diff *apply.Diff, opts *DiffOptions) error {
+^
+cmd/infra/show.go:145:1: cognitive complexity 58 of func `filterState` is high (> 30) (gocognit)
+func filterState(state *apply.ProjectState, opts *ShowOptions) *apply.ProjectState {
+^
+cmd/infra/show.go:277:1: cognitive complexity 56 of func `displayStateTable` is high (> 30) (gocognit)
+func displayStateTable(state *apply.ProjectState, opts *ShowOptions) error {
+^
+cmd/infra/validate.go:247:1: cognitive complexity 62 of func `validateBatch` is high (> 30) (gocognit)
+func validateBatch(ctx context.Context, files []string, loader *apply.ConfigurationLoader, validationOpts *apply.ValidatorOptions, opts *ValidateOptions) ([]*ValidationFileResult, error) {
+^
+cmd/infra/validate.go:519:1: cognitive complexity 56 of func `aggregateProjectConfigs` is high (> 30) (gocognit)
+func aggregateProjectConfigs(loadResults []*apply.LoadResult) (map[string]*types.ProjectConfig, map[string][]int) {
+^
+internal/apply/diff.go:293:1: cognitive complexity 39 of func `(*DiffEngine).computeResourceDiff` is high (> 30) (gocognit)
+func (d *DiffEngine) computeResourceDiff(resourceType types.ResourceKind, resourceName string, desired, current interface{}) *Operation {
+^
+internal/apply/dryrun_formatter.go:259:1: cognitive complexity 35 of func `(*DryRunFormatter).writeDetailedOperations` is high (> 30) (gocognit)
+func (f *DryRunFormatter) writeDetailedOperations(output *strings.Builder, result *DryRunResult) {
+^
+internal/apply/dryrun_test.go:11:1: cognitive complexity 35 of func `TestDryRunExecutor_Execute` is high (> 30) (gocognit)
+func TestDryRunExecutor_Execute(t *testing.T) {
+^
+internal/apply/format_converter.go:20:1: cognitive complexity 56 of func `(*DiscoveredProjectConverter).ConvertToApplyDocument` is high (> 30) (gocognit)
+func (c *DiscoveredProjectConverter) ConvertToApplyDocument(discovered interface{}) (*types.ApplyDocument, error) {
+^
+internal/apply/format_converter.go:226:1: cognitive complexity 67 of func `(*DiscoveredProjectConverter).extractMetadata` is high (> 30) (gocognit)
+func (c *DiscoveredProjectConverter) extractMetadata(resourceMap map[string]interface{}, resourceType string) types.ResourceMetadata {
+^
+internal/apply/recovery.go:443:1: cognitive complexity 38 of func `(*RecoveryManager).analyzeAffectedResources` is high (> 30) (gocognit)
+func (rm *RecoveryManager) analyzeAffectedResources(operation *PlannedOperation) []AffectedResource {
+^
+internal/apply/recovery.go:1057:1: cognitive complexity 52 of func `(*RecoveryManager).getProjectIDForOperation` is high (> 30) (gocognit)
+func (rm *RecoveryManager) getProjectIDForOperation(operation *PlannedOperation) (string, error) {
+^
+internal/apply/validation.go:1221:1: cognitive complexity 40 of func `validateBusinessLogicRules` is high (> 30) (gocognit)
+func validateBusinessLogicRules(config *types.ApplyConfig, result *ValidationResult, opts *ValidatorOptions) {
+^
+internal/output/formatters.go:189:1: cognitive complexity 33 of func `formatValue` is high (> 30) (gocognit)
+func formatValue(v reflect.Value) string {
+^
+internal/services/atlas/users.go:44:1: cognitive complexity 32 of func `(*DatabaseUsersService).ListWithPagination` is high (> 30) (gocognit)
+func (s *DatabaseUsersService) ListWithPagination(ctx context.Context, projectID string, page, limit int, all bool) ([]admin.CloudDatabaseUser, error) {
+^
+internal/services/database/temp_user_test.go:55:1: cognitive complexity 67 of func `TestTempUserManager_CreateTempUserForDiscovery` is high (> 30) (gocognit)
+func TestTempUserManager_CreateTempUserForDiscovery(t *testing.T) {
+^
+internal/services/database/temp_user_test.go:266:1: cognitive complexity 53 of func `TestTempUserManager_CreateTempUser` is high (> 30) (gocognit)
+func TestTempUserManager_CreateTempUser(t *testing.T) {
+^
+internal/validation/schema.go:175:1: cognitive complexity 55 of func `(*SchemaValidator).validateProperty` is high (> 30) (gocognit)
+func (sv *SchemaValidator) validateProperty(value interface{}, schema *PropertySchema, path string, result *SchemaValidationResult) {
+^
+cmd/atlas/clusters/clusters.go:608:17: string `REPLICASET` has 3 occurrences, make it a constant (goconst)
+	clusterType := "REPLICASET"
+	               ^
+cmd/atlas/clusters/clusters.go:1401:10: string `N/A` has 9 occurrences, make it a constant (goconst)
+		return "N/A"
+		       ^
+cmd/infra/apply.go:1046:15: string `.yaml` has 3 occurrences, make it a constant (goconst)
+				if ext == ".yaml" || ext == ".yml" || ext == "" {
+				          ^
+cmd/infra/diff.go:199:8: string `json` has 8 occurrences, make it a constant (goconst)
+		case "json":
+		     ^
+cmd/infra/diff.go:201:8: string `yaml` has 8 occurrences, make it a constant (goconst)
+		case "yaml":
+		     ^
+cmd/infra/diff.go:203:8: string `summary` has 7 occurrences, make it a constant (goconst)
+		case "summary":
+		     ^
+cmd/infra/diff.go:205:8: string `table` has 4 occurrences, make it a constant (goconst)
+		case "table":
+		     ^
+cmd/infra/diff.go:289:15: string `[32m` has 3 occurrences, make it a constant (goconst)
+				opColor = "\033[32m" // Green
+				          ^
+cmd/infra/diff.go:291:15: string `[33m` has 3 occurrences, make it a constant (goconst)
+				opColor = "\033[33m" // Yellow
+				          ^
+cmd/infra/diff.go:293:15: string `[31m` has 3 occurrences, make it a constant (goconst)
+				opColor = "\033[31m" // Red
+				          ^
+cmd/infra/diff.go:328:16: string `N/A` has 3 occurrences, make it a constant (goconst)
+		riskLevel := "N/A"
+		             ^
+cmd/infra/validate_test.go:94:23: string `error` has 5 occurrences, make it a constant (goconst)
+			if dep.Severity == "error" {
+			                   ^
+internal/apply/cache_test.go:38:15: string `test-project` has 7 occurrences, make it a constant (goconst)
+	projectID := "test-project"
+	             ^
+internal/apply/diff_test.go:83:24: string `test-cluster` has 4 occurrences, make it a constant (goconst)
+	if op.ResourceName != "test-cluster" {
+	                      ^
+internal/apply/executor.go:380:35: string `updateProject` has 3 occurrences, make it a constant (goconst)
+			result.Metadata["operation"] = "updateProject"
+			                               ^
+internal/apply/executor.go:482:34: string `createCluster` has 3 occurrences, make it a constant (goconst)
+		result.Metadata["operation"] = "createCluster"
+		                               ^
+internal/apply/executor.go:544:34: string `updateCluster` has 3 occurrences, make it a constant (goconst)
+		result.Metadata["operation"] = "updateCluster"
+		                               ^
+internal/apply/executor.go:606:34: string `deleteCluster` has 4 occurrences, make it a constant (goconst)
+		result.Metadata["operation"] = "deleteCluster"
+		                               ^
+internal/apply/executor.go:659:34: string `createDatabaseUser` has 4 occurrences, make it a constant (goconst)
+		result.Metadata["operation"] = "createDatabaseUser"
+		                               ^
+internal/apply/executor.go:708:38: string `admin` has 7 occurrences, make it a constant (goconst)
+			result.Metadata["databaseName"] = "admin"
+			                                  ^
+internal/apply/executor.go:732:34: string `updateDatabaseUser` has 3 occurrences, make it a constant (goconst)
+		result.Metadata["operation"] = "updateDatabaseUser"
+		                               ^
+internal/apply/executor.go:799:34: string `deleteDatabaseUser` has 4 occurrences, make it a constant (goconst)
+		result.Metadata["operation"] = "deleteDatabaseUser"
+		                               ^
+internal/apply/executor.go:862:34: string `createNetworkAccess` has 3 occurrences, make it a constant (goconst)
+		result.Metadata["operation"] = "createNetworkAccess"
+		                               ^
+internal/apply/executor.go:930:34: string `deleteNetworkAccess` has 4 occurrences, make it a constant (goconst)
+		result.Metadata["operation"] = "deleteNetworkAccess"
+		                               ^
+internal/apply/executor_mapping_test.go:61:13: string `507f1f77bcf86cd799439011` has 6 occurrences, make it a constant (goconst)
+	groupID := "507f1f77bcf86cd799439011"
+	           ^
+internal/apply/fetchers.go:184:10: string `N/A` has 9 occurrences, make it a constant (goconst)
+		return "N/A"
+		       ^
+internal/apply/idempotency_test.go:75:17: string `op-123` has 3 occurrences, make it a constant (goconst)
+	if state.ID != "op-123" {
+	               ^
+internal/apply/loader_test.go:59:39: string `value` has 3 occurrences, make it a constant (goconst)
+	if cl.processor.Variables["TEST"] != "value" {
+	                                     ^
+internal/apply/loader_test.go:379:43: string `test_value` has 6 occurrences, make it a constant (goconst)
+	if cl.processor.Variables["TEST_VAR"] != "test_value" {
+	                                         ^
+internal/apply/loader_test.go:560:12: string `test.yaml` has 3 occurrences, make it a constant (goconst)
+	source := "test.yaml"
+	          ^
+internal/apply/template_test.go:88:28: string `set_value` has 3 occurrences, make it a constant (goconst)
+	tp.Variables["SET_VAR"] = "set_value"
+	                          ^
+internal/apply/validation.go:1161:24: string `error` has 3 occurrences, but such constant `ProgressEventError` already exists (goconst)
+		if issue.Severity == "error" {
+		                     ^
+internal/cli/completion_unit_test.go:56:19: string `bash` has 4 occurrences, make it a constant (goconst)
+			if tt.shell == "bash" || tt.shell == "zsh" || tt.shell == "fish" {
+			               ^
+internal/cli/enhanced_errors.go:182:10: string `critical` has 3 occurrences, make it a constant (goconst)
+		return "critical"
+		       ^
+internal/cli/enhanced_errors.go:187:11: string `warning` has 4 occurrences, make it a constant (goconst)
+			return "warning"
+			       ^
+internal/cli/enhanced_errors.go:189:10: string `error` has 10 occurrences, make it a constant (goconst)
+		return "error"
+		       ^
+internal/services/atlas/network_containers.go:421:9: string `UNKNOWN` has 3 occurrences, make it a constant (goconst)
+	return "UNKNOWN", nil
+	       ^
+internal/services/database/temp_user_test.go:42:15: string `test-project-id` has 3 occurrences, make it a constant (goconst)
+	projectID := "test-project-id"
+	             ^
+internal/services/database/temp_user_test.go:103:30: string `admin` has 4 occurrences, make it a constant (goconst)
+					if user.DatabaseName != "admin" {
+					                        ^
+internal/validation/schema.go:145:20: string `object` has 3 occurrences, make it a constant (goconst)
+	if schema.Type == "object" {
+	                  ^
+internal/validation/validation_test.go:313:62: string `error` has 3 occurrences, make it a constant (goconst)
+		if issue.DependencyType == "temporal" && issue.Severity == "error" {
+		                                                           ^
+cmd/atlas/clusters/clusters.go:761:15: G304: Potential file inclusion via variable (gosec)
+	data, err := os.ReadFile(configPath)
+	             ^
+cmd/config/config.go:287:21: G304: Potential file inclusion via variable (gosec)
+	configData, err := os.ReadFile(configFile)
+	                   ^
+cmd/infra/apply_test.go:129:10: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+		err := os.WriteFile(filePath, []byte("test: content"), 0644)
+		       ^
+cmd/infra/apply_test.go:362:10: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+		err := os.WriteFile(filePath, []byte("test: content"), 0644)
+		       ^
+cmd/infra/helpers_test.go:37:10: G301: Expect directory permissions to be 0750 or less (gosec)
+		err := os.MkdirAll(filepath.Dir(fullPath), 0755)
+		       ^
+cmd/infra/helpers_test.go:39:9: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+		err = ioutil.WriteFile(fullPath, []byte("test content"), 0644)
+		      ^
+cmd/infra/helpers_test.go:208:11: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+			err := ioutil.WriteFile(filePath, []byte(tt.fileContent), 0644)
+			       ^
+cmd/infra/helpers_test.go:307:9: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+				_ = ioutil.WriteFile(configFile, []byte("test"), 0644)
+				    ^
+cmd/infra/helpers_test.go:365:10: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+		err := ioutil.WriteFile(fileName, []byte("test content"), 0644)
+		       ^
+cmd/infra/validate_test.go:17:12: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	          ^
+internal/apply/loader.go:398:16: G304: Potential file inclusion via variable (gosec)
+		file, err := os.Open(source)
+		             ^
+internal/apply/loader_test.go:82:9: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+	err := os.WriteFile(tmpFile, []byte(content), 0644)
+	       ^
+internal/apply/loader_test.go:135:9: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+	err := os.WriteFile(tmpFile, []byte(content), 0644)
+	       ^
+internal/apply/loader_test.go:182:9: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+	err := os.WriteFile(tmpFile, []byte(content), 0644)
+	       ^
+internal/apply/loader_test.go:226:9: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+	err := os.WriteFile(tmpFile, []byte(content), 0644)
+	       ^
+internal/apply/loader_test.go:263:10: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+		err := os.WriteFile(filepath.Join(tmpDir, filename), []byte(content), 0644)
+		       ^
+internal/apply/loader_test.go:316:9: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+	err := os.WriteFile(tmpFile, []byte(content), 0644)
+	       ^
+internal/apply/loader_test.go:344:9: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+	err := os.WriteFile(tmpFile, []byte(content), 0644)
+	       ^
+internal/apply/loader_test.go:411:9: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+	err := os.WriteFile(tmpFile, []byte(content), 0644)
+	       ^
+internal/apply/loader_test.go:471:9: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+	err := os.WriteFile(tmpFile, []byte(content), 0644)
+	       ^
+internal/apply/loader_test.go:497:9: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+	err := os.WriteFile(tmpFile, []byte(largeContent), 0644)
+	       ^
+internal/apply/loader_test.go:538:9: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+	err := os.WriteFile(tmpFile, []byte(content), 0644)
+	       ^
+internal/apply/retry.go:262:14: G404: Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand) (gosec)
+		jitter := (rand.Float64() - 0.5) * 2 * jitterAmount
+		           ^
+internal/clients/mongodb/client.go:89:24: G402: TLS InsecureSkipVerify may be true. (gosec)
+			InsecureSkipVerify: config.TLSInsecure,
+			                    ^
+internal/config/extra_test.go:84:12: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+	if err := os.WriteFile(badPath, []byte("foo: [unbalanced"), 0o644); err != nil {
+	          ^
+internal/config/extra_test.go:196:5: G101: Potential hardcoded credentials (gosec)
+	if apiKey != "atlas_api_key" {
+	   ^
+internal/config/extra_test.go:226:5: G101: Potential hardcoded credentials (gosec)
+	if apiKey != "matlas_api_key" {
+	   ^
+internal/config/loader_test.go:18:12: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+	if err := os.WriteFile(yamlPath, yamlContent, 0o644); err != nil {
+	          ^
+internal/validation/schema.go:110:21: G304: Potential file inclusion via variable (gosec)
+	configData, err := os.ReadFile(filePath)
+	                   ^
+internal/validation/schema.go:120:21: G304: Potential file inclusion via variable (gosec)
+	schemaData, err := os.ReadFile(schemaPath)
+	                   ^
+internal/apply/loader.go:396:3: ineffectual assignment to size (ineffassign)
+		size = cl.options.MaxFileSize // Use max size for stdin
+		^
+internal/apply/recovery.go:510:4: ineffectual assignment to depState (ineffassign)
+			depState := ResourceStateUnknown
+			^
+internal/apply/recovery.go:524:4: ineffectual assignment to depImpact (ineffassign)
+			depImpact := ResourceImpactNone
+			^
+cmd/atlas/clusters/clusters.go:1078:2: Consider pre-allocating `regionConfigs` (prealloc)
+	var regionConfigs []admin.CloudRegionConfig20240805
+	^
+cmd/atlas/clusters/clusters.go:1152:2: Consider pre-allocating `atlasTags` (prealloc)
+	var atlasTags []admin.ResourceTag
+	^
+cmd/atlas/users/users.go:629:2: Consider pre-allocating `roles` (prealloc)
+	var roles []admin.DatabaseUserRole
+	^
+cmd/discover/database_enumeration.go:159:2: Consider pre-allocating `databases` (prealloc)
+	var databases []DatabaseInfo
+	^
+cmd/discover/database_enumeration.go:331:2: Consider pre-allocating `collections` (prealloc)
+	var collections []CollectionInfo
+	^
+cmd/infra/apply.go:179:2: Consider pre-allocating `configs` (prealloc)
+	var configs []*apply.LoadResult
+	^
+cmd/infra/validate.go:144:2: Consider pre-allocating `results` (prealloc)
+	var results []*ValidationFileResult
+	^
+cmd/infra/validate.go:253:2: Consider pre-allocating `loadResults` (prealloc)
+	var loadResults []*apply.LoadResult
+	^
+cmd/infra/validate.go:254:2: Consider pre-allocating `results` (prealloc)
+	var results []*ValidationFileResult
+	^
+internal/apply/executor.go:1039:2: Consider pre-allocating `atlasSpecs` (prealloc)
+	var atlasSpecs []admin.ReplicationSpec20240805
+	^
+internal/apply/loader.go:204:2: Consider pre-allocating `results` (prealloc)
+	var results []*LoadResult
+	^
+internal/apply/loader.go:308:2: Consider pre-allocating `results` (prealloc)
+	var results []*LoadResult
+	^
+internal/apply/optimizer.go:204:2: Consider pre-allocating `actions` (prealloc)
+	var actions []OptimizationAction
+	^
+internal/cli/enhanced_errors.go:368:2: Consider pre-allocating `messages` (prealloc)
+	var messages []string
+	^
+internal/cli/signals.go:184:2: Consider pre-allocating `errors` (prealloc)
+	var errors []error
+	^
+internal/services/database/temp_user.go:130:2: Consider pre-allocating `scopes` (prealloc)
+	var scopes []admin.UserScope
+	^
+internal/services/database/temp_user.go:166:2: Consider pre-allocating `scopes` (prealloc)
+	var scopes []admin.UserScope
+	^
+internal/validation/schema.go:136:2: Consider pre-allocating `names` (prealloc)
+	var names []string
+	^
+cmd/atlas/atlas.go:1:1: package-comments: should have a package comment (revive)
+package atlas
+^
+cmd/atlas/clusters/clusters.go:1:1: package-comments: should have a package comment (revive)
+package clusters
+^
+cmd/atlas/clusters/clusters.go:64:1: exported: exported function NewClustersCmd should have comment or be unexported (revive)
+func NewClustersCmd() *cobra.Command {
+^
+cmd/atlas/clusters/clusters.go:109:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/clusters/clusters.go:263:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/clusters/clusters.go:1025:29: empty-block: this block is empty, you can remove it (revive)
+		if opts.AWSKMSKeyID != "" {
+			// Note: KMS configuration requires more complex setup in real Atlas API
+			// This is a simplified implementation
+		}
+cmd/atlas/clusters/clusters.go:1040:67: empty-block: this block is empty, you can remove it (revive)
+	if opts.AutoScalingDiskEnabled || opts.AutoScalingComputeEnabled {
+		// Note: Autoscaling configuration in Atlas API is more complex
+		// This is a placeholder for the structure
+	}
+cmd/atlas/network-containers/network_containers.go:1:1: package-comments: should have a package comment (revive)
+package networkcontainers
+^
+cmd/atlas/network-containers/network_containers.go:20:1: exported: exported function NewNetworkContainersCmd should have comment or be unexported (revive)
+func NewNetworkContainersCmd() *cobra.Command {
+^
+cmd/atlas/network-containers/network_containers.go:60:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/network-containers/network_containers.go:89:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/network-containers/network_containers.go:121:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/network-containers/network_containers.go:154:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/network-peering/network_peering.go:1:1: package-comments: should have a package comment (revive)
+package networkpeering
+^
+cmd/atlas/network-peering/network_peering.go:20:1: exported: exported function NewNetworkPeeringCmd should have comment or be unexported (revive)
+func NewNetworkPeeringCmd() *cobra.Command {
+^
+cmd/atlas/network-peering/network_peering.go:59:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/network-peering/network_peering.go:87:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/network-peering/network_peering.go:121:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/network-peering/network_peering.go:156:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/network/network.go:1:1: package-comments: should have a package comment (revive)
+package network
+^
+cmd/atlas/network/network.go:19:1: exported: exported function NewNetworkCmd should have comment or be unexported (revive)
+func NewNetworkCmd() *cobra.Command {
+^
+cmd/atlas/network/network.go:314:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/network/network.go:370:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/projects/projects.go:1:1: package-comments: should have a package comment (revive)
+package projects
+^
+cmd/atlas/projects/projects.go:20:1: exported: exported function NewProjectsCmd should have comment or be unexported (revive)
+func NewProjectsCmd() *cobra.Command {
+^
+cmd/atlas/projects/projects.go:53:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/projects/projects.go:124:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/projects/projects.go:223:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/projects/projects.go:374:14: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		           ^
+cmd/atlas/search/search.go:1:1: package-comments: should have a package comment (revive)
+package search
+^
+cmd/atlas/search/search.go:15:1: exported: exported function NewSearchCmd should have comment or be unexported (revive)
+func NewSearchCmd() *cobra.Command {
+^
+cmd/atlas/search/search.go:61:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/search/search.go:94:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/search/search.go:135:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/search/search.go:171:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/search/search.go:205:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/search/search.go:220:71: unused-parameter: parameter 'databaseName' seems to be unused, consider removing or renaming it as _ (revive)
+func runListSearchIndexes(cmd *cobra.Command, projectID, clusterName, databaseName, collectionName string, paginationFlags *cli.PaginationFlags) error {
+                                                                      ^
+cmd/atlas/search/search.go:262:24: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+func runGetSearchIndex(cmd *cobra.Command, projectID, clusterName, indexID string) error {
+                       ^
+cmd/atlas/search/search.go:267:27: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+func runCreateSearchIndex(cmd *cobra.Command, projectID, clusterName, databaseName, collectionName, indexName, indexFile, indexType string) error {
+                          ^
+cmd/atlas/search/search.go:272:27: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+func runUpdateSearchIndex(cmd *cobra.Command, projectID, clusterName, indexID, indexFile string) error {
+                          ^
+cmd/atlas/search/search.go:277:27: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+func runDeleteSearchIndex(cmd *cobra.Command, projectID, clusterName, indexID string, force bool) error {
+                          ^
+cmd/atlas/users/users.go:1:1: package-comments: should have a package comment (revive)
+package users
+^
+cmd/atlas/users/users.go:22:1: exported: exported function NewUsersCmd should have comment or be unexported (revive)
+func NewUsersCmd() *cobra.Command {
+^
+cmd/atlas/users/users.go:62:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/users/users.go:119:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/atlas/vpc-endpoints/vpc_endpoints.go:1:1: package-comments: should have a package comment (revive)
+package vpcendpoints
+^
+cmd/atlas/vpc-endpoints/vpc_endpoints.go:20:1: exported: exported function NewVPCEndpointsCmd should have comment or be unexported (revive)
+func NewVPCEndpointsCmd() *cobra.Command {
+^
+cmd/atlas/vpc-endpoints/vpc_endpoints.go:57:14: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		           ^
+cmd/atlas/vpc-endpoints/vpc_endpoints.go:82:14: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		           ^
+cmd/atlas/vpc-endpoints/vpc_endpoints.go:108:14: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		           ^
+cmd/atlas/vpc-endpoints/vpc_endpoints.go:136:14: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		           ^
+cmd/config/config.go:1:1: package-comments: should have a package comment (revive)
+package config
+^
+cmd/config/config.go:146:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/config/config.go:223:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/config/config.go:256:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/config/config.go:428:26: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+func runGenerateTemplate(cmd *cobra.Command, templateType, outputFile, format string) error {
+                         ^
+cmd/config/config.go:519:22: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+func runImportConfig(cmd *cobra.Command, sourceFile, targetFile, format string, merge bool) error {
+                     ^
+cmd/config/config.go:533:22: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+func runExportConfig(cmd *cobra.Command, outputFile, format string, includeSecrets bool) error {
+                     ^
+cmd/config/config.go:546:23: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+func runMigrateConfig(cmd *cobra.Command, fromVersion, toVersion string, backup bool) error {
+                      ^
+cmd/database/collections/collections.go:1:1: package-comments: should have a package comment (revive)
+package collections
+^
+cmd/database/collections/collections.go:23:1: exported: exported function NewCollectionsCmd should have comment or be unexported (revive)
+func NewCollectionsCmd() *cobra.Command {
+^
+cmd/database/collections/collections.go:65:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/database/collections/collections.go:205:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/database/collections/collections.go:792:118: unused-parameter: parameter 'useTempUser' seems to be unused, consider removing or renaming it as _ (revive)
+func resolveConnectionInfo(ctx context.Context, cfg *config.Config, connectionString, clusterName, projectID string, useTempUser bool, databaseName string, progress *ui.ProgressIndicator) (*types.ConnectionInfo, error) {
+                                                                                                                     ^
+cmd/database/database.go:1:1: package-comments: should have a package comment (revive)
+package database
+^
+cmd/database/database.go:76:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/database/database.go:93:41: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+	                                       ^
+cmd/discover/database_enumeration.go:1:1: package-comments: should have a package comment (revive)
+package discover
+^
+cmd/discover/discover.go:26:6: exported: type name will be used as discover.DiscoverOptions by other packages, and that stutters; consider calling this Options (revive)
+type DiscoverOptions struct {
+     ^
+cmd/discover/discover.go:181:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/discover/discover_test.go:440:11: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+			} else {
+				assert.NoError(t, err)
+			}
+cmd/infra/apply.go:1:1: package-comments: should have a package comment (revive)
+package infra
+^
+cmd/infra/apply.go:208:6: exported: exported type ServiceClients should have comment or be unexported (revive)
+type ServiceClients struct {
+     ^
+cmd/infra/apply.go:782:47: unused-parameter: parameter 'opts' seems to be unused, consider removing or renaming it as _ (revive)
+func showPlanAndGetApproval(plan *apply.Plan, opts *ApplyOptions) error {
+                                              ^
+cmd/infra/apply.go:811:61: unused-parameter: parameter 'opts' seems to be unused, consider removing or renaming it as _ (revive)
+func displayExecutionResults(result *apply.ExecutionResult, opts *ApplyOptions) error {
+                                                            ^
+cmd/infra/destroy.go:540:46: unused-parameter: parameter 'opts' seems to be unused, consider removing or renaming it as _ (revive)
+func displayDestroySummary(plan *apply.Plan, opts *DestroyOptions) error {
+                                             ^
+cmd/infra/destroy.go:643:90: unused-parameter: parameter 'opts' seems to be unused, consider removing or renaming it as _ (revive)
+func executeDestroyPlan(ctx context.Context, plan *apply.Plan, services *ServiceClients, opts *DestroyOptions) error {
+                                                                                         ^
+cmd/infra/plan.go:267:43: unused-parameter: parameter 'opts' seems to be unused, consider removing or renaming it as _ (revive)
+func displayPlanSummary(plan *apply.Plan, opts *PlanOptions) error {
+                                          ^
+cmd/infra/show.go:59:34: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		                               ^
+cmd/infra/show.go:122:48: unused-parameter: parameter 'services' seems to be unused, consider removing or renaming it as _ (revive)
+func discoverCurrentState(ctx context.Context, services *ServiceClients, cfg *config.Config, opts *ShowOptions) (*apply.ProjectState, error) {
+                                               ^
+cmd/infra/show.go:253:53: unused-parameter: parameter 'opts' seems to be unused, consider removing or renaming it as _ (revive)
+func displayStateSummary(state *apply.ProjectState, opts *ShowOptions) error {
+                                                    ^
+cmd/infra/validate.go:131:6: exported: exported type ValidationFileResult should have comment or be unexported (revive)
+type ValidationFileResult struct {
+     ^
+cmd/infra/validate.go:143:25: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func validateIndividual(ctx context.Context, files []string, loader *apply.ConfigurationLoader, validationOpts *apply.ValidatorOptions, opts *ValidateOptions) ([]*ValidationFileResult, error) {
+                        ^
+cmd/infra/validate.go:442:101: unused-parameter: parameter 'opts' seems to be unused, consider removing or renaming it as _ (revive)
+func displayValidationSummary(totalFiles, validFiles, invalidFiles, totalErrors, totalWarnings int, opts *ValidateOptions) error {
+                                                                                                    ^
+cmd/infra/validate.go:453:9: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+	} else {
+		fmt.Printf("\n✅ All files are valid\n")
+	}
+cmd/root.go:1:1: package-comments: should have a package comment (revive)
+package cmd
+^
+cmd/root.go:43:47: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		                                            ^
+cmd/root.go:85:48: unused-parameter: parameter 'args' seems to be unused, consider removing or renaming it as _ (revive)
+		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+		                                             ^
+cmd/root.go:95:1: exported: exported function Execute should have comment or be unexported (revive)
+func Execute() {
+^
+cmd/root.go:154:14: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		           ^
+internal/apply/benchmarks_test.go:1:1: package-comments: should have a package comment (revive)
+package apply
+^
+internal/apply/dependencies.go:44:2: exported: exported const DependencyTypeAutomatic should have comment (or a comment on this block) or be unexported (revive)
+	DependencyTypeAutomatic DependencyType = "automatic" // Automatically detected
+	^
+internal/apply/diff.go:18:2: exported: exported const OperationCreate should have comment (or a comment on this block) or be unexported (revive)
+	OperationCreate   OperationType = "Create"
+	^
+internal/apply/diff.go:55:2: exported: exported const ChangeTypeAdd should have comment (or a comment on this block) or be unexported (revive)
+	ChangeTypeAdd    ChangeType = "add"
+	^
+internal/apply/diff.go:73:2: exported: exported const RiskLevelLow should have comment (or a comment on this block) or be unexported (revive)
+	RiskLevelLow      RiskLevel = "low"
+	^
+internal/apply/diff.go:419:23: empty-block: this block is empty, you can remove it (revive)
+		if d.IgnoreDefaults {
+			// Remove default values from comparison
+		}
+internal/apply/diff_formatter.go:322:6: exported: exported type Color should have comment or be unexported (revive)
+type Color string
+     ^
+internal/apply/diff_formatter.go:325:2: exported: exported const ColorReset should have comment (or a comment on this block) or be unexported (revive)
+	ColorReset  Color = "\033[0m"
+	^
+internal/apply/diff_formatter_test.go:159:2: redefines-builtin-id: redefinition of the built-in function delete (revive)
+	delete := formatter.colorizeOperation("Delete")
+	^
+internal/apply/discovery_test.go:216:46: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *MockStateDiscovery) DiscoverProject(ctx context.Context, projectID string) (*ProjectState, error) {
+                                             ^
+internal/apply/discovery_test.go:221:47: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *MockStateDiscovery) DiscoverClusters(ctx context.Context, projectID string) ([]types.ClusterManifest, error) {
+                                              ^
+internal/apply/discovery_test.go:225:52: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *MockStateDiscovery) DiscoverDatabaseUsers(ctx context.Context, projectID string) ([]types.DatabaseUserManifest, error) {
+                                                   ^
+internal/apply/discovery_test.go:229:52: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *MockStateDiscovery) DiscoverNetworkAccess(ctx context.Context, projectID string) ([]types.NetworkAccessManifest, error) {
+                                                   ^
+internal/apply/discovery_test.go:233:54: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *MockStateDiscovery) DiscoverProjectSettings(ctx context.Context, projectID string) (*types.ProjectManifest, error) {
+                                                     ^
+internal/apply/dryrun.go:15:2: exported: exported const DryRunModeQuick should have comment (or a comment on this block) or be unexported (revive)
+	DryRunModeQuick    DryRunMode = "quick"    // Basic validation, fast execution
+	^
+internal/apply/dryrun.go:425:1: exported: exported function NewDefaultDryRunQuotaValidator should have comment or be unexported (revive)
+func NewDefaultDryRunQuotaValidator() *DefaultDryRunQuotaValidator {
+^
+internal/apply/dryrun.go:429:1: exported: exported method DefaultDryRunQuotaValidator.CheckProjectQuotas should have comment or be unexported (revive)
+func (v *DefaultDryRunQuotaValidator) CheckProjectQuotas(ctx context.Context, projectID string, operations []PlannedOperation) ([]QuotaCheckResult, error) {
+^
+internal/apply/dryrun.go:483:1: exported: exported method DefaultDryRunQuotaValidator.GetResourceLimits should have comment or be unexported (revive)
+func (v *DefaultDryRunQuotaValidator) GetResourceLimits(ctx context.Context, projectID string) (map[string]int64, error) {
+^
+internal/apply/dryrun.go:494:1: exported: exported function NewDefaultResourceChecker should have comment or be unexported (revive)
+func NewDefaultResourceChecker() *DefaultResourceChecker {
+^
+internal/apply/dryrun.go:498:1: exported: exported method DefaultResourceChecker.ValidateClusterConfiguration should have comment or be unexported (revive)
+func (c *DefaultResourceChecker) ValidateClusterConfiguration(ctx context.Context, spec types.ClusterSpec) []ResourceValidationResult {
+^
+internal/apply/dryrun.go:521:1: exported: exported method DefaultResourceChecker.ValidateUserConfiguration should have comment or be unexported (revive)
+func (c *DefaultResourceChecker) ValidateUserConfiguration(ctx context.Context, spec types.DatabaseUserSpec) []ResourceValidationResult {
+^
+internal/apply/dryrun.go:544:1: exported: exported method DefaultResourceChecker.ValidateNetworkConfiguration should have comment or be unexported (revive)
+func (c *DefaultResourceChecker) ValidateNetworkConfiguration(ctx context.Context, spec types.NetworkAccessSpec) []ResourceValidationResult {
+^
+internal/apply/dryrun.go:565:1: exported: exported function NewDefaultTimingEstimator should have comment or be unexported (revive)
+func NewDefaultTimingEstimator() *DefaultTimingEstimator {
+^
+internal/apply/dryrun.go:569:1: exported: exported method DefaultTimingEstimator.EstimateOperationDuration should have comment or be unexported (revive)
+func (e *DefaultTimingEstimator) EstimateOperationDuration(operation PlannedOperation) time.Duration {
+^
+internal/apply/dryrun.go:610:1: exported: exported method DefaultTimingEstimator.EstimateTotalDuration should have comment or be unexported (revive)
+func (e *DefaultTimingEstimator) EstimateTotalDuration(operations []PlannedOperation) time.Duration {
+^
+internal/apply/dryrun_formatter.go:387:9: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+	} else {
+		return fmt.Sprintf("%.1fh", d.Hours())
+	}
+internal/apply/enhanced_executor.go:171:45: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (e *EnhancedExecutor) enhanceOperation(ctx context.Context, operation *PlannedOperation) (*PlannedOperation, bool, error) {
+                                            ^
+internal/apply/executor.go:920:45: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (e *AtlasExecutor) updateNetworkAccess(ctx context.Context, operation *PlannedOperation, result *OperationResult) error {
+                                            ^
+internal/apply/executor_test.go:606:101: unused-parameter: parameter 'err' seems to be unused, consider removing or renaming it as _ (revive)
+func createTestOperationWithError(id string, opType OperationType, resourceKind types.ResourceKind, err error) PlannedOperation {
+                                                                                                    ^
+internal/apply/idempotency.go:205:80: unused-parameter: parameter 'resourceKind' seems to be unused, consider removing or renaming it as _ (revive)
+func (im *IdempotencyManager) ComputeResourceFingerprint(resource interface{}, resourceKind types.ResourceKind) (string, error) {
+                                                                               ^
+internal/apply/optimizer.go:78:2: exported: exported const OptimizationParallelization should have comment (or a comment on this block) or be unexported (revive)
+	OptimizationParallelization OptimizationType = "parallelization"
+	^
+internal/apply/plan.go:62:2: exported: exported const PlanStatusDraft should have comment (or a comment on this block) or be unexported (revive)
+	PlanStatusDraft     PlanStatus = "draft"     // Plan created but not approved
+	^
+internal/apply/plan.go:75:2: exported: exported const OperationStatusPending should have comment (or a comment on this block) or be unexported (revive)
+	OperationStatusPending   OperationStatus = "pending"   // Not yet started
+	^
+internal/apply/progress.go:45:2: exported: exported const ProgressEventStart should have comment (or a comment on this block) or be unexported (revive)
+	ProgressEventStart     ProgressEventType = "start"
+	^
+internal/apply/quota_validation.go:173:58: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (v *AtlasQuotaValidator) ValidateDatabaseUserQuotas(ctx context.Context, orgID string, users []types.DatabaseUserConfig) error {
+                                                         ^
+internal/apply/quota_validation.go:206:59: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (v *AtlasQuotaValidator) ValidateNetworkAccessQuotas(ctx context.Context, orgID string, access []types.NetworkAccessConfig) error {
+                                                          ^
+internal/apply/quota_validation.go:241:53: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (v *AtlasQuotaValidator) getOrganizationLimits(ctx context.Context, orgID string) (*OrganizationLimits, error) {
+                                                    ^
+internal/apply/reconcile.go:132:2: exported: exported const DriftTypeConfiguration should have comment (or a comment on this block) or be unexported (revive)
+	DriftTypeConfiguration DriftType = "configuration" // Configuration changes
+	^
+internal/apply/reconcile.go:147:2: exported: exported const DriftSeverityInfo should have comment (or a comment on this block) or be unexported (revive)
+	DriftSeverityInfo     DriftSeverity = "info"     // Informational only
+	^
+internal/apply/reconcile.go:158:2: exported: exported const ReconcileComplexitySimple should have comment (or a comment on this block) or be unexported (revive)
+	ReconcileComplexitySimple   ReconcileComplexity = "simple"   // Simple, safe operations
+	^
+internal/apply/reconcile.go:168:2: exported: exported const ReconcileActionIgnore should have comment (or a comment on this block) or be unexported (revive)
+	ReconcileActionIgnore  ReconcileAction = "ignore"  // Ignore the drift
+	^
+internal/apply/reconcile.go:916:10: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+		} else {
+			return ReconcileActionIgnore
+		}
+internal/apply/reconcile.go:940:49: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (rm *ReconciliationManager) executeAutoFix(ctx context.Context, drift ResourceDrift, reconciliation *ResourceReconciliation) error {
+                                                ^
+internal/apply/recovery.go:58:2: exported: exported const RecoveryStrategyRetry should have comment (or a comment on this block) or be unexported (revive)
+	RecoveryStrategyRetry    RecoveryStrategy = "retry"    // Retry the failed operation
+	^
+internal/apply/recovery.go:115:2: exported: exported const FailureTypeNetwork should have comment (or a comment on this block) or be unexported (revive)
+	FailureTypeNetwork        FailureType = "network"        // Network connectivity issues
+	^
+internal/apply/recovery.go:149:2: exported: exported const ResourceStateUnknown should have comment (or a comment on this block) or be unexported (revive)
+	ResourceStateUnknown      ResourceState = "unknown"
+	^
+internal/apply/recovery.go:161:2: exported: exported const ResourceImpactNone should have comment (or a comment on this block) or be unexported (revive)
+	ResourceImpactNone      ResourceImpact = "none"      // No impact
+	^
+internal/apply/recovery.go:343:114: unused-parameter: parameter 'err' seems to be unused, consider removing or renaming it as _ (revive)
+func (rm *RecoveryManager) generateRecoveryRecommendations(operation *PlannedOperation, failureType FailureType, err error) []RecoveryRecommendation {
+                                                                                                                 ^
+internal/apply/recovery.go:646:81: unused-parameter: parameter 'err' seems to be unused, consider removing or renaming it as _ (revive)
+func (rm *RecoveryManager) calculateAnalysisConfidence(failureType FailureType, err error) float64 {
+                                                                                ^
+internal/apply/recovery.go:689:48: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (rm *RecoveryManager) handleRetryRecovery(ctx context.Context, operation *PlannedOperation, result *RecoveryResult) error {
+                                               ^
+internal/apply/recovery.go:740:47: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (rm *RecoveryManager) handleSkipRecovery(ctx context.Context, operation *PlannedOperation, result *RecoveryResult) error {
+                                              ^
+internal/apply/recovery.go:746:48: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (rm *RecoveryManager) handleAbortRecovery(ctx context.Context, operation *PlannedOperation, result *RecoveryResult) error {
+                                               ^
+internal/apply/recovery.go:752:49: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (rm *RecoveryManager) handleManualRecovery(ctx context.Context, operation *PlannedOperation, result *RecoveryResult) error {
+                                                ^
+internal/apply/recovery.go:963:50: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (rm *RecoveryManager) rollbackClusterUpdate(ctx context.Context, operation *PlannedOperation, result *RecoveryResult, checkpoint *Checkpoint) error {
+                                                 ^
+internal/apply/recovery.go:976:47: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (rm *RecoveryManager) rollbackUserUpdate(ctx context.Context, operation *PlannedOperation, result *RecoveryResult, checkpoint *Checkpoint) error {
+                                              ^
+internal/apply/recovery.go:988:56: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (rm *RecoveryManager) rollbackNetworkAccessUpdate(ctx context.Context, operation *PlannedOperation, result *RecoveryResult, checkpoint *Checkpoint) error {
+                                                       ^
+internal/apply/recovery.go:1000:50: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (rm *RecoveryManager) rollbackClusterDelete(ctx context.Context, operation *PlannedOperation, result *RecoveryResult, checkpoint *Checkpoint) error {
+                                                 ^
+internal/apply/recovery.go:1006:47: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (rm *RecoveryManager) rollbackUserDelete(ctx context.Context, operation *PlannedOperation, result *RecoveryResult, checkpoint *Checkpoint) error {
+                                              ^
+internal/apply/recovery.go:1012:56: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (rm *RecoveryManager) rollbackNetworkAccessDelete(ctx context.Context, operation *PlannedOperation, result *RecoveryResult, checkpoint *Checkpoint) error {
+                                                       ^
+internal/apply/recovery.go:1051:52: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (rm *RecoveryManager) fixInconsistentResource(ctx context.Context, operation *PlannedOperation, result *RecoveryResult) error {
+                                                   ^
+internal/apply/retry.go:18:2: exported: exported const RetryDecisionRetry should have comment (or a comment on this block) or be unexported (revive)
+	RetryDecisionRetry   RetryDecision = "retry"   // Retry the operation
+	^
+internal/apply/retry.go:96:2: exported: exported const CircuitBreakerClosed should have comment (or a comment on this block) or be unexported (revive)
+	CircuitBreakerClosed   CircuitBreakerState = "closed"    // Normal operation
+	^
+internal/apply/retry.go:349:39: unused-parameter: parameter 'operationID' seems to be unused, consider removing or renaming it as _ (revive)
+func (rm *RetryManager) recordSuccess(operationID, circuitKey string) {
+                                      ^
+internal/apply/retry_manual_test.go:17:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	config.ManualRetryCallback = func(ctx context.Context, operation *PlannedOperation, err error, attempt int) RetryDecision {
+	                                  ^
+internal/apply/retry_manual_test.go:63:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	config.ManualRetryCallback = func(ctx context.Context, operation *PlannedOperation, err error, attempt int) RetryDecision {
+	                                  ^
+internal/apply/retry_manual_test.go:100:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	config.ManualRetryCallback = func(ctx context.Context, operation *PlannedOperation, err error, attempt int) RetryDecision {
+	                                  ^
+internal/apply/retry_manual_test.go:209:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	config.ManualRetryCallback = func(ctx context.Context, operation *PlannedOperation, err error, attempt int) RetryDecision {
+	                                  ^
+internal/apply/retry_manual_test.go:265:57: unused-parameter: parameter 'operation' seems to be unused, consider removing or renaming it as _ (revive)
+	config.ManualRetryCallback = func(ctx context.Context, operation *PlannedOperation, err error, attempt int) RetryDecision {
+	                                                       ^
+internal/apply/template.go:171:11: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+			} else {
+				result.Warnings = append(result.Warnings, SubstitutionError{
+					Variable: matches[1],
+					Position: position,
+					Message:  err.Error(),
+					Type:     "warning",
+				})
+				return match // Keep original on error in non-strict mode
+			}
+internal/apply/template.go:196:61: unused-parameter: parameter 'position' seems to be unused, consider removing or renaming it as _ (revive)
+func (tp *TemplateProcessor) handleSimple(matches []string, position int) (string, error) {
+                                                            ^
+internal/apply/template.go:212:66: unused-parameter: parameter 'position' seems to be unused, consider removing or renaming it as _ (revive)
+func (tp *TemplateProcessor) handleWithDefault(matches []string, position int) (string, error) {
+                                                                 ^
+internal/apply/template.go:231:68: unused-parameter: parameter 'position' seems to be unused, consider removing or renaming it as _ (revive)
+func (tp *TemplateProcessor) handleSimpleDefault(matches []string, position int) (string, error) {
+                                                                   ^
+internal/apply/template.go:249:69: unused-parameter: parameter 'position' seems to be unused, consider removing or renaming it as _ (revive)
+func (tp *TemplateProcessor) handleConditionalSet(matches []string, position int) (string, error) {
+                                                                    ^
+internal/apply/template.go:265:71: unused-parameter: parameter 'position' seems to be unused, consider removing or renaming it as _ (revive)
+func (tp *TemplateProcessor) handleConditionalError(matches []string, position int) (string, error) {
+                                                                      ^
+internal/apply/validation.go:293:101: unused-parameter: parameter 'opts' seems to be unused, consider removing or renaming it as _ (revive)
+func validateClusterConfig(cluster *types.ClusterConfig, basePath string, result *ValidationResult, opts *ValidatorOptions) {
+                                                                                                    ^
+internal/apply/validation.go:344:108: unused-parameter: parameter 'opts' seems to be unused, consider removing or renaming it as _ (revive)
+func validateDatabaseUserConfig(user *types.DatabaseUserConfig, basePath string, result *ValidationResult, opts *ValidatorOptions) {
+                                                                                                           ^
+internal/apply/validation.go:374:115: unused-parameter: parameter 'opts' seems to be unused, consider removing or renaming it as _ (revive)
+func validateNetworkAccessConfig(netAccess *types.NetworkAccessConfig, basePath string, result *ValidationResult, opts *ValidatorOptions) {
+                                                                                                                  ^
+internal/apply/validation.go:602:30: unused-parameter: parameter 'manifest' seems to be unused, consider removing or renaming it as _ (revive)
+func validateProjectManifest(manifest *types.ResourceManifest, basePath string, result *ValidationResult, opts *ValidatorOptions) {
+                             ^
+internal/apply/validation.go:608:87: unused-parameter: parameter 'opts' seems to be unused, consider removing or renaming it as _ (revive)
+func validateResourceDependencies(doc *types.ApplyDocument, result *ValidationResult, opts *ValidatorOptions) {
+                                                                                      ^
+internal/apply/validation.go:647:83: unused-parameter: parameter 'opts' seems to be unused, consider removing or renaming it as _ (revive)
+func validateCrossFieldRules(config *types.ApplyConfig, result *ValidationResult, opts *ValidatorOptions) {
+                                                                                  ^
+internal/apply/validation.go:878:106: unused-parameter: parameter 'opts' seems to be unused, consider removing or renaming it as _ (revive)
+func validateMetadataFields(metadata *types.ResourceMetadata, basePath string, result *ValidationResult, opts *ValidatorOptions) {
+                                                                                                         ^
+internal/apply/validation.go:1186:92: unused-parameter: parameter 'opts' seems to be unused, consider removing or renaming it as _ (revive)
+func validateCrossDocumentDependencies(doc *types.ApplyDocument, result *ValidationResult, opts *ValidatorOptions) {
+                                                                                           ^
+internal/cli/completion.go:73:14: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		           ^
+internal/cli/completion.go:407:53: unused-parameter: parameter 'rootCmd' seems to be unused, consider removing or renaming it as _ (revive)
+func (si *ShellIntegration) SetupAdvancedCompletion(rootCmd *cobra.Command, atlasAPIKey, atlasPublicKey string) {
+                                                    ^
+internal/cli/completion.go:439:14: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		           ^
+internal/cli/completion.go:451:14: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+		RunE: func(cmd *cobra.Command, args []string) error {
+		           ^
+internal/cli/completion_unit_test.go:150:23: unused-parameter: parameter 't' seems to be unused, consider removing or renaming it as _ (revive)
+		t.Run(tt.name, func(t *testing.T) {
+		                    ^
+internal/cli/enhanced_errors.go:66:2: exported: exported const CategoryAuthentication should have comment (or a comment on this block) or be unexported (revive)
+	CategoryAuthentication ErrorCategory = "authentication"
+	^
+internal/cli/enhanced_errors_unit_test.go:90:23: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+	originalRunE := func(cmd *cobra.Command, args []string) error {
+	                     ^
+internal/cli/enhanced_errors_unit_test.go:118:23: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+	originalRunE := func(cmd *cobra.Command, args []string) error {
+	                     ^
+internal/cli/enhanced_errors_unit_test.go:172:23: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+	originalRunE := func(cmd *cobra.Command, args []string) error {
+	                     ^
+internal/cli/enhanced_errors_unit_test.go:208:16: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+	runE1 := func(cmd *cobra.Command, args []string) error {
+	              ^
+internal/cli/enhanced_errors_unit_test.go:213:16: unused-parameter: parameter 'cmd' seems to be unused, consider removing or renaming it as _ (revive)
+	runE2 := func(cmd *cobra.Command, args []string) error {
+	              ^
+internal/cli/error_recovery.go:74:52: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (erm *ErrorRecoveryManager) AnalyzeAndRecover(ctx context.Context, err error) *RecoveryResult {
+                                                   ^
+internal/cli/error_recovery.go:301:70: unused-parameter: parameter 'context' seems to be unused, consider removing or renaming it as _ (revive)
+func (erm *ErrorRecoveryManager) generateApplySuggestions(err error, context ErrorContext) []ErrorSuggestion {
+                                                                     ^
+internal/cli/error_recovery.go:351:73: unused-parameter: parameter 'context' seems to be unused, consider removing or renaming it as _ (revive)
+func (erm *ErrorRecoveryManager) generateDatabaseSuggestions(err error, context ErrorContext) []ErrorSuggestion {
+                                                                        ^
+internal/cli/error_recovery.go:386:71: unused-parameter: parameter 'context' seems to be unused, consider removing or renaming it as _ (revive)
+func (erm *ErrorRecoveryManager) generateConfigSuggestions(err error, context ErrorContext) []ErrorSuggestion {
+                                                                      ^
+internal/cli/error_recovery.go:445:50: unused-parameter: parameter 'suggestion' seems to be unused, consider removing or renaming it as _ (revive)
+func (se *SuggestionEngine) isSuggestionRelevant(suggestion ErrorSuggestion, errorMessage string, context ErrorContext) bool {
+                                                 ^
+internal/cli/signals.go:74:68: unused-parameter: parameter 'config' seems to be unused, consider removing or renaming it as _ (revive)
+func (sh *SignalHandler) RegisterCleanupWithConfig(fn CleanupFunc, config CleanupConfig) {
+                                                                   ^
+internal/cli/signals.go:235:14: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	return func(ctx context.Context) error {
+	            ^
+internal/cli/signals.go:247:14: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	return func(ctx context.Context) error {
+	            ^
+internal/cli/signals_test.go:77:22: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	cleanupFunc := func(ctx context.Context) error {
+	                    ^
+internal/cli/signals_test.go:102:22: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	cleanupFunc := func(ctx context.Context) error {
+	                    ^
+internal/cli/signals_test.go:136:22: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	cleanupFunc := func(ctx context.Context) error {
+	                    ^
+internal/cli/signals_test.go:177:34: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	cleanupFunc := CleanupFunc(func(ctx context.Context) error {
+	                                ^
+internal/clients/atlas/client_test.go:17:40: unused-parameter: parameter 'api' seems to be unused, consider removing or renaming it as _ (revive)
+	err = c.Do(context.Background(), func(api *admin.APIClient) error {
+	                                      ^
+internal/clients/atlas/client_test.go:39:23: unused-parameter: parameter 'api' seems to be unused, consider removing or renaming it as _ (revive)
+	err = c.Do(ctx, func(api *admin.APIClient) error {
+	                     ^
+internal/clients/mongodb/mock.go:79:29: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (mc *MockClient) Close(ctx context.Context) error {
+                            ^
+internal/clients/mongodb/mock.go:85:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (mc *MockClient) ListDatabases(ctx context.Context) ([]types.DatabaseInfo, error) {
+                                    ^
+internal/clients/mongodb/mock.go:95:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (mc *MockClient) ListCollections(ctx context.Context, dbName string) ([]types.CollectionInfo, error) {
+                                      ^
+internal/clients/mongodb/mock.go:113:40: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (mc *MockClient) CreateCollection(ctx context.Context, dbName, collectionName string, opts *options.CreateCollectionOptions) error {
+                                       ^
+internal/clients/mongodb/mock.go:138:38: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (mc *MockClient) DropCollection(ctx context.Context, dbName, collectionName string) error {
+                                     ^
+internal/clients/mongodb/mock.go:165:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (mc *MockClient) GetCollectionStats(ctx context.Context, dbName, collectionName string) (*types.CollectionStats, error) {
+                                         ^
+internal/clients/mongodb/mock.go:185:28: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (mc *MockClient) Ping(ctx context.Context) error {
+                           ^
+internal/config/config.go:13:6: exported: exported type OutputFormat should have comment or be unexported (revive)
+type OutputFormat string
+     ^
+internal/config/config.go:16:2: exported: exported const OutputTable should have comment (or a comment on this block) or be unexported (revive)
+	OutputTable OutputFormat = "table"
+	^
+internal/config/config.go:39:6: exported: exported type Config should have comment or be unexported (revive)
+type Config struct {
+     ^
+internal/logging/logger.go:20:2: exported: exported const LevelInfo should have comment (or a comment on this block) or be unexported (revive)
+	LevelInfo
+	^
+internal/logging/logger.go:427:1: exported: comment on exported function Debug should be of the form "Debug ..." (revive)
+// Global convenience functions.
+^
+internal/logging/logger.go:429:1: exported: exported function Info should have comment or be unexported (revive)
+func Info(msg string, args ...any)     { Default().Info(msg, args...) }
+^
+internal/logging/logger.go:430:1: exported: exported function Warn should have comment or be unexported (revive)
+func Warn(msg string, args ...any)     { Default().Warn(msg, args...) }
+^
+internal/logging/logger.go:431:1: exported: exported function Error should have comment or be unexported (revive)
+func Error(msg string, args ...any)    { Default().Error(msg, args...) }
+^
+internal/logging/logger.go:432:1: exported: exported function Critical should have comment or be unexported (revive)
+func Critical(msg string, args ...any) { Default().Critical(msg, args...) }
+^
+internal/logging/logger_enhanced_test.go:110:9: context-keys-type: should not use basic type untyped string as key in context.WithValue (revive)
+	ctx := context.WithValue(context.Background(), "test-key", "test-value")
+	       ^
+internal/logging/logger_enhanced_test.go:390:9: context-keys-type: should not use basic type untyped string as key in context.WithValue (revive)
+	ctx := context.WithValue(context.Background(), "trace_id", "trace-123")
+	       ^
+internal/logging/logger_test.go:173:9: context-keys-type: should not use basic type untyped string as key in context.WithValue (revive)
+	ctx := context.WithValue(context.Background(), "key", "value")
+	       ^
+internal/logging/logger_test.go:292:9: context-keys-type: should not use basic type untyped string as key in context.WithValue (revive)
+	ctx := context.WithValue(context.Background(), "test", "value")
+	       ^
+internal/services/atlas/clusters.go:1:1: package-comments: should have a package comment (revive)
+package atlas
+^
+internal/services/atlas/network_peering.go:205:73: unused-parameter: parameter 'projectID' seems to be unused, consider removing or renaming it as _ (revive)
+func (s *NetworkPeeringService) ValidatePeeringCIDRs(_ context.Context, projectID string, newCIDR string) error {
+                                                                        ^
+internal/services/atlas/vpc_endpoints.go:62:31: unused-parameter: parameter 'api' seems to be unused, consider removing or renaming it as _ (revive)
+	err := s.client.Do(ctx, func(api *admin.APIClient) error {
+	                             ^
+internal/services/atlas/vpc_endpoints.go:71:53: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (s *VPCEndpointsService) CreatePrivateEndpoint(ctx context.Context, projectID string, endpoint *admin.PrivateLinkEndpoint) (*admin.PrivateLinkEndpoint, error) {
+                                                    ^
+internal/services/atlas/vpc_endpoints.go:86:53: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (s *VPCEndpointsService) DeletePrivateEndpoint(ctx context.Context, projectID, endpointID string) error {
+                                                    ^
+internal/services/atlas/vpc_endpoints.go:108:51: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (s *VPCEndpointsService) GetConnectionString(ctx context.Context, projectID, endpointID string) (string, error) {
+                                                  ^
+internal/services/atlas/vpc_endpoints.go:118:56: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (s *VPCEndpointsService) WaitForEndpointAvailable(ctx context.Context, projectID, endpointID string) error {
+                                                       ^
+internal/services/database/additional_test.go:1:1: package-comments: should have a package comment (revive)
+package database
+^
+internal/services/database/service.go:159:7: redefines-builtin-id: redefinition of the built-in function max (revive)
+			if max, ok := opts["max"].(int64); ok {
+			   ^
+internal/services/database/temp_user.go:14:6: exported: type name will be used as database.DatabaseUsersServiceInterface by other packages, and that stutters; consider calling this UsersServiceInterface (revive)
+type DatabaseUsersServiceInterface interface {
+     ^
+internal/services/database/temp_user_test.go:89:22: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+				CreateFunc: func(ctx context.Context, projectID string, user *admin.CloudDatabaseUser) (*admin.CloudDatabaseUser, error) {
+				                 ^
+internal/services/database/temp_user_test.go:177:32: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	mockService.CreateFunc = func(ctx context.Context, projectID string, user *admin.CloudDatabaseUser) (*admin.CloudDatabaseUser, error) {
+	                              ^
+internal/services/database/temp_user_test.go:235:32: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	mockService.CreateFunc = func(ctx context.Context, projectID string, user *admin.CloudDatabaseUser) (*admin.CloudDatabaseUser, error) {
+	                              ^
+internal/services/database/temp_user_test.go:327:22: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+				CreateFunc: func(ctx context.Context, projectID string, user *admin.CloudDatabaseUser) (*admin.CloudDatabaseUser, error) {
+				                 ^
+internal/services/database/temp_user_test.go:461:20: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+				ListFunc: func(ctx context.Context, projectID string) ([]admin.CloudDatabaseUser, error) {
+				               ^
+internal/services/database/temp_user_test.go:464:22: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+				DeleteFunc: func(ctx context.Context, projectID, databaseName, username string) error {
+				                 ^
+internal/types/apply.go:12:2: exported: exported const APIVersionV1Alpha1 should have comment (or a comment on this block) or be unexported (revive)
+	APIVersionV1Alpha1 APIVersion = "matlas.mongodb.com/v1alpha1"
+	^
+internal/types/apply.go:21:2: exported: exported const KindProject should have comment (or a comment on this block) or be unexported (revive)
+	KindProject       ResourceKind = "Project"
+	^
+internal/types/apply.go:32:2: exported: exported const StatusPending should have comment (or a comment on this block) or be unexported (revive)
+	StatusPending  ResourceStatus = "Pending"
+	^
+internal/types/config.go:1:9: var-naming: avoid meaningless package names (revive)
+package types
+        ^
+internal/types/config.go:7:2: exported: exported const DeletionPolicyDelete should have comment (or a comment on this block) or be unexported (revive)
+	DeletionPolicyDelete   DeletionPolicy = "Delete"   // Delete the resource immediately
+	^
+internal/ui/confirm.go:1:1: package-comments: should have a package comment (revive)
+package ui
+^
+internal/ui/confirm_test.go:236:28: unused-parameter: parameter 'p' seems to be unused, consider removing or renaming it as _ (revive)
+func (e *errorReader) Read(p []byte) (n int, err error) {
+                           ^
+internal/validation/dependencies.go:284:89: unused-parameter: parameter 'graph' seems to be unused, consider removing or renaming it as _ (revive)
+func (dv *DependencyValidator) validateClusterDependencies(config *types.ProjectConfig, graph *DependencyGraph) []DependencyIssue {
+                                                                                        ^
+internal/validation/dependencies.go:328:94: unused-parameter: parameter 'graph' seems to be unused, consider removing or renaming it as _ (revive)
+func (dv *DependencyValidator) validateDatabaseUserDependencies(config *types.ProjectConfig, graph *DependencyGraph) []DependencyIssue {
+                                                                                             ^
+internal/validation/dependencies.go:383:95: unused-parameter: parameter 'graph' seems to be unused, consider removing or renaming it as _ (revive)
+func (dv *DependencyValidator) validateNetworkAccessDependencies(config *types.ProjectConfig, graph *DependencyGraph) []DependencyIssue {
+                                                                                              ^
+internal/validation/schema.go:202:28: empty-block: this block is empty, you can remove it (revive)
+			if schema.Pattern != "" {
+				// For simplicity, we'll skip regex validation for now
+				// In production, you'd use regexp.MatchString here
+			}
+internal/validation/schema.go:303:2: redefines-builtin-id: redefinition of the built-in type error (revive)
+	error := SchemaValidationError{
+		Path:     path,
+		Property: property,
+		Value:    value,
+		Expected: expected,
+		Message:  message,
+		Severity: severity,
+	}
+internal/validation/validation.go:30:6: exported: type name will be used as validation.ValidationSeverity by other packages, and that stutters; consider calling this Severity (revive)
+type ValidationSeverity int
+     ^
+internal/validation/validation.go:33:2: exported: exported const SeverityError should have comment (or a comment on this block) or be unexported (revive)
+	SeverityError ValidationSeverity = iota
+	^
+internal/validation/validation.go:39:6: exported: type name will be used as validation.ValidationIssue by other packages, and that stutters; consider calling this Issue (revive)
+type ValidationIssue struct {
+     ^
+internal/validation/validation.go:296:49: redefines-builtin-id: redefinition of the built-in function min (revive)
+func ValidateRange(value int, fieldName string, min, max int) error {
+                                                ^
+test/observability_demo.go:120:74: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	handler.RegisterCleanup(cli.CreateResourceCleanup("demo-resource", func(ctx context.Context) error {
+	                                                                        ^
+cmd/infra/apply.go:474:6: QF1001: could apply De Morgan's law (staticcheck)
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+		   ^
+cmd/infra/helpers_test.go:5:2: SA1019: "io/ioutil" has been deprecated since Go 1.19: As of Go 1.16, the same functionality is now provided by package [io] or package [os], and those implementations should be preferred in new code. See the specific function documentation for details. (staticcheck)
+	"io/ioutil"
+	^
+internal/apply/diff.go:407:3: SA4006: this value of resourceValue is never used (staticcheck)
+		resourceValue = resourceValue.Elem()
+		^
+internal/apply/format_converter.go:371:7: QF1001: could apply De Morgan's law (staticcheck)
+			if !((sanitized[0] >= 'a' && sanitized[0] <= 'z') ||
+			   ^
+internal/apply/format_converter.go:377:7: QF1001: could apply De Morgan's law (staticcheck)
+			if !((lastChar >= 'a' && lastChar <= 'z') ||
+			   ^
+internal/apply/idempotency_test.go:268:5: SA5011(related information): this check suggests that the pointer can be nil (staticcheck)
+	if ownership4 == nil {
+	   ^
+internal/apply/idempotency_test.go:271:16: SA5011: possible nil pointer dereference (staticcheck)
+	if ownership4.OwnerPlanID != planID2 {
+	              ^
+internal/apply/loader_test.go:572:5: SA5011(related information): this check suggests that the pointer can be nil (staticcheck)
+	if cached == nil {
+	   ^
+internal/apply/loader_test.go:575:12: SA5011: possible nil pointer dereference (staticcheck)
+	if cached.Content != result.Content {
+	          ^
+internal/apply/plan_test.go:578:3: QF1003: could use tagged switch on op.ResourceType (staticcheck)
+		if op.ResourceType == types.KindCluster {
+		^
+internal/apply/reconcile.go:621:2: S1008: should use 'return complexityOrder[drift.Complexity] <= complexityOrder[rule.MaxComplexity]' instead of 'if complexityOrder[drift.Complexity] > complexityOrder[rule.MaxComplexity] { return false }; return true' (staticcheck)
+	if complexityOrder[drift.Complexity] > complexityOrder[rule.MaxComplexity] {
+	^
+internal/apply/validation.go:1170:30: QF1004: could use strings.ReplaceAll instead (staticcheck)
+			Code:     strings.ToUpper(strings.Replace(issue.DependencyType, " ", "_", -1)),
+			                          ^
+internal/apply/validation.go:1416:6: QF1001: could apply De Morgan's law (staticcheck)
+		if !((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f') || (char >= 'A' && char <= 'F')) {
+		   ^
+internal/cli/enhanced_errors.go:37:21: QF1008: could remove embedded field "ErrorFormatter" from selector (staticcheck)
+	baseMessage := eef.ErrorFormatter.Format(err)
+	                   ^
+internal/clients/mongodb/client.go:316:4: SA1019: indexOptions.SetBackground is deprecated: This option has been deprecated in MongoDB version 4.2. (staticcheck)
+			indexOptions.SetBackground(background)
+			^
+internal/output/create_formatters.go:311:5: QF1003: could use tagged switch on fieldName (staticcheck)
+				if fieldName == "GroupId" {
+				^
+cmd/atlas/users/users.go:611:40: unnecessary conversion (unconvert)
+	password, err := term.ReadPassword(int(syscall.Stdin))
+	                                      ^
+cmd/infra/validate.go:558:22: unnecessary conversion (unconvert)
+					if pm, ok := any(res.Spec).(types.ProjectConfig); ok {
+					                ^
+cmd/infra/validate.go:575:22: unnecessary conversion (unconvert)
+					if cm, ok := any(res.Spec).(types.ClusterSpec); ok {
+					                ^
+cmd/infra/validate.go:585:22: unnecessary conversion (unconvert)
+					if um, ok := any(res.Spec).(types.DatabaseUserSpec); ok {
+					                ^
+cmd/infra/validate.go:595:22: unnecessary conversion (unconvert)
+					if nm, ok := any(res.Spec).(types.NetworkAccessSpec); ok {
+					                ^
+cmd/atlas/clusters/clusters.go:1105:168: buildSingleRegionConfig - result 1 (error) is always nil (unparam)
+func buildSingleRegionConfig(provider, region, tier string, diskSizeGB, diskIOPS int, ebsVolumeType string, priority, nodeCount int) (admin.CloudRegionConfig20240805, error) {
+                                                                                                                                                                       ^
+cmd/database/collections/collections.go:853:51: mustMarkFlagsOneRequired - name1 always receives "connection-string" (unparam)
+func mustMarkFlagsOneRequired(cmd *cobra.Command, name1, name2 string) {
+                                                  ^
+cmd/database/collections/collections.go:858:56: mustMarkFlagsRequiredTogether - name1 always receives "cluster" (unparam)
+func mustMarkFlagsRequiredTogether(cmd *cobra.Command, name1, name2 string) {
+                                                       ^
+cmd/discover/discover.go:428:103: applyFiltering - result 0 (error) is always nil (unparam)
+func applyFiltering(result *DiscoveryResult, projectState *apply.ProjectState, opts *DiscoverOptions) error {
+                                                                                                      ^
+cmd/infra/apply.go:610:90: mergeApplyDocumentToState - result 0 (error) is always nil (unparam)
+func mergeApplyDocumentToState(state *apply.ProjectState, applyDoc *types.ApplyDocument) error {
+                                                                                         ^
+internal/apply/dependencies.go:148:62: (*DependencyResolver).applyRule - result 0 (error) is always nil (unparam)
+func (dr *DependencyResolver) applyRule(rule DependencyRule) error {
+                                                             ^
+internal/apply/diff.go:141:107: (*DiffEngine).computeProjectSettingsDiff - result 0 (error) is always nil (unparam)
+func (d *DiffEngine) computeProjectSettingsDiff(desired *ProjectState, current *ProjectState, diff *Diff) error {
+                                                                                                          ^
+internal/apply/diff.go:172:100: (*DiffEngine).computeClustersDiff - result 0 (error) is always nil (unparam)
+func (d *DiffEngine) computeClustersDiff(desired *ProjectState, current *ProjectState, diff *Diff) error {
+                                                                                                   ^
+internal/apply/diff.go:195:105: (*DiffEngine).computeDatabaseUsersDiff - result 0 (error) is always nil (unparam)
+func (d *DiffEngine) computeDatabaseUsersDiff(desired *ProjectState, current *ProjectState, diff *Diff) error {
+                                                                                                        ^
+internal/apply/diff.go:247:105: (*DiffEngine).computeNetworkAccessDiff - result 0 (error) is always nil (unparam)
+func (d *DiffEngine) computeNetworkAccessDiff(desired *ProjectState, current *ProjectState, diff *Diff) error {
+                                                                                                        ^
+internal/apply/dryrun.go:185:139: (*DryRunExecutor).simulateOperation - result 1 (error) is always nil (unparam)
+func (dre *DryRunExecutor) simulateOperation(ctx context.Context, operation PlannedOperation, result *DryRunResult) (*SimulatedOperation, error) {
+                                                                                                                                          ^
+internal/apply/enhanced_executor.go:240:100: (*EnhancedExecutor).executeEnhancedPlan - result 1 (error) is always nil (unparam)
+func (e *EnhancedExecutor) executeEnhancedPlan(ctx context.Context, plan *Plan) (*ExecutionResult, error) {
+                                                                                                   ^
+internal/apply/executor.go:1058:94: buildDefaultRegionConfig - result 1 (error) is always nil (unparam)
+func buildDefaultRegionConfig(config *types.ClusterConfig) (admin.CloudRegionConfig20240805, error) {
+                                                                                             ^
+internal/apply/validation.go:1113:93: addResourceToGraph - namespace always receives "" (unparam)
+func addResourceToGraph(graph *types.DependencyGraph, name string, kind types.ResourceKind, namespace string, dependencies []string) {
+                                                                                            ^
+internal/validation/dependencies.go:107:108: (*DependencyValidator).buildProjectDependencyGraph - result 1 (error) is always nil (unparam)
+func (dv *DependencyValidator) buildProjectDependencyGraph(config *types.ProjectConfig) (*DependencyGraph, error) {
+                                                                                                           ^
+cmd/atlas/network-containers/network_containers.go:436:6: func formatTimeValue is unused (unused)
+func formatTimeValue(ptr *time.Time) string {
+     ^
+cmd/atlas/network-peering/network_peering.go:448:6: func formatTimeValue is unused (unused)
+func formatTimeValue(ptr *time.Time) string {
+     ^
+cmd/atlas/search/search.go:283:6: func getStringValue is unused (unused)
+func getStringValue(ptr *string) string {
+     ^
+cmd/atlas/search/search.go:290:6: func formatTimeValue is unused (unused)
+func formatTimeValue(ptr *time.Time) string {
+     ^
+cmd/atlas/vpc-endpoints/vpc_endpoints.go:149:6: func runListVPCEndpoints is unused (unused)
+func runListVPCEndpoints(cmd *cobra.Command, projectID string, paginationFlags *cli.PaginationFlags) error {
+     ^
+cmd/atlas/vpc-endpoints/vpc_endpoints.go:228:6: func runGetVPCEndpoint is unused (unused)
+func runGetVPCEndpoint(cmd *cobra.Command, projectID, endpointID string) error {
+     ^
+cmd/atlas/vpc-endpoints/vpc_endpoints.go:279:6: func runCreateVPCEndpoint is unused (unused)
+func runCreateVPCEndpoint(cmd *cobra.Command, projectID, cloudProvider, region string) error {
+     ^
+cmd/atlas/vpc-endpoints/vpc_endpoints.go:339:6: func runDeleteVPCEndpoint is unused (unused)
+func runDeleteVPCEndpoint(cmd *cobra.Command, projectID, endpointID string, force bool) error {
+     ^
+cmd/atlas/vpc-endpoints/vpc_endpoints.go:401:6: func getStringValue is unused (unused)
+func getStringValue(ptr *string) string {
+     ^
+cmd/atlas/vpc-endpoints/vpc_endpoints.go:408:6: func formatTimeValue is unused (unused)
+func formatTimeValue(ptr *time.Time) string {
+     ^
+cmd/infra/apply.go:1076:6: func createMockPlan is unused (unused)
+func createMockPlan(projectID string) *apply.Plan {
+     ^
+cmd/infra/helpers_test.go:341:6: func createTempConfigFile is unused (unused)
+func createTempConfigFile(t *testing.T, content string) string {
+     ^
+cmd/root.go:33:2: var cfg is unused (unused)
+	cfg              *config.Config
+	^
+internal/apply/dependencies.go:469:31: func (*DependencyResolver).sameProject is unused (unused)
+func (dr *DependencyResolver) sameProject(source, target interface{}) bool {
+                              ^
+internal/apply/dependencies.go:476:31: func (*DependencyResolver).extractProjectName is unused (unused)
+func (dr *DependencyResolver) extractProjectName(spec interface{}) string {
+                              ^
+internal/apply/executor.go:52:2: field idempotencyManager is unused (unused)
+	idempotencyManager *IdempotencyManager
+	^
+internal/apply/executor.go:53:2: field recoveryManager is unused (unused)
+	recoveryManager    *RecoveryManager
+	^
+internal/apply/progress.go:341:2: field mu is unused (unused)
+	mu         sync.RWMutex
+	^
+internal/apply/validation.go:852:6: func validateResourceMetadata is unused (unused)
+func validateResourceMetadata(metadata *types.ResourceMetadata, basePath string, result *ValidationResult, opts *ValidatorOptions) {
+     ^
+internal/clients/atlas/retry_stress_test.go:13:6: type mockTransientError is unused (unused)
+type mockTransientError struct {
+     ^
+internal/clients/atlas/retry_stress_test.go:17:29: func mockTransientError.Error is unused (unused)
+func (e mockTransientError) Error() string {
+                            ^
+internal/services/atlas/network_peering.go:218:6: func getSafeString is unused (unused)
+func getSafeString(ptr *string) string {
+     ^
+483 issues:
+* dupl: 11
+* errcheck: 45
+* gocognit: 27
+* goconst: 41
+* gosec: 30
+* ineffassign: 3
+* prealloc: 18
+* revive: 250
+* staticcheck: 16
+* unconvert: 5
+* unparam: 15
+* unused: 22

@@ -91,10 +91,8 @@ func (ds *DocumentService) FindDocuments(ctx context.Context, connInfo *types.Co
 
 	// Convert filter to BSON
 	bsonFilter := bson.M{}
-	if filter != nil {
-		for k, v := range filter {
-			bsonFilter[k] = v
-		}
+	for k, v := range filter {
+		bsonFilter[k] = v
 	}
 
 	// Set up find options
@@ -107,7 +105,7 @@ func (ds *DocumentService) FindDocuments(ctx context.Context, connInfo *types.Co
 	if err != nil {
 		return nil, fmt.Errorf("failed to find documents: %w", err)
 	}
-	defer cursor.Close(ctx)
+	defer func() { _ = cursor.Close(ctx) }()
 
 	var documents []Document
 	for cursor.Next(ctx) {
@@ -252,10 +250,8 @@ func (ds *DocumentService) CountDocuments(ctx context.Context, connInfo *types.C
 
 	// Convert filter to BSON
 	bsonFilter := bson.M{}
-	if filter != nil {
-		for k, v := range filter {
-			bsonFilter[k] = v
-		}
+	for k, v := range filter {
+		bsonFilter[k] = v
 	}
 
 	count, err := collection.CountDocuments(ctx, bsonFilter)

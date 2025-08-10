@@ -393,13 +393,13 @@ func (cl *ConfigurationLoader) loadRawContent(source string) (string, error) {
 			return "", fmt.Errorf("stdin input not allowed")
 		}
 		reader = os.Stdin
-		size = cl.options.MaxFileSize // Use max size for stdin
+		size = cl.options.MaxFileSize // Use max size for stdin (used to configure limit reader)
 	} else {
-		file, err := os.Open(source)
+		file, err := os.Open(source) //nolint:gosec // user-provided path is expected for CLI tool
 		if err != nil {
 			return "", fmt.Errorf("failed to open file %s: %w", source, err)
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		// Check file size
 		info, err := file.Stat()
@@ -416,7 +416,7 @@ func (cl *ConfigurationLoader) loadRawContent(source string) (string, error) {
 	}
 
 	// Read content with size limit
-	limited := io.LimitReader(reader, cl.options.MaxFileSize)
+	limited := io.LimitReader(reader, size)
 	content, err := io.ReadAll(limited)
 	if err != nil {
 		return "", fmt.Errorf("failed to read content from %s: %w", source, err)

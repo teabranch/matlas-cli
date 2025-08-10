@@ -171,21 +171,21 @@ func (s *EncryptionService) validateEncryptionConfig(encryption *admin.Encryptio
 	if encryption.AwsKms != nil {
 		hasProvider = true
 		if err := s.validateAWSKMSEncryption(encryption.AwsKms); err != nil {
-			return fmt.Errorf("AWS KMS validation failed: %w", err)
+			return fmt.Errorf("aws KMS validation failed: %w", err)
 		}
 	}
 
 	if encryption.AzureKeyVault != nil {
 		hasProvider = true
 		if err := s.validateAzureKeyVaultEncryption(encryption.AzureKeyVault); err != nil {
-			return fmt.Errorf("Azure Key Vault validation failed: %w", err)
+			return fmt.Errorf("azure key vault validation failed: %w", err)
 		}
 	}
 
 	if encryption.GoogleCloudKms != nil {
 		hasProvider = true
 		if err := s.validateGoogleCloudKMSEncryption(encryption.GoogleCloudKms); err != nil {
-			return fmt.Errorf("Google Cloud KMS validation failed: %w", err)
+			return fmt.Errorf("google cloud KMS validation failed: %w", err)
 		}
 	}
 

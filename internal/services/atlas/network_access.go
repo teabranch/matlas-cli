@@ -6,8 +6,8 @@ import (
 	"net"
 	"strings"
 
-	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
 	atlasclient "github.com/teabranch/matlas-cli/internal/clients/atlas"
+	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
 )
 
 // NetworkAccessListsService provides CRUD operations for Atlas IP Access Lists (network access control).
@@ -15,6 +15,7 @@ type NetworkAccessListsService struct {
 	client *atlasclient.Client
 }
 
+// NewNetworkAccessListsService creates a new NetworkAccessListsService.
 func NewNetworkAccessListsService(client *atlasclient.Client) *NetworkAccessListsService {
 	return &NetworkAccessListsService{client: client}
 }

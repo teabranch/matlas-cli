@@ -37,8 +37,14 @@ func convertError(err error) error {
 	}
 }
 
-// Helper predicates for errors.Is checks.
-func IsNotFound(err error) bool     { return errors.Is(err, ErrNotFound) }
-func IsConflict(err error) bool     { return errors.Is(err, ErrConflict) }
+// IsNotFound reports whether err represents a not-found condition.
+func IsNotFound(err error) bool { return errors.Is(err, ErrNotFound) }
+
+// IsConflict reports whether err represents a conflict condition.
+func IsConflict(err error) bool { return errors.Is(err, ErrConflict) }
+
+// IsUnauthorized reports whether err represents an authentication/authorization error.
 func IsUnauthorized(err error) bool { return errors.Is(err, ErrUnauthorized) }
-func IsTransient(err error) bool    { return errors.Is(err, ErrTransient) }
+
+// IsTransient reports whether err represents a transient/retryable failure.
+func IsTransient(err error) bool { return errors.Is(err, ErrTransient) }

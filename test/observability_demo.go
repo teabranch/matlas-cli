@@ -1,3 +1,4 @@
+// Package main contains a standalone demo binary showcasing observability features.
 package main
 
 import (

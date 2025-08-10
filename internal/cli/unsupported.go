@@ -1,3 +1,4 @@
+// Package cli provides command-line user experience helpers (errors, completion, recovery).
 package cli
 
 import "fmt"
@@ -14,7 +15,7 @@ func UnsupportedFeatureError(feature string, details ...string) error {
 
 // UnsupportedSearchAPIError returns a consistent, helpful multi-line message for Atlas Search.
 func UnsupportedSearchAPIError() error {
-	return fmt.Errorf(`Atlas Search indexes are not yet supported by the Atlas Go SDK.
+	return fmt.Errorf(`atlas search indexes are not yet supported by the Atlas Go SDK.
 
 This feature will be available when the Atlas SDK includes the following APIs:
 - AtlasSearchApi.ListAtlasSearchIndexes()
@@ -23,7 +24,7 @@ This feature will be available when the Atlas SDK includes the following APIs:
 - AtlasSearchApi.UpdateAtlasSearchIndex()
 - AtlasSearchApi.DeleteAtlasSearchIndex()
 
-For now, you can manage Atlas Search indexes through:
+For now, you can manage atlas search indexes through:
 - MongoDB Atlas UI (https://cloud.mongodb.com)
 - Official Atlas CLI (https://www.mongodb.com/docs/atlas/cli/)
 - Direct Atlas API calls`)

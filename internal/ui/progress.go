@@ -62,14 +62,14 @@ func (p *ProgressIndicator) StopSpinnerWithError(errorMessage string) {
 // Print prints a message respecting quiet/verbose settings
 func (p *ProgressIndicator) Print(message string) {
 	if !p.quiet {
-		fmt.Fprintln(p.output, message)
+		_, _ = fmt.Fprintln(p.output, message)
 	}
 }
 
 // PrintVerbose prints a message only in verbose mode
 func (p *ProgressIndicator) PrintVerbose(message string) {
 	if p.verbose && !p.quiet {
-		fmt.Fprintln(p.output, message)
+		_, _ = fmt.Fprintln(p.output, message)
 	}
 }
 
@@ -112,7 +112,7 @@ func (s *Spinner) Stop(successMessage string) {
 	s.stopChan <- true
 
 	// Clear the spinner line and print success message
-	fmt.Fprintf(s.output, "\r\033[K✓ %s\n", successMessage)
+	_, _ = fmt.Fprintf(s.output, "\r\033[K✓ %s\n", successMessage)
 }
 
 // StopWithError stops the spinner with an error message
@@ -125,7 +125,7 @@ func (s *Spinner) StopWithError(errorMessage string) {
 	s.stopChan <- true
 
 	// Clear the spinner line and print error message
-	fmt.Fprintf(s.output, "\r\033[K✗ %s\n", errorMessage)
+	_, _ = fmt.Fprintf(s.output, "\r\033[K✗ %s\n", errorMessage)
 }
 
 // animate runs the spinner animation loop
@@ -142,7 +142,7 @@ func (s *Spinner) animate() {
 		case <-ticker.C:
 			if s.active {
 				frame := s.frames[frameIndex%len(s.frames)]
-				fmt.Fprintf(s.output, "\r%s %s", frame, s.message)
+				_, _ = fmt.Fprintf(s.output, "\r%s %s", frame, s.message)
 				frameIndex++
 			}
 		}
@@ -184,7 +184,7 @@ func (pb *ProgressBar) Increment() {
 func (pb *ProgressBar) Finish(message string) {
 	pb.current = pb.total
 	pb.render()
-	fmt.Fprintf(pb.output, " %s\n", message)
+	_, _ = fmt.Fprintf(pb.output, " %s\n", message)
 }
 
 // render draws the progress bar
@@ -209,6 +209,6 @@ func (pb *ProgressBar) render() {
 		}
 	}
 
-	fmt.Fprintf(pb.output, "\r%s [%s] %d/%d (%.1f%%)",
+	_, _ = fmt.Fprintf(pb.output, "\r%s [%s] %d/%d (%.1f%%)",
 		pb.prefix, bar, pb.current, pb.total, percent*100)
 }

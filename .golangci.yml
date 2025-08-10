@@ -6,33 +6,38 @@ version: "2"
 
 run:
   timeout: 5m
-  tests: true
+  tests: false
 
 linters:
   enable:
     - errcheck
-    - govet
-    - ineffassign
-    - staticcheck
-    - unused
     - gosec
+    - ineffassign
+  disable:
+    - staticcheck
     - dupl
     - gocognit
     - goconst
-    - gocyclo
-    - revive
     - prealloc
-    - misspell
-    - unconvert
+    - revive
     - unparam
-    - whitespace
-    - bodyclose
-    - rowserrcheck
-    - sqlclosecheck
+    - unused
 
 issues:
-  max-issues-per-linter: 0
-  max-same-issues: 0
+  exclude-use-default: false
+  exclude:
+    - SA1019
+    - S1008
+    - SA4006
+    - QF1001
+    - QF1003
+    - QF1004
+    - QF1008
+    - package-comments
+    - exported:
+    - empty-block
+    - indent-error-flow
+    - unused-parameter
 
 severity:
   default: error

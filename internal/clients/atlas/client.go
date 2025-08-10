@@ -1,3 +1,4 @@
+// Package atlas provides a thin wrapper over the Atlas Go SDK with retries and helpers.
 package atlas
 
 import (

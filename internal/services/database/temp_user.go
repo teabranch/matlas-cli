@@ -224,7 +224,10 @@ func (m *TempUserManager) CleanupExpiredUsers(ctx context.Context) error {
 func generateTempUsername(purpose string) string {
 	timestamp := time.Now().Unix()
 	randomBytes := make([]byte, 4)
-	rand.Read(randomBytes)
+	if _, err := rand.Read(randomBytes); err != nil {
+		// Best-effort fallback, but return without random suffix on failure
+		return fmt.Sprintf("matlas-%s-%d", purpose, timestamp)
+	}
 	randomStr := hex.EncodeToString(randomBytes)
 
 	if purpose == "" {
@@ -242,7 +245,11 @@ func generateSecurePassword() string {
 
 	for i := range password {
 		randomBytes := make([]byte, 1)
-		rand.Read(randomBytes)
+		if _, err := rand.Read(randomBytes); err != nil {
+			// On failure, deterministically fall back to 'a'
+			password[i] = 'a'
+			continue
+		}
 		password[i] = charset[int(randomBytes[0])%len(charset)]
 	}
 

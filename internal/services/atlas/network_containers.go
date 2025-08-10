@@ -229,7 +229,7 @@ func (s *NetworkContainersService) validateCIDRSize(provider, cidr string) error
 	case "AZURE":
 		// Azure requires /16 to /24 for Atlas network containers
 		if prefixLen < 16 || prefixLen > 24 {
-			return fmt.Errorf("Azure network containers require CIDR blocks between /16 and /24, got /%d", prefixLen)
+			return fmt.Errorf("azure network containers require CIDR blocks between /16 and /24, got /%d", prefixLen)
 		}
 	}
 

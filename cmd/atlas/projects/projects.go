@@ -176,9 +176,9 @@ func newListCmd() *cobra.Command {
 						if project.Name != "" {
 							name = project.Name
 						}
-						orgId := ""
+						orgID := ""
 						if project.OrgId != "" {
-							orgId = project.OrgId
+							orgID = project.OrgId
 						}
 						created := ""
 						if !project.Created.IsZero() {
@@ -191,9 +191,9 @@ func newListCmd() *cobra.Command {
 							for _, t := range *project.Tags {
 								pairs = append(pairs, fmt.Sprintf("%s=%s", t.Key, t.Value))
 							}
-							return []string{id, name, orgId, created + "  [" + strings.Join(pairs, ",") + "]"}
+							return []string{id, name, orgID, created + "  [" + strings.Join(pairs, ",") + "]"}
 						}
-						return []string{id, name, orgId, created}
+						return []string{id, name, orgID, created}
 					}
 					// Fallback for unknown project type
 					return []string{"N/A", "N/A", "N/A", "N/A"}

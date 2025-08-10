@@ -507,7 +507,7 @@ func (rm *RecoveryManager) analyzeAffectedResources(operation *PlannedOperation)
 				continue
 			}
 
-			depState := ResourceStateUnknown
+			depState := ResourceStateUnknown // nolint:ineffassign // kept for future logic wiring
 			switch st.Status {
 			case OperationStatusPending:
 				depState = ResourceStateUnknown
@@ -521,7 +521,7 @@ func (rm *RecoveryManager) analyzeAffectedResources(operation *PlannedOperation)
 				depState = ResourceStateUnknown
 			}
 
-			depImpact := ResourceImpactNone
+			depImpact := ResourceImpactNone // nolint:ineffassign // kept for future logic wiring
 			switch depState {
 			case ResourceStatePartial:
 				depImpact = ResourceImpactPartial

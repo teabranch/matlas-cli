@@ -202,7 +202,7 @@ func (s *NetworkPeeringService) GetPeeringConnectionStatus(ctx context.Context, 
 }
 
 // ValidatePeeringCIDRs validates that peering CIDR blocks don't overlap.
-func (s *NetworkPeeringService) ValidatePeeringCIDRs(ctx context.Context, projectID string, newCIDR string) error {
+func (s *NetworkPeeringService) ValidatePeeringCIDRs(_ context.Context, projectID string, newCIDR string) error {
 	// Validate CIDR format first
 	_, _, err := net.ParseCIDR(newCIDR)
 	if err != nil {

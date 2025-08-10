@@ -42,7 +42,7 @@ func (s *Service) GetOrCreateClient(ctx context.Context, connInfo *types.Connect
 			return client, nil
 		}
 		// Connection is stale, remove it
-		client.Close(ctx)
+		_ = client.Close(ctx)
 		delete(s.clients, connInfo.ConnectionString)
 	}
 
@@ -149,7 +149,7 @@ func (s *Service) CreateCollection(ctx context.Context, connInfo *types.Connecti
 	var createOpts *options.CreateCollectionOptions
 	if opts != nil {
 		createOpts = options.CreateCollection()
-		
+
 		// Handle common options
 		if capped, ok := opts["capped"].(bool); ok && capped {
 			createOpts.SetCapped(true)
@@ -237,14 +237,14 @@ func (s *Service) CreateDatabase(ctx context.Context, connInfo *types.Connection
 	// MongoDB creates databases implicitly when first collection is created
 	// We'll create a temporary collection and then drop it to ensure the database exists
 	tempCollectionName := "__temp_collection_for_db_creation"
-	
+
 	if err := client.CreateCollection(ctx, databaseName, tempCollectionName, nil); err != nil {
 		return fmt.Errorf("failed to create database: %w", err)
 	}
 
 	// Drop the temporary collection
 	if err := client.DropCollection(ctx, databaseName, tempCollectionName); err != nil {
-		s.logger.Warn("Failed to drop temporary collection", 
+		s.logger.Warn("Failed to drop temporary collection",
 			zap.String("database", databaseName),
 			zap.String("collection", tempCollectionName),
 			zap.Error(err))

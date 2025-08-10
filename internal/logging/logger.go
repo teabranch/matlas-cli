@@ -1,3 +1,4 @@
+// Package logging provides structured logging utilities used across the CLI and services.
 package logging
 
 import (
@@ -10,10 +11,11 @@ import (
 	"time"
 )
 
-// LogLevel represents different log levels
+// LogLevel represents different log levels.
 type LogLevel int
 
 const (
+	// LevelDebug is verbose diagnostic logging.
 	LevelDebug LogLevel = iota
 	LevelInfo
 	LevelWarn
@@ -414,7 +416,7 @@ func SetDefault(logger *Logger) {
 	defaultLogger = logger
 }
 
-// Default returns the default global logger
+// Default returns the default global logger.
 func Default() *Logger {
 	if defaultLogger == nil {
 		defaultLogger = New(DefaultConfig())
@@ -422,7 +424,7 @@ func Default() *Logger {
 	return defaultLogger
 }
 
-// Global convenience functions
+// Global convenience functions.
 func Debug(msg string, args ...any)    { Default().Debug(msg, args...) }
 func Info(msg string, args ...any)     { Default().Info(msg, args...) }
 func Warn(msg string, args ...any)     { Default().Warn(msg, args...) }

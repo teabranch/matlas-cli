@@ -108,7 +108,7 @@ func (si *ShellIntegration) setupDynamicCompletion(rootCmd *cobra.Command) {
 
 // registerProjectIDCompletion sets up completion for project IDs
 func (si *ShellIntegration) registerProjectIDCompletion(rootCmd *cobra.Command) {
-	projectCompletion := func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	projectCompletion := func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		// This would ideally fetch from Atlas API, but for now return common examples
 		suggestions := []string{
 			"5e2c123456789abcdef012345\tProduction Project",
@@ -126,23 +126,23 @@ func (si *ShellIntegration) registerProjectIDCompletion(rootCmd *cobra.Command) 
 		return matches, cobra.ShellCompDirectiveDefault
 	}
 
-		// Register for any flag that contains "project"
-	rootCmd.RegisterFlagCompletionFunc("project-id", projectCompletion)
-	
+	// Register for any flag that contains "project"
+	_ = rootCmd.RegisterFlagCompletionFunc("project-id", projectCompletion)
+
 	// Walk through subcommands and register for project flags
 	walkCommands(rootCmd, func(cmd *cobra.Command) {
 		if flag := cmd.Flags().Lookup("project-id"); flag != nil {
-			cmd.RegisterFlagCompletionFunc("project-id", projectCompletion)
+			_ = cmd.RegisterFlagCompletionFunc("project-id", projectCompletion)
 		}
 		if flag := cmd.Flags().Lookup("project"); flag != nil {
-			cmd.RegisterFlagCompletionFunc("project", projectCompletion)
+			_ = cmd.RegisterFlagCompletionFunc("project", projectCompletion)
 		}
 	})
 }
 
 // registerOutputFormatCompletion sets up completion for output formats
 func (si *ShellIntegration) registerOutputFormatCompletion(rootCmd *cobra.Command) {
-	outputCompletion := func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	outputCompletion := func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		formats := []string{
 			"text\tHuman-readable text output",
 			"json\tJSON formatted output",
@@ -161,22 +161,22 @@ func (si *ShellIntegration) registerOutputFormatCompletion(rootCmd *cobra.Comman
 	}
 
 	// Register for output flags
-	rootCmd.RegisterFlagCompletionFunc("output", outputCompletion)
-	rootCmd.RegisterFlagCompletionFunc("format", outputCompletion)
+	_ = rootCmd.RegisterFlagCompletionFunc("output", outputCompletion)
+	_ = rootCmd.RegisterFlagCompletionFunc("format", outputCompletion)
 
 	walkCommands(rootCmd, func(cmd *cobra.Command) {
 		if flag := cmd.Flags().Lookup("output"); flag != nil {
-			cmd.RegisterFlagCompletionFunc("output", outputCompletion)
+			_ = cmd.RegisterFlagCompletionFunc("output", outputCompletion)
 		}
 		if flag := cmd.Flags().Lookup("format"); flag != nil {
-			cmd.RegisterFlagCompletionFunc("format", outputCompletion)
+			_ = cmd.RegisterFlagCompletionFunc("format", outputCompletion)
 		}
 	})
 }
 
 // registerConfigFileCompletion sets up completion for config files
 func (si *ShellIntegration) registerConfigFileCompletion(rootCmd *cobra.Command) {
-	configCompletion := func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	configCompletion := func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		// Look for common config file extensions
 		if toComplete == "" {
 			// Suggest common locations
@@ -204,14 +204,14 @@ func (si *ShellIntegration) registerConfigFileCompletion(rootCmd *cobra.Command)
 		return nil, cobra.ShellCompDirectiveDefault
 	}
 
-	rootCmd.RegisterFlagCompletionFunc("config", configCompletion)
+	_ = rootCmd.RegisterFlagCompletionFunc("config", configCompletion)
 
 	walkCommands(rootCmd, func(cmd *cobra.Command) {
 		if flag := cmd.Flags().Lookup("config"); flag != nil {
-			cmd.RegisterFlagCompletionFunc("config", configCompletion)
+			_ = cmd.RegisterFlagCompletionFunc("config", configCompletion)
 		}
 		if flag := cmd.Flags().Lookup("file"); flag != nil {
-			cmd.RegisterFlagCompletionFunc("file", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			_ = cmd.RegisterFlagCompletionFunc("file", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
 				// For file flags, prefer YAML files
 				return nil, cobra.ShellCompDirectiveFilterFileExt
 			})
@@ -222,7 +222,7 @@ func (si *ShellIntegration) registerConfigFileCompletion(rootCmd *cobra.Command)
 // registerAtlasResourceCompletion sets up completion for Atlas resources
 func (si *ShellIntegration) registerAtlasResourceCompletion(rootCmd *cobra.Command) {
 	// Cluster name completion
-	clusterCompletion := func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	clusterCompletion := func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		// In a real implementation, this would query the Atlas API
 		// For now, return common cluster naming patterns
 		suggestions := []string{
@@ -243,7 +243,7 @@ func (si *ShellIntegration) registerAtlasResourceCompletion(rootCmd *cobra.Comma
 	}
 
 	// Database name completion
-	databaseCompletion := func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	databaseCompletion := func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		suggestions := []string{
 			"users\tUser management database",
 			"products\tProduct catalog database",
@@ -265,16 +265,16 @@ func (si *ShellIntegration) registerAtlasResourceCompletion(rootCmd *cobra.Comma
 	// Register completions for various resource flags
 	walkCommands(rootCmd, func(cmd *cobra.Command) {
 		if flag := cmd.Flags().Lookup("cluster"); flag != nil {
-			cmd.RegisterFlagCompletionFunc("cluster", clusterCompletion)
+			_ = cmd.RegisterFlagCompletionFunc("cluster", clusterCompletion)
 		}
 		if flag := cmd.Flags().Lookup("cluster-name"); flag != nil {
-			cmd.RegisterFlagCompletionFunc("cluster-name", clusterCompletion)
+			_ = cmd.RegisterFlagCompletionFunc("cluster-name", clusterCompletion)
 		}
 		if flag := cmd.Flags().Lookup("database"); flag != nil {
-			cmd.RegisterFlagCompletionFunc("database", databaseCompletion)
+			_ = cmd.RegisterFlagCompletionFunc("database", databaseCompletion)
 		}
 		if flag := cmd.Flags().Lookup("db"); flag != nil {
-			cmd.RegisterFlagCompletionFunc("db", databaseCompletion)
+			_ = cmd.RegisterFlagCompletionFunc("db", databaseCompletion)
 		}
 	})
 }

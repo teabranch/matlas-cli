@@ -166,9 +166,9 @@ func (pb *PlanBuilder) WithConfig(config PlanConfig) *PlanBuilder {
 	return pb
 }
 
-// WithMaxParallelOps sets the maximum parallel operations
-func (pb *PlanBuilder) WithMaxParallelOps(max int) *PlanBuilder {
-	pb.config.MaxParallelOps = max
+// WithMaxParallelOps sets the maximum parallel operations.
+func (pb *PlanBuilder) WithMaxParallelOps(maxOps int) *PlanBuilder {
+	pb.config.MaxParallelOps = maxOps
 	return pb
 }
 

@@ -234,7 +234,7 @@ func savePlanToFile(plan *apply.Plan, filename string) error {
 		return fmt.Errorf("failed to marshal plan: %w", err)
 	}
 
-	if err := os.WriteFile(filename, data, 0644); err != nil {
+	if err := os.WriteFile(filename, data, 0o600); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
@@ -290,7 +290,9 @@ func displayPlanSummary(plan *apply.Plan, opts *PlanOptions) error {
 func displayPlanTable(plan *apply.Plan, opts *PlanOptions) error {
 	// Plan header using standard formatter
 	header := output.TableData{Headers: []string{"Execution Plan", plan.ID}, Rows: [][]string{{"Project", plan.ProjectID}, {"Created", plan.CreatedAt.Format("2006-01-02 15:04:05")}}}
-	_ = output.NewFormatter(config.OutputTable, os.Stdout).Format(header)
+	if err := output.NewFormatter(config.OutputTable, os.Stdout).Format(header); err != nil {
+		return err
+	}
 
 	// Group operations by stage
 	stageToOperations := make(map[int][]apply.PlannedOperation)
@@ -308,7 +310,9 @@ func displayPlanTable(plan *apply.Plan, opts *PlanOptions) error {
 	// Render each stage as a table via formatter
 	for _, stage := range stages {
 		ops := stageToOperations[stage]
-		fmt.Fprintf(os.Stdout, "\nStage %d (%d operations)\n\n", stage, len(ops))
+		if _, err := fmt.Fprintf(os.Stdout, "\nStage %d (%d operations)\n\n", stage, len(ops)); err != nil {
+			return err
+		}
 
 		rows := make([][]string, 0, len(ops))
 		for _, op := range ops {
@@ -340,7 +344,9 @@ func displayPlanTable(plan *apply.Plan, opts *PlanOptions) error {
 			Headers: []string{"Resource Type", "Operation", "Resource Name", "Risk", "Duration", "Dependencies"},
 			Rows:    rows,
 		}
-		_ = output.NewFormatter(config.OutputTable, os.Stdout).Format(table)
+		if err := output.NewFormatter(config.OutputTable, os.Stdout).Format(table); err != nil {
+			return err
+		}
 	}
 
 	// Optional verbose configuration block
@@ -352,8 +358,12 @@ func displayPlanTable(plan *apply.Plan, opts *PlanOptions) error {
 		if plan.Config.DefaultTimeout > 0 {
 			cfgRows = append(cfgRows, []string{"Default Timeout", plan.Config.DefaultTimeout.String()})
 		}
-		fmt.Fprintln(os.Stdout)
-		_ = output.NewFormatter(config.OutputTable, os.Stdout).Format(output.TableData{Headers: []string{"Plan Configuration", "Value"}, Rows: cfgRows})
+		if _, err := fmt.Fprintln(os.Stdout); err != nil {
+			return err
+		}
+		if err := output.NewFormatter(config.OutputTable, os.Stdout).Format(output.TableData{Headers: []string{"Plan Configuration", "Value"}, Rows: cfgRows}); err != nil {
+			return err
+		}
 	}
 
 	// Summary block via formatter
@@ -366,8 +376,12 @@ func displayPlanTable(plan *apply.Plan, opts *PlanOptions) error {
 	if plan.Summary.DestructiveOperations > 0 {
 		sumRows = append(sumRows, []string{"Destructive Operations", fmt.Sprintf("%d", plan.Summary.DestructiveOperations)})
 	}
-	fmt.Fprintln(os.Stdout)
-	_ = output.NewFormatter(config.OutputTable, os.Stdout).Format(output.TableData{Headers: []string{"Summary", "Value"}, Rows: sumRows})
+	if _, err := fmt.Fprintln(os.Stdout); err != nil {
+		return err
+	}
+	if err := output.NewFormatter(config.OutputTable, os.Stdout).Format(output.TableData{Headers: []string{"Summary", "Value"}, Rows: sumRows}); err != nil {
+		return err
+	}
 
 	return nil
 }

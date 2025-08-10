@@ -13,10 +13,15 @@ import (
 type DryRunOutputFormat string
 
 const (
-	DryRunFormatTable    DryRunOutputFormat = "table"
-	DryRunFormatJSON     DryRunOutputFormat = "json"
-	DryRunFormatYAML     DryRunOutputFormat = "yaml"
-	DryRunFormatSummary  DryRunOutputFormat = "summary"
+	// DryRunFormatTable renders results as an ASCII table.
+	DryRunFormatTable DryRunOutputFormat = "table"
+	// DryRunFormatJSON renders results as JSON.
+	DryRunFormatJSON DryRunOutputFormat = "json"
+	// DryRunFormatYAML renders results as YAML.
+	DryRunFormatYAML DryRunOutputFormat = "yaml"
+	// DryRunFormatSummary renders a high-level summary only.
+	DryRunFormatSummary DryRunOutputFormat = "summary"
+	// DryRunFormatDetailed renders the table plus expanded details.
 	DryRunFormatDetailed DryRunOutputFormat = "detailed"
 )
 
@@ -150,21 +155,21 @@ func (f *DryRunFormatter) formatDetailed(result *DryRunResult) string {
 
 func (f *DryRunFormatter) writeHeader(output *strings.Builder, title string) {
 	separator := strings.Repeat("=", len(title))
-	output.WriteString(fmt.Sprintf("%s\n%s\n%s\n\n", separator, title, separator))
+	fmt.Fprintf(output, "%s\n%s\n%s\n\n", separator, title, separator)
 }
 
 func (f *DryRunFormatter) writeSummarySection(output *strings.Builder, result *DryRunResult) {
 	output.WriteString("Summary:\n")
-	output.WriteString(fmt.Sprintf("  Mode: %s\n", result.Mode))
-	output.WriteString(fmt.Sprintf("  Total Operations: %d\n", result.Summary.TotalOperations))
-	output.WriteString(fmt.Sprintf("  Would Succeed: %s\n", f.colorize(fmt.Sprintf("%d", result.Summary.OperationsWouldSucceed), "green")))
+	fmt.Fprintf(output, "  Mode: %s\n", result.Mode)
+	fmt.Fprintf(output, "  Total Operations: %d\n", result.Summary.TotalOperations)
+	fmt.Fprintf(output, "  Would Succeed: %s\n", f.colorize(fmt.Sprintf("%d", result.Summary.OperationsWouldSucceed), "green"))
 
 	if result.Summary.OperationsWouldFail > 0 {
-		output.WriteString(fmt.Sprintf("  Would Fail: %s\n", f.colorize(fmt.Sprintf("%d", result.Summary.OperationsWouldFail), "red")))
+		fmt.Fprintf(output, "  Would Fail: %s\n", f.colorize(fmt.Sprintf("%d", result.Summary.OperationsWouldFail), "red"))
 	}
 
-	output.WriteString(fmt.Sprintf("  Estimated Duration: %s\n", formatDuration(result.Summary.EstimatedDuration)))
-	output.WriteString(fmt.Sprintf("  Highest Risk Level: %s\n", f.colorizeRiskLevel(string(result.Summary.HighestRiskLevel))))
+	fmt.Fprintf(output, "  Estimated Duration: %s\n", formatDuration(result.Summary.EstimatedDuration))
+	fmt.Fprintf(output, "  Highest Risk Level: %s\n", f.colorizeRiskLevel(string(result.Summary.HighestRiskLevel)))
 	output.WriteString("\n")
 }
 
@@ -237,7 +242,7 @@ func (f *DryRunFormatter) writeWarningsAndErrors(output *strings.Builder, result
 	if len(result.Errors) > 0 {
 		output.WriteString("Errors:\n")
 		for _, err := range result.Errors {
-			output.WriteString(fmt.Sprintf("  • %s\n", f.colorize(err, "red")))
+			fmt.Fprintf(output, "  • %s\n", f.colorize(err, "red"))
 		}
 		output.WriteString("\n")
 	}
@@ -245,7 +250,7 @@ func (f *DryRunFormatter) writeWarningsAndErrors(output *strings.Builder, result
 	if len(result.Warnings) > 0 {
 		output.WriteString("Warnings:\n")
 		for _, warning := range result.Warnings {
-			output.WriteString(fmt.Sprintf("  • %s\n", f.colorize(warning, "yellow")))
+			fmt.Fprintf(output, "  • %s\n", f.colorize(warning, "yellow"))
 		}
 		output.WriteString("\n")
 	}
@@ -258,13 +263,13 @@ func (f *DryRunFormatter) writeDetailedOperations(output *strings.Builder, resul
 	for i, simResult := range result.SimulatedResults {
 		op := simResult.Operation
 
-		output.WriteString(fmt.Sprintf("Operation %d: %s %s/%s\n", i+1, op.Type, op.ResourceType, op.ResourceName))
-		output.WriteString(fmt.Sprintf("  ID: %s\n", op.ID))
-		output.WriteString(fmt.Sprintf("  Would Succeed: %t\n", simResult.WouldSucceed))
-		output.WriteString(fmt.Sprintf("  Expected Duration: %s\n", formatDuration(simResult.ExpectedDuration)))
+		fmt.Fprintf(output, "Operation %d: %s %s/%s\n", i+1, op.Type, op.ResourceType, op.ResourceName)
+		fmt.Fprintf(output, "  ID: %s\n", op.ID)
+		fmt.Fprintf(output, "  Would Succeed: %t\n", simResult.WouldSucceed)
+		fmt.Fprintf(output, "  Expected Duration: %s\n", formatDuration(simResult.ExpectedDuration))
 
 		if len(simResult.Dependencies) > 0 {
-			output.WriteString(fmt.Sprintf("  Dependencies: %s\n", strings.Join(simResult.Dependencies, ", ")))
+			fmt.Fprintf(output, "  Dependencies: %s\n", strings.Join(simResult.Dependencies, ", "))
 		}
 
 		// Pre-conditions
@@ -275,9 +280,9 @@ func (f *DryRunFormatter) writeDetailedOperations(output *strings.Builder, resul
 				if !cond.Satisfied {
 					status = "✗"
 				}
-				output.WriteString(fmt.Sprintf("    %s %s\n", status, cond.Description))
+				fmt.Fprintf(output, "    %s %s\n", status, cond.Description)
 				if cond.Reason != "" {
-					output.WriteString(fmt.Sprintf("      Reason: %s\n", cond.Reason))
+					fmt.Fprintf(output, "      Reason: %s\n", cond.Reason)
 				}
 			}
 		}
@@ -286,9 +291,9 @@ func (f *DryRunFormatter) writeDetailedOperations(output *strings.Builder, resul
 		if len(simResult.PostConditions) > 0 {
 			output.WriteString("  Post-conditions:\n")
 			for _, cond := range simResult.PostConditions {
-				output.WriteString(fmt.Sprintf("    • %s: %s\n", cond.Description, cond.ExpectedValue))
+				fmt.Fprintf(output, "    • %s: %s\n", cond.Description, cond.ExpectedValue)
 				if cond.Impact != "" {
-					output.WriteString(fmt.Sprintf("      Impact: %s\n", cond.Impact))
+					fmt.Fprintf(output, "      Impact: %s\n", cond.Impact)
 				}
 			}
 		}
@@ -297,14 +302,14 @@ func (f *DryRunFormatter) writeDetailedOperations(output *strings.Builder, resul
 		if len(simResult.Errors) > 0 {
 			output.WriteString("  Errors:\n")
 			for _, err := range simResult.Errors {
-				output.WriteString(fmt.Sprintf("    • %s\n", f.colorize(err, "red")))
+				fmt.Fprintf(output, "    • %s\n", f.colorize(err, "red"))
 			}
 		}
 
 		if len(simResult.Warnings) > 0 {
 			output.WriteString("  Warnings:\n")
 			for _, warning := range simResult.Warnings {
-				output.WriteString(fmt.Sprintf("    • %s\n", f.colorize(warning, "yellow")))
+				fmt.Fprintf(output, "    • %s\n", f.colorize(warning, "yellow"))
 			}
 		}
 

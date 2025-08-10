@@ -260,10 +260,16 @@ func displayStateSummary(state *apply.ProjectState, opts *ShowOptions) error {
 	data := output.TableData{Headers: []string{"Resource", "Count"}, Rows: rows}
 	formatter := output.NewFormatter(config.OutputTable, os.Stdout)
 	if state.Project != nil {
-		fmt.Fprintf(os.Stdout, "Project: %s\n\n", state.Project.Metadata.Name)
+		if _, err := fmt.Fprintf(os.Stdout, "Project: %s\n\n", state.Project.Metadata.Name); err != nil {
+			return err
+		}
 	} else {
-		fmt.Fprintln(os.Stdout, "Project State")
-		fmt.Fprintln(os.Stdout)
+		if _, err := fmt.Fprintln(os.Stdout, "Project State"); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(os.Stdout); err != nil {
+			return err
+		}
 	}
 	return formatter.Format(data)
 }
@@ -271,10 +277,16 @@ func displayStateSummary(state *apply.ProjectState, opts *ShowOptions) error {
 func displayStateTable(state *apply.ProjectState, opts *ShowOptions) error {
 	// Header
 	if state.Project != nil {
-		fmt.Fprintf(os.Stdout, "Atlas Project State: %s\n\n", state.Project.Metadata.Name)
+		if _, err := fmt.Fprintf(os.Stdout, "Atlas Project State: %s\n\n", state.Project.Metadata.Name); err != nil {
+			return err
+		}
 	} else {
-		fmt.Fprintln(os.Stdout, "Atlas Project State")
-		fmt.Fprintln(os.Stdout)
+		if _, err := fmt.Fprintln(os.Stdout, "Atlas Project State"); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(os.Stdout); err != nil {
+			return err
+		}
 	}
 
 	formatter := output.NewFormatter(config.OutputTable, os.Stdout)
@@ -292,11 +304,15 @@ func displayStateTable(state *apply.ProjectState, opts *ShowOptions) error {
 				status,
 			})
 		}
-		_ = formatter.Format(output.TableData{
+		if err := formatter.Format(output.TableData{
 			Headers: []string{"Name", "Provider", "Instance", "Region", "Status"},
 			Rows:    clusterRows,
-		})
-		fmt.Fprintln(os.Stdout)
+		}); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(os.Stdout); err != nil {
+			return err
+		}
 	}
 
 	// Users table
@@ -317,11 +333,15 @@ func displayStateTable(state *apply.ProjectState, opts *ShowOptions) error {
 			}
 			userRows = append(userRows, []string{u.Spec.Username, u.Spec.AuthDatabase, roles, password})
 		}
-		_ = formatter.Format(output.TableData{
+		if err := formatter.Format(output.TableData{
 			Headers: []string{"Username", "Auth DB", "Roles", "Password"},
 			Rows:    userRows,
-		})
-		fmt.Fprintln(os.Stdout)
+		}); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(os.Stdout); err != nil {
+			return err
+		}
 	}
 
 	// Network access table
@@ -358,14 +378,20 @@ func displayStateTable(state *apply.ProjectState, opts *ShowOptions) error {
 				rows = append(rows, []string{a.Spec.IPAddress, comment})
 			}
 		}
-		_ = formatter.Format(output.TableData{Headers: headers, Rows: rows})
-		fmt.Fprintln(os.Stdout)
+		if err := formatter.Format(output.TableData{Headers: headers, Rows: rows}); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(os.Stdout); err != nil {
+			return err
+		}
 	}
 
 	if opts.ShowMetadata && opts.Verbose {
-		fmt.Fprintf(os.Stdout, "Metadata:\n  Discovery completed at: %s\n  Total resources: %d\n",
+		if _, err := fmt.Fprintf(os.Stdout, "Metadata:\n  Discovery completed at: %s\n  Total resources: %d\n",
 			time.Now().Format(time.RFC3339),
-			len(state.Clusters)+len(state.DatabaseUsers)+len(state.NetworkAccess))
+			len(state.Clusters)+len(state.DatabaseUsers)+len(state.NetworkAccess)); err != nil {
+			return err
+		}
 	}
 
 	return nil

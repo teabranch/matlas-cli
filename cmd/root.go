@@ -92,6 +92,7 @@ var (
 	}
 )
 
+// Execute runs the matlas root command.
 func Execute() {
 	// Use enhanced error handling with recovery
 	err := cli.HandleWithRecovery("root_execution", func() error {
@@ -156,7 +157,7 @@ func init() {
 			fmt.Println("matlas-cli version: development")
 			fmt.Println("Build time: unknown")
 			fmt.Println("Git commit: unknown")
-			fmt.Println("Go version:", fmt.Sprintf("%s", "go1.24.5"))
+			fmt.Println("Go version:", "go1.24.5")
 
 			if verbose {
 				fmt.Println("\nAdvanced Features:")

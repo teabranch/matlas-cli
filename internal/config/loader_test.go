@@ -10,7 +10,7 @@ import (
 	"github.com/teabranch/matlas-cli/internal/config"
 )
 
-func TestLoad_Precendence(t *testing.T) {
+func TestLoad_Precedence(t *testing.T) {
 	// 1. YAML file with baseline values
 	tmpDir := t.TempDir()
 	yamlPath := filepath.Join(tmpDir, "config.yaml")

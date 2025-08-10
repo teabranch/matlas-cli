@@ -101,12 +101,12 @@ func (erm *ErrorRecoveryManager) Format(result *RecoveryResult) string {
 
 	// Error header
 	output.WriteString(fmt.Sprintf("❌ %s Error in %s %s\n",
-		strings.Title(result.Severity), result.Context.Command, result.Context.Operation))
+		capitalizeFirst(result.Severity), result.Context.Command, result.Context.Operation))
 	output.WriteString(fmt.Sprintf("   %s\n\n", result.Error.Error()))
 
 	// Context information
 	if erm.verbose && result.Context.Resource != "" {
-		output.WriteString(fmt.Sprintf("📋 Context:\n"))
+		output.WriteString("📋 Context:\n")
 		output.WriteString(fmt.Sprintf("   Resource: %s\n", result.Context.Resource))
 		output.WriteString(fmt.Sprintf("   Operation: %s\n", result.Context.Operation))
 		output.WriteString(fmt.Sprintf("   Time: %s\n\n", result.Context.Timestamp.Format(time.RFC3339)))
@@ -536,4 +536,16 @@ func (se *SuggestionEngine) initializeKnowledgeBase() {
 			Description: "Consider upgrading your Atlas organization tier for higher limits",
 		},
 	}
+}
+
+// capitalizeFirst uppercases the first character of a string without locale deps.
+func capitalizeFirst(s string) string {
+	if s == "" {
+		return s
+	}
+	b := []rune(s)
+	if b[0] >= 'a' && b[0] <= 'z' {
+		b[0] = b[0] - ('a' - 'A')
+	}
+	return string(b)
 }

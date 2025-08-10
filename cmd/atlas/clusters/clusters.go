@@ -758,7 +758,7 @@ func loadConfigFromYAML(opts *CreateClusterOptions) error {
 	}
 
 	// Read the YAML file
-	data, err := os.ReadFile(configPath)
+	data, err := os.ReadFile(configPath) //nolint:gosec // reading user-provided path is expected for CLI tool
 	if err != nil {
 		return fmt.Errorf("failed to read config file: %w", err)
 	}
