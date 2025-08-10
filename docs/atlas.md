@@ -1,4 +1,9 @@
-Atlas commands
+---
+title: Atlas commands
+nav_order: 3
+---
+
+# Atlas commands
 
 Projects
 - List: `matlas atlas projects list [--org-id <org>]`

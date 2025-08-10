@@ -1,4 +1,9 @@
-Database commands
+---
+title: Database commands
+nav_order: 4
+---
+
+# Database commands
 
 Connection options
 - Direct: `--connection-string "mongodb+srv://user:pass@host/"`

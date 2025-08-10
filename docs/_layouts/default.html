@@ -1,0 +1,21 @@
+---
+---
+{% if site.theme or site.remote_theme %}
+  {%- comment -%} When using just-the-docs, its layout will be used automatically. {%- endcomment -%}
+  {{ content }}
+{% else %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page.title }} | {{ site.title }}</title>
+  </head>
+  <body>
+    <main>
+      {{ content }}
+    </main>
+  </body>
+  </html>
+{% endif %}
+

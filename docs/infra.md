@@ -1,4 +1,9 @@
-Infrastructure workflows
+---
+title: Infra workflows
+nav_order: 5
+---
+
+# Infrastructure workflows
 
 File formats
 - DiscoveredProject: output from `matlas discover`
