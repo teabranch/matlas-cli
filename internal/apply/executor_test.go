@@ -408,10 +408,15 @@ func TestAtlasExecutor_GetProgress(t *testing.T) {
 }
 
 func TestExecutionResult_Fields(t *testing.T) {
+	startTime := time.Now()
+
+	// Add a small delay to ensure measurable duration on fast systems
+	time.Sleep(1 * time.Millisecond)
+
 	result := &ExecutionResult{
 		PlanID:    "test-plan",
 		Status:    PlanStatusCompleted,
-		StartedAt: time.Now(),
+		StartedAt: startTime,
 		OperationResults: map[string]*OperationResult{
 			"op-1": {
 				OperationID: "op-1",

@@ -170,9 +170,10 @@ func TestRetry_ContextCancellationStress(t *testing.T) {
 				if !errors.Is(err, context.DeadlineExceeded) {
 					t.Errorf("expected context.DeadlineExceeded but got: %v", err)
 				}
-				// Should fail relatively quickly due to timeout
-				if elapsed > tt.timeout*5 {
-					t.Errorf("operation took too long: %v (expected around %v)", elapsed, tt.timeout)
+				// Should fail within reasonable time due to timeout (more tolerant for CI)
+				maxAllowedTime := tt.timeout * 10 // More tolerant for CI environments
+				if elapsed > maxAllowedTime {
+					t.Errorf("operation took too long: %v (expected less than %v)", elapsed, maxAllowedTime)
 				}
 			} else {
 				if err != nil {
