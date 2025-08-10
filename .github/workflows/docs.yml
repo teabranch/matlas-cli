@@ -31,8 +31,13 @@ jobs:
         with:
           ruby-version: '3.2'
           bundler: '2.5.0'
-          bundler-cache: true
+          bundler-cache: false
           working-directory: docs
+
+      - name: Clean previous vendor and lock
+        working-directory: docs
+        run: |
+          rm -rf vendor/bundle Gemfile.lock
 
       - name: Install dependencies
         working-directory: docs
@@ -40,6 +45,7 @@ jobs:
           BUNDLE_PATH: vendor/bundle
         run: |
           bundle config set without 'development'
+          bundle --version
           bundle install --jobs 4 --retry 3
 
       - name: Build site
