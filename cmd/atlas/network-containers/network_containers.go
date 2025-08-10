@@ -93,7 +93,7 @@ including CIDR block, cloud provider, region, and status.`,
 
 	cmd.Flags().StringVar(&projectID, "project-id", "", "Project ID (can be set via ATLAS_PROJECT_ID env var)")
 	cmd.Flags().StringVar(&containerID, "container-id", "", "Network container ID (required)")
-	cmd.MarkFlagRequired("container-id")
+	mustMarkFlagRequired(cmd, "container-id")
 
 	return cmd
 }
@@ -127,9 +127,9 @@ for Atlas clusters in a specific region, enabling VPC peering connectivity.`,
 	cmd.Flags().StringVar(&cloudProvider, "cloud-provider", "", "Cloud provider (AWS, AZURE, GCP) (required)")
 	cmd.Flags().StringVar(&region, "region", "", "Cloud provider region (required)")
 	cmd.Flags().StringVar(&cidrBlock, "cidr-block", "", "CIDR block for the network container (required)")
-	cmd.MarkFlagRequired("cloud-provider")
-	cmd.MarkFlagRequired("region")
-	cmd.MarkFlagRequired("cidr-block")
+	mustMarkFlagRequired(cmd, "cloud-provider")
+	mustMarkFlagRequired(cmd, "region")
+	mustMarkFlagRequired(cmd, "cidr-block")
 
 	return cmd
 }
@@ -159,7 +159,7 @@ The container must not be in use by any clusters or peering connections.`,
 	cmd.Flags().StringVar(&projectID, "project-id", "", "Project ID (can be set via ATLAS_PROJECT_ID env var)")
 	cmd.Flags().StringVar(&containerID, "container-id", "", "Network container ID (required)")
 	cmd.Flags().BoolVar(&force, "force", false, "Skip confirmation prompt")
-	cmd.MarkFlagRequired("container-id")
+	mustMarkFlagRequired(cmd, "container-id")
 
 	return cmd
 }
@@ -448,4 +448,12 @@ func formatBoolValue(ptr *bool) string {
 		return "provisioned"
 	}
 	return "provisioning"
+}
+
+// mustMarkFlagRequired marks a flag as required and panics if it fails.
+// This should never fail in normal execution and indicates a programmer error if it does.
+func mustMarkFlagRequired(cmd *cobra.Command, name string) {
+	if err := cmd.MarkFlagRequired(name); err != nil {
+		panic(fmt.Errorf("failed to mark flag %q required: %w", name, err))
+	}
 }

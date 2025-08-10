@@ -403,7 +403,9 @@ WARNING: This action cannot be undone. The project must be empty (no clusters) b
 				fmt.Printf("\nThis action cannot be undone. Are you sure? (y/N): ")
 
 				var response string
-				fmt.Scanln(&response)
+				if _, err := fmt.Scanln(&response); err != nil {
+					return fmt.Errorf("failed to read confirmation: %w", err)
+				}
 				if response != "y" && response != "Y" && response != "yes" && response != "Yes" {
 					fmt.Println("Project deletion cancelled.")
 					return nil

@@ -86,7 +86,7 @@ func newGetCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&projectID, "project-id", "", "Project ID (can be set via ATLAS_PROJECT_ID env var)")
 	cmd.Flags().StringVar(&endpointID, "endpoint-id", "", "VPC endpoint ID (required)")
-	cmd.MarkFlagRequired("endpoint-id")
+	mustMarkFlagRequired(cmd, "endpoint-id")
 
 	return cmd
 }
@@ -113,8 +113,8 @@ func newCreateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&projectID, "project-id", "", "Project ID (can be set via ATLAS_PROJECT_ID env var)")
 	cmd.Flags().StringVar(&cloudProvider, "cloud-provider", "", "Cloud provider (AWS, AZURE, GCP) (required)")
 	cmd.Flags().StringVar(&region, "region", "", "Cloud provider region (required)")
-	cmd.MarkFlagRequired("cloud-provider")
-	cmd.MarkFlagRequired("region")
+	mustMarkFlagRequired(cmd, "cloud-provider")
+	mustMarkFlagRequired(cmd, "region")
 
 	return cmd
 }
@@ -141,7 +141,7 @@ func newDeleteCmd() *cobra.Command {
 	cmd.Flags().StringVar(&projectID, "project-id", "", "Project ID (can be set via ATLAS_PROJECT_ID env var)")
 	cmd.Flags().StringVar(&endpointID, "endpoint-id", "", "VPC endpoint ID (required)")
 	cmd.Flags().BoolVar(&force, "force", false, "Skip confirmation prompt")
-	cmd.MarkFlagRequired("endpoint-id")
+	mustMarkFlagRequired(cmd, "endpoint-id")
 
 	return cmd
 }
@@ -410,4 +410,12 @@ func formatTimeValue(ptr *time.Time) string {
 		return ""
 	}
 	return ptr.Format("2006-01-02 15:04:05")
+}
+
+// mustMarkFlagRequired marks a flag as required and panics if it fails.
+// This should never fail in normal execution and indicates a programmer error if it does.
+func mustMarkFlagRequired(cmd *cobra.Command, name string) {
+	if err := cmd.MarkFlagRequired(name); err != nil {
+		panic(fmt.Errorf("failed to mark flag %q required: %w", name, err))
+	}
 }

@@ -408,7 +408,15 @@ func newDeleteCmd() *cobra.Command {
 	cmd.Flags().StringVar(&projectID, "project-id", "", "Project ID (required)")
 	cmd.Flags().BoolVar(&yes, "yes", false, "Skip confirmation prompt")
 
-	cmd.MarkFlagRequired("project-id")
+	mustMarkFlagRequired(cmd, "project-id")
 
 	return cmd
+}
+
+// mustMarkFlagRequired marks a flag as required and panics if it fails.
+// This should never fail in normal execution and indicates a programmer error if it does.
+func mustMarkFlagRequired(cmd *cobra.Command, name string) {
+	if err := cmd.MarkFlagRequired(name); err != nil {
+		panic(fmt.Errorf("failed to mark flag %q required: %w", name, err))
+	}
 }

@@ -127,8 +127,8 @@ func newCreateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&password, "password", "", "Database password (will prompt if not provided)")
 	cmd.Flags().StringSliceVar(&roles, "roles", []string{}, "Database roles in format roleName@databaseName (required)")
 
-	cmd.MarkFlagRequired("username")
-	cmd.MarkFlagRequired("roles")
+	mustMarkFlagRequired(cmd, "username")
+	mustMarkFlagRequired(cmd, "roles")
 
 	return cmd
 }
@@ -614,6 +614,14 @@ func readPassword(prompt string) (string, error) {
 		return "", err
 	}
 	return string(password), nil
+}
+
+// mustMarkFlagRequired marks a flag as required and panics if it fails.
+// This should never fail in normal execution and indicates a programmer error if it does.
+func mustMarkFlagRequired(cmd *cobra.Command, name string) {
+	if err := cmd.MarkFlagRequired(name); err != nil {
+		panic(fmt.Errorf("failed to mark flag %q required: %w", name, err))
+	}
 }
 
 // parseRoles converts role strings in format "roleName@databaseName" to Atlas SDK role objects

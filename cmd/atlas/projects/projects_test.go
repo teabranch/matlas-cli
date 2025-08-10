@@ -110,14 +110,22 @@ func TestListCommandValidation(t *testing.T) {
 	// Temporarily unset environment variables to ensure test isolation
 	originalAPIKey := os.Getenv("ATLAS_API_KEY")
 	originalPublicKey := os.Getenv("ATLAS_PUBLIC_KEY")
-	os.Unsetenv("ATLAS_API_KEY")
-	os.Unsetenv("ATLAS_PUBLIC_KEY")
+	if err := os.Unsetenv("ATLAS_API_KEY"); err != nil {
+		t.Fatalf("failed to unset ATLAS_API_KEY: %v", err)
+	}
+	if err := os.Unsetenv("ATLAS_PUBLIC_KEY"); err != nil {
+		t.Fatalf("failed to unset ATLAS_PUBLIC_KEY: %v", err)
+	}
 	defer func() {
 		if originalAPIKey != "" {
-			os.Setenv("ATLAS_API_KEY", originalAPIKey)
+			if err := os.Setenv("ATLAS_API_KEY", originalAPIKey); err != nil {
+				t.Fatalf("failed to restore ATLAS_API_KEY: %v", err)
+			}
 		}
 		if originalPublicKey != "" {
-			os.Setenv("ATLAS_PUBLIC_KEY", originalPublicKey)
+			if err := os.Setenv("ATLAS_PUBLIC_KEY", originalPublicKey); err != nil {
+				t.Fatalf("failed to restore ATLAS_PUBLIC_KEY: %v", err)
+			}
 		}
 	}()
 
@@ -134,10 +142,14 @@ func TestListCommandValidation(t *testing.T) {
 func TestGetCommandValidation(t *testing.T) {
 	// Temporarily unset environment variable to ensure test isolation
 	originalProjectID := os.Getenv("ATLAS_PROJECT_ID")
-	os.Unsetenv("ATLAS_PROJECT_ID")
+	if err := os.Unsetenv("ATLAS_PROJECT_ID"); err != nil {
+		t.Fatalf("failed to unset ATLAS_PROJECT_ID: %v", err)
+	}
 	defer func() {
 		if originalProjectID != "" {
-			os.Setenv("ATLAS_PROJECT_ID", originalProjectID)
+			if err := os.Setenv("ATLAS_PROJECT_ID", originalProjectID); err != nil {
+				t.Fatalf("failed to restore ATLAS_PROJECT_ID: %v", err)
+			}
 		}
 	}()
 

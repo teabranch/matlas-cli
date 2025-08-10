@@ -218,7 +218,11 @@ func runCreateDatabase(cmd *cobra.Command, connectionString, clusterName, projec
 	// Create database service
 	zapLogger, _ := zap.NewDevelopment()
 	dbService := database.NewService(zapLogger)
-	defer dbService.Close(ctx)
+	defer func() {
+		if err := dbService.Close(ctx); err != nil {
+			fmt.Printf("Warning: Failed to close database service: %v\n", err)
+		}
+	}()
 
 	// Create database
 	err = dbService.CreateDatabase(ctx, connInfo, databaseName)
@@ -287,7 +291,11 @@ func runDeleteDatabase(cmd *cobra.Command, connectionString, clusterName, projec
 	// Create database service
 	zapLogger, _ := zap.NewDevelopment()
 	dbService := database.NewService(zapLogger)
-	defer dbService.Close(ctx)
+	defer func() {
+		if err := dbService.Close(ctx); err != nil {
+			fmt.Printf("Warning: Failed to close database service: %v\n", err)
+		}
+	}()
 
 	// Delete database
 	err = dbService.DropDatabase(ctx, connInfo, databaseName)

@@ -73,9 +73,9 @@ The output includes collection name, type, document count, size, and average obj
 	cmd.Flags().StringVar(&databaseName, "database", "", "Database name (required)")
 
 	// At least one connection method is required
-	cmd.MarkFlagsOneRequired("connection-string", "cluster")
-	cmd.MarkFlagsRequiredTogether("cluster", "project-id")
-	cmd.MarkFlagRequired("database")
+	mustMarkFlagsOneRequired(cmd, "connection-string", "cluster")
+	mustMarkFlagsRequiredTogether(cmd, "cluster", "project-id")
+	mustMarkFlagRequired(cmd, "database")
 
 	cli.AddPaginationFlags(cmd, &paginationFlags)
 
@@ -116,9 +116,9 @@ func newCreateCmd() *cobra.Command {
 	cmd.Flags().Int64Var(&maxDocuments, "max-documents", 0, "Maximum number of documents for capped collection")
 
 	// At least one connection method is required
-	cmd.MarkFlagsOneRequired("connection-string", "cluster")
-	cmd.MarkFlagsRequiredTogether("cluster", "project-id")
-	cmd.MarkFlagRequired("database")
+	mustMarkFlagsOneRequired(cmd, "connection-string", "cluster")
+	mustMarkFlagsRequiredTogether(cmd, "cluster", "project-id")
+	mustMarkFlagRequired(cmd, "database")
 
 	return cmd
 }
@@ -157,9 +157,9 @@ Use with caution in production environments.`,
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "Skip confirmation prompt")
 
 	// At least one connection method is required
-	cmd.MarkFlagsOneRequired("connection-string", "cluster")
-	cmd.MarkFlagsRequiredTogether("cluster", "project-id")
-	cmd.MarkFlagRequired("database")
+	mustMarkFlagsOneRequired(cmd, "connection-string", "cluster")
+	mustMarkFlagsRequiredTogether(cmd, "cluster", "project-id")
+	mustMarkFlagRequired(cmd, "database")
 
 	return cmd
 }
@@ -214,10 +214,10 @@ including index names, keys, and options.`,
 	cmd.Flags().StringVar(&collectionName, "collection", "", "Collection name (required)")
 
 	// At least one connection method is required
-	cmd.MarkFlagsOneRequired("connection-string", "cluster")
-	cmd.MarkFlagsRequiredTogether("cluster", "project-id")
-	cmd.MarkFlagRequired("database")
-	cmd.MarkFlagRequired("collection")
+	mustMarkFlagsOneRequired(cmd, "connection-string", "cluster")
+	mustMarkFlagsRequiredTogether(cmd, "cluster", "project-id")
+	mustMarkFlagRequired(cmd, "database")
+	mustMarkFlagRequired(cmd, "collection")
 
 	return cmd
 }
@@ -265,10 +265,10 @@ Multiple fields can be specified to create a compound index.`,
 	cmd.Flags().BoolVar(&background, "background", false, "Create index in background")
 
 	// At least one connection method is required
-	cmd.MarkFlagsOneRequired("connection-string", "cluster")
-	cmd.MarkFlagsRequiredTogether("cluster", "project-id")
-	cmd.MarkFlagRequired("database")
-	cmd.MarkFlagRequired("collection")
+	mustMarkFlagsOneRequired(cmd, "connection-string", "cluster")
+	mustMarkFlagsRequiredTogether(cmd, "cluster", "project-id")
+	mustMarkFlagRequired(cmd, "database")
+	mustMarkFlagRequired(cmd, "collection")
 
 	return cmd
 }
@@ -309,10 +309,10 @@ Make sure you understand the impact before deleting production indexes.`,
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "Skip confirmation prompt")
 
 	// At least one connection method is required
-	cmd.MarkFlagsOneRequired("connection-string", "cluster")
-	cmd.MarkFlagsRequiredTogether("cluster", "project-id")
-	cmd.MarkFlagRequired("database")
-	cmd.MarkFlagRequired("collection")
+	mustMarkFlagsOneRequired(cmd, "connection-string", "cluster")
+	mustMarkFlagsRequiredTogether(cmd, "cluster", "project-id")
+	mustMarkFlagRequired(cmd, "database")
+	mustMarkFlagRequired(cmd, "collection")
 
 	return cmd
 }
@@ -367,7 +367,11 @@ func runListCollections(cmd *cobra.Command, connectionString, clusterName, proje
 	// Create database service
 	zapLogger, _ := zap.NewDevelopment()
 	dbService := database.NewService(zapLogger)
-	defer dbService.Close(ctx)
+	defer func() {
+		if err := dbService.Close(ctx); err != nil {
+			fmt.Printf("Warning: Failed to close database service: %v\n", err)
+		}
+	}()
 
 	// List collections
 	collections, err := dbService.ListCollections(ctx, connInfo, databaseName)
@@ -460,7 +464,11 @@ func runCreateCollection(cmd *cobra.Command, connectionString, clusterName, proj
 	// Create database service
 	zapLogger, _ := zap.NewDevelopment()
 	dbService := database.NewService(zapLogger)
-	defer dbService.Close(ctx)
+	defer func() {
+		if err := dbService.Close(ctx); err != nil {
+			fmt.Printf("Warning: Failed to close database service: %v\n", err)
+		}
+	}()
 
 	// Create collection
 	err = dbService.CreateCollection(ctx, connInfo, databaseName, collectionName, opts)
@@ -519,7 +527,11 @@ func runDeleteCollection(cmd *cobra.Command, connectionString, clusterName, proj
 	// Create database service
 	zapLogger, _ := zap.NewDevelopment()
 	dbService := database.NewService(zapLogger)
-	defer dbService.Close(ctx)
+	defer func() {
+		if err := dbService.Close(ctx); err != nil {
+			fmt.Printf("Warning: Failed to close database service: %v\n", err)
+		}
+	}()
 
 	// Delete collection
 	err = dbService.DropCollection(ctx, connInfo, databaseName, collectionName)
@@ -565,7 +577,11 @@ func runListIndexes(cmd *cobra.Command, connectionString, clusterName, projectID
 	// Create database service
 	zapLogger, _ := zap.NewDevelopment()
 	dbService := database.NewService(zapLogger)
-	defer dbService.Close(ctx)
+	defer func() {
+		if err := dbService.Close(ctx); err != nil {
+			fmt.Printf("Warning: Failed to close database service: %v\n", err)
+		}
+	}()
 
 	// List indexes
 	indexes, err := dbService.ListIndexes(ctx, connInfo, databaseName, collectionName)
@@ -688,7 +704,11 @@ func runCreateIndex(cmd *cobra.Command, connectionString, clusterName, projectID
 	// Create database service
 	zapLogger, _ := zap.NewDevelopment()
 	dbService := database.NewService(zapLogger)
-	defer dbService.Close(ctx)
+	defer func() {
+		if err := dbService.Close(ctx); err != nil {
+			fmt.Printf("Warning: Failed to close database service: %v\n", err)
+		}
+	}()
 
 	// Create index
 	createdIndexName, err := dbService.CreateIndex(ctx, connInfo, databaseName, collectionName, keys, opts)
@@ -750,7 +770,11 @@ func runDeleteIndex(cmd *cobra.Command, connectionString, clusterName, projectID
 	// Create database service
 	zapLogger, _ := zap.NewDevelopment()
 	dbService := database.NewService(zapLogger)
-	defer dbService.Close(ctx)
+	defer func() {
+		if err := dbService.Close(ctx); err != nil {
+			fmt.Printf("Warning: Failed to close database service: %v\n", err)
+		}
+	}()
 
 	// Delete index
 	err = dbService.DropIndex(ctx, connInfo, databaseName, collectionName, indexName)
@@ -817,4 +841,21 @@ func resolveConnectionInfo(ctx context.Context, cfg *config.Config, connectionSt
 	return &types.ConnectionInfo{
 		ConnectionString: connectionString,
 	}, nil
+}
+
+// Helpers to enforce required flags during command setup
+func mustMarkFlagRequired(cmd *cobra.Command, name string) {
+	if err := cmd.MarkFlagRequired(name); err != nil {
+		panic(fmt.Errorf("failed to mark flag %q required: %w", name, err))
+	}
+}
+
+func mustMarkFlagsOneRequired(cmd *cobra.Command, name1, name2 string) {
+	// Under our cobra version these helpers do not return an error
+	cmd.MarkFlagsOneRequired(name1, name2)
+}
+
+func mustMarkFlagsRequiredTogether(cmd *cobra.Command, name1, name2 string) {
+	// Under our cobra version these helpers do not return an error
+	cmd.MarkFlagsRequiredTogether(name1, name2)
 }

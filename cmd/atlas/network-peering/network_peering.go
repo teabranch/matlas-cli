@@ -91,7 +91,7 @@ including configuration, status, and connection details.`,
 
 	cmd.Flags().StringVar(&projectID, "project-id", "", "Project ID (can be set via ATLAS_PROJECT_ID env var)")
 	cmd.Flags().StringVar(&peerID, "peer-id", "", "Network peering connection ID (required)")
-	cmd.MarkFlagRequired("peer-id")
+	mustMarkFlagRequired(cmd, "peer-id")
 
 	return cmd
 }
@@ -128,10 +128,10 @@ This command creates a network peering connection using the Atlas API. After cre
 	cmd.Flags().StringVar(&vpcID, "vpc-id", "", "VPC/VNet ID to peer with (required)")
 	cmd.Flags().StringVar(&region, "region", "", "Cloud provider region (required)")
 	cmd.Flags().StringVar(&cidrBlock, "cidr-block", "", "CIDR block for the peering connection (required)")
-	cmd.MarkFlagRequired("cloud-provider")
-	cmd.MarkFlagRequired("vpc-id")
-	cmd.MarkFlagRequired("region")
-	cmd.MarkFlagRequired("cidr-block")
+	mustMarkFlagRequired(cmd, "cloud-provider")
+	mustMarkFlagRequired(cmd, "vpc-id")
+	mustMarkFlagRequired(cmd, "region")
+	mustMarkFlagRequired(cmd, "cidr-block")
 
 	return cmd
 }
@@ -161,7 +161,7 @@ The connection must not be in use by any clusters.`,
 	cmd.Flags().StringVar(&projectID, "project-id", "", "Project ID (can be set via ATLAS_PROJECT_ID env var)")
 	cmd.Flags().StringVar(&peerID, "peer-id", "", "Network peering connection ID (required)")
 	cmd.Flags().BoolVar(&force, "force", false, "Skip confirmation prompt")
-	cmd.MarkFlagRequired("peer-id")
+	mustMarkFlagRequired(cmd, "peer-id")
 
 	return cmd
 }
@@ -450,4 +450,12 @@ func formatTimeValue(ptr *time.Time) string {
 		return ""
 	}
 	return ptr.Format("2006-01-02 15:04:05")
+}
+
+// mustMarkFlagRequired marks a flag as required and panics if it fails.
+// This should never fail in normal execution and indicates a programmer error if it does.
+func mustMarkFlagRequired(cmd *cobra.Command, name string) {
+	if err := cmd.MarkFlagRequired(name); err != nil {
+		panic(fmt.Errorf("failed to mark flag %q required: %w", name, err))
+	}
 }

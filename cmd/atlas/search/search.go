@@ -67,7 +67,7 @@ The output includes index name, status, type, and configuration details.`,
 	cmd.Flags().StringVar(&clusterName, "cluster", "", "Cluster name (required)")
 	cmd.Flags().StringVar(&databaseName, "database", "", "Database name (optional)")
 	cmd.Flags().StringVar(&collectionName, "collection", "", "Collection name (requires database)")
-	cmd.MarkFlagRequired("cluster")
+	mustMarkFlagRequired(cmd, "cluster")
 
 	cli.AddPaginationFlags(cmd, &paginationFlags)
 
@@ -99,8 +99,8 @@ including configuration, status, and mapping details.`,
 	cmd.Flags().StringVar(&projectID, "project-id", "", "Project ID (can be set via ATLAS_PROJECT_ID env var)")
 	cmd.Flags().StringVar(&clusterName, "cluster", "", "Cluster name (required)")
 	cmd.Flags().StringVar(&indexID, "index-id", "", "Search index ID (required)")
-	cmd.MarkFlagRequired("cluster")
-	cmd.MarkFlagRequired("index-id")
+	mustMarkFlagRequired(cmd, "cluster")
+	mustMarkFlagRequired(cmd, "index-id")
 
 	return cmd
 }
@@ -144,10 +144,10 @@ You can specify the index definition inline or provide a JSON file with the defi
 	cmd.Flags().StringVar(&indexName, "name", "", "Search index name (required)")
 	cmd.Flags().StringVar(&indexFile, "index-file", "", "Path to JSON file containing index definition")
 	cmd.Flags().StringVar(&indexType, "type", "search", "Index type: search, vectorSearch")
-	cmd.MarkFlagRequired("cluster")
-	cmd.MarkFlagRequired("database")
-	cmd.MarkFlagRequired("collection")
-	cmd.MarkFlagRequired("name")
+	mustMarkFlagRequired(cmd, "cluster")
+	mustMarkFlagRequired(cmd, "database")
+	mustMarkFlagRequired(cmd, "collection")
+	mustMarkFlagRequired(cmd, "name")
 
 	return cmd
 }
@@ -177,9 +177,9 @@ The new definition must be provided via a JSON file.`,
 	cmd.Flags().StringVar(&clusterName, "cluster", "", "Cluster name (required)")
 	cmd.Flags().StringVar(&indexID, "index-id", "", "Search index ID (required)")
 	cmd.Flags().StringVar(&indexFile, "index-file", "", "Path to JSON file containing updated index definition (required)")
-	cmd.MarkFlagRequired("cluster")
-	cmd.MarkFlagRequired("index-id")
-	cmd.MarkFlagRequired("index-file")
+	mustMarkFlagRequired(cmd, "cluster")
+	mustMarkFlagRequired(cmd, "index-id")
+	mustMarkFlagRequired(cmd, "index-file")
 
 	return cmd
 }
@@ -211,8 +211,8 @@ All search functionality depending on this index will stop working.`,
 	cmd.Flags().StringVar(&clusterName, "cluster", "", "Cluster name (required)")
 	cmd.Flags().StringVar(&indexID, "index-id", "", "Search index ID (required)")
 	cmd.Flags().BoolVar(&force, "force", false, "Skip confirmation prompt")
-	cmd.MarkFlagRequired("cluster")
-	cmd.MarkFlagRequired("index-id")
+	mustMarkFlagRequired(cmd, "cluster")
+	mustMarkFlagRequired(cmd, "index-id")
 
 	return cmd
 }
@@ -292,4 +292,12 @@ func formatTimeValue(ptr *time.Time) string {
 		return ""
 	}
 	return ptr.Format("2006-01-02 15:04:05")
+}
+
+// mustMarkFlagRequired marks a flag as required and panics if it fails.
+// This should never fail in normal execution and indicates a programmer error if it does.
+func mustMarkFlagRequired(cmd *cobra.Command, name string) {
+	if err := cmd.MarkFlagRequired(name); err != nil {
+		panic(fmt.Errorf("failed to mark flag %q required: %w", name, err))
+	}
 }

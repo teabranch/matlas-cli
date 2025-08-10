@@ -425,8 +425,10 @@ func TestOutputResult(t *testing.T) {
 			// Create a temporary file to capture output
 			tempFile, err := os.CreateTemp("", "test-output-*")
 			require.NoError(t, err)
-			defer os.Remove(tempFile.Name())
-			defer tempFile.Close()
+			defer func() {
+				require.NoError(t, tempFile.Close())
+				require.NoError(t, os.Remove(tempFile.Name()))
+			}()
 
 			opts.OutputFile = tempFile.Name()
 
@@ -440,8 +442,10 @@ func TestOutputResult(t *testing.T) {
 			}
 
 			// Read the output from the temporary file
-			tempFile.Seek(0, 0)
-			buf.ReadFrom(tempFile)
+			_, err = tempFile.Seek(0, 0)
+			require.NoError(t, err)
+			_, err = buf.ReadFrom(tempFile)
+			require.NoError(t, err)
 
 			if tt.validate != nil {
 				tt.validate(t, buf.String())

@@ -141,7 +141,13 @@ func (e *DatabaseEnumerator) enumerateClusterDatabases(ctx context.Context, clus
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to cluster: %w", err)
 	}
-	defer client.Disconnect(ctx)
+	defer func() {
+		if err := client.Disconnect(ctx); err != nil {
+			if e.verbose {
+				fmt.Printf("    Warning: failed to disconnect MongoDB client: %v\n", err)
+			}
+		}
+	}()
 
 	// List databases
 	dbNames, err := e.listDatabases(ctx, client)
@@ -245,7 +251,11 @@ func (e *DatabaseEnumerator) connectToCluster(ctx context.Context, connectionStr
 	defer cancel()
 
 	if err := client.Ping(pingCtx, nil); err != nil {
-		client.Disconnect(ctx)
+		if derr := client.Disconnect(ctx); derr != nil {
+			if e.verbose {
+				fmt.Printf("    Warning: failed to disconnect MongoDB client after ping error: %v\n", derr)
+			}
+		}
 		return nil, fmt.Errorf("failed to ping MongoDB: %w", err)
 	}
 
@@ -407,7 +417,13 @@ func (e *DatabaseEnumerator) getIndexInfo(ctx context.Context, collection *mongo
 	if err != nil {
 		return nil, fmt.Errorf("failed to list indexes: %w", err)
 	}
-	defer cursor.Close(ctx)
+	defer func() {
+		if err := cursor.Close(ctx); err != nil {
+			if e.verbose {
+				fmt.Printf("    Warning: failed to close index cursor: %v\n", err)
+			}
+		}
+	}()
 
 	var indexes []IndexInfo
 

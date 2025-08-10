@@ -55,7 +55,11 @@ func runListDatabases(cmd *cobra.Command, connectionString, clusterName, project
 	// Create database service
 	zapLogger, _ := zap.NewDevelopment() // For compatibility with database service
 	dbService := database.NewService(zapLogger)
-	defer dbService.Close(ctx)
+	defer func() {
+		if err := dbService.Close(ctx); err != nil {
+			fmt.Printf("Warning: Failed to close database service: %v\n", err)
+		}
+	}()
 
 	// List databases
 	databases, err := dbService.ListDatabases(ctx, connInfo)
