@@ -1,0 +1,17 @@
+linters:
+  enable:
+    - errcheck
+    - gosec
+    - ineffassign
+  disable:
+    - staticcheck
+    - dupl
+    - gocognit
+    - goconst
+    - prealloc
+    - revive
+    - unparam
+    - unused
+
+run:
+  timeout: 5m

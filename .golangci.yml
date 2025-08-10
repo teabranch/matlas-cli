@@ -1,43 +1,8 @@
-# =============================================================================
-# golangci-lint configuration for matlas-cli
-# =============================================================================
-
-version: "2"
-
 run:
   timeout: 5m
-  tests: false
 
 linters:
   enable:
     - errcheck
     - gosec
     - ineffassign
-  disable:
-    - staticcheck
-    - dupl
-    - gocognit
-    - goconst
-    - prealloc
-    - revive
-    - unparam
-    - unused
-
-issues:
-  exclude-use-default: false
-  exclude:
-    - SA1019
-    - S1008
-    - SA4006
-    - QF1001
-    - QF1003
-    - QF1004
-    - QF1008
-    - package-comments
-    - exported:
-    - empty-block
-    - indent-error-flow
-    - unused-parameter
-
-severity:
-  default: error
