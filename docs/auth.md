@@ -1,40 +1,97 @@
 ---
-title: Authentication and configuration
+title: Authentication & Configuration
 nav_order: 2
 ---
 
-# Authentication and configuration
+# Authentication & Configuration
+{: .no_toc }
 
-Sources and precedence
-1) Defaults (output=table, timeout=30s)
-2) Config file: `~/.matlas/config.yaml` or `--config`/`ATLAS_CONFIG_FILE`
-3) Env vars (prefix `ATLAS_`), e.g. `ATLAS_API_KEY`, `ATLAS_PUB_KEY`, `ATLAS_PROJECT_ID`, `ATLAS_ORG_ID`
-4) Flags on the command line
+Configure matlas to authenticate with MongoDB Atlas and set default behaviors.
+{: .fs-6 .fw-300 }
 
-## Config file example (`~/.matlas/config.yaml`)
-```
+## Table of contents
+{: .no_toc .text-delta }
+
+1. TOC
+{:toc}
+
+---
+
+## Configuration precedence
+
+Matlas uses the following configuration precedence (later sources override earlier ones):
+
+1. **Defaults** - `output=table`, `timeout=30s`
+2. **Config file** - `~/.matlas/config.yaml` or via `--config`/`ATLAS_CONFIG_FILE`
+3. **Environment variables** - Prefix `ATLAS_`, e.g. `ATLAS_API_KEY`, `ATLAS_PUB_KEY`
+4. **Command line flags** - `--api-key`, `--project-id`, etc.
+
+## Config file
+
+Create `~/.matlas/config.yaml` to set default values:
+
+```yaml
 output: table
 timeout: 30s
 projectId: "507f1f77bcf86cd799439011"
-apiKey: "<private>"
-publicKey: "<public>"
+apiKey: "<private-key>"
+publicKey: "<public-key>"
 ```
 
-## Environment
-- `ATLAS_API_KEY`: private key
-- `ATLAS_PUB_KEY`: public key
-- Optional: `ATLAS_PROJECT_ID`, `ATLAS_ORG_ID`
+You can override the config file location using `--config` flag or `ATLAS_CONFIG_FILE` environment variable.
 
-## Flags
-- `--api-key`, `--pub-key`, `--project-id`, `--org-id`, `--output`, `--timeout`, `--config`
+## Environment variables
 
-## macOS Keychain fallback
-- If keys aren’t found in flags/env/file, the CLI attempts a macOS keychain lookup:
-  - service "api-key" account "matlas" for `ATLAS_API_KEY`
-  - service "pub-key" account "matlas" for `ATLAS_PUB_KEY`
+Set these environment variables for authentication:
+
+| Variable | Description | Required |
+|:---------|:------------|:---------|
+| `ATLAS_API_KEY` | Private API key | ✅ |
+| `ATLAS_PUB_KEY` | Public API key | ✅ |
+| `ATLAS_PROJECT_ID` | Default project ID | ❌ |
+| `ATLAS_ORG_ID` | Default organization ID | ❌ |
+
+```bash
+export ATLAS_API_KEY="your-private-key"
+export ATLAS_PUB_KEY="your-public-key"
+export ATLAS_PROJECT_ID="507f1f77bcf86cd799439011"
+```
+
+## Command line flags
+
+Override any configuration using command line flags:
+
+| Flag | Description |
+|:-----|:------------|
+| `--api-key` | Private API key |
+| `--pub-key` | Public API key |
+| `--project-id` | Project ID |
+| `--org-id` | Organization ID |
+| `--output` | Output format (table, json, yaml) |
+| `--timeout` | Request timeout |
+| `--config` | Config file path |
+
+## macOS Keychain integration
+
+{: .highlight }
+On macOS, matlas can fallback to keychain lookup if credentials aren't found elsewhere.
+
+If API keys aren't found in flags/environment/config file, matlas attempts keychain lookup:
+- Service: `api-key`, Account: `matlas` → `ATLAS_API_KEY`
+- Service: `pub-key`, Account: `matlas` → `ATLAS_PUB_KEY`
 
 ## Best practices
-- Prefer environment variables over flags for secrets
-- Limit scope of API keys to required permissions
-- For DB enumeration, use `--use-temp-user` to create a short‑lived user
+
+{: .important }
+> **Security recommendations**
+> - Use environment variables instead of command line flags for secrets
+> - Limit API key scope to required permissions only
+> - For database enumeration, use `--use-temp-user` to create short-lived database users
+
+### Getting API keys
+
+1. Log into [MongoDB Atlas](https://cloud.mongodb.com)
+2. Go to **Organization Access Manager** → **API Keys**
+3. Create a new API key with appropriate permissions
+4. Save the public and private keys securely
 

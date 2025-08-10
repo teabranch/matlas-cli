@@ -1,4 +1,4 @@
-name: Deploy Docs
+name: Deploy Documentation
 
 on:
   release:
@@ -30,28 +30,19 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.2'
-          bundler: '2.5.0'
-          bundler-cache: false
+          bundler-cache: true
           working-directory: docs
 
-      - name: Clean previous vendor and lock
-        working-directory: docs
-        run: |
-          rm -rf vendor/bundle Gemfile.lock
-
-      - name: Install dependencies
-        working-directory: docs
-        env:
-          BUNDLE_PATH: vendor/bundle
-        run: |
-          bundle config set without 'development'
-          bundle --version
-          bundle install --jobs 4 --retry 3
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v4
 
       - name: Build site
         working-directory: docs
+        env:
+          JEKYLL_ENV: production
         run: |
-          bundle exec jekyll build --baseurl "" --destination ../_site
+          bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}" --destination ../_site
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

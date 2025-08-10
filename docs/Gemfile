@@ -1,7 +1,9 @@
 source "https://rubygems.org"
 
-gem "jekyll", "~> 3.10"
+gem "jekyll", "~> 4.2"
 gem "jekyll-remote-theme"
-gem "just-the-docs"
+gem "jekyll-seo-tag"
+gem "just-the-docs", "~> 0.7.0"
 gem "kramdown-parser-gfm"
+gem "webrick"
 
