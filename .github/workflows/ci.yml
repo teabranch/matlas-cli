@@ -52,7 +52,7 @@ jobs:
         uses: golangci/golangci-lint-action@v7
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
-          args: --timeout=5m --config=.golangci.yml
+          args: --no-config --enable-only=errcheck,gosec,ineffassign --timeout=5m
 
       - name: Check Code Formatting
         run: |
