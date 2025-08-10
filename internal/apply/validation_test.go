@@ -97,181 +97,94 @@ func TestValidateProvider(t *testing.T) {
 }
 
 func TestValidateInstanceSize(t *testing.T) {
-	tests := []struct {
-		name    string
-		size    string
-		wantErr bool
-		errCode string
-	}{
-		{"Valid M10", "M10", false, ""},
-		{"Valid M20", "M20", false, ""},
-		{"Valid M700", "M700", false, ""},
-		{"Valid R40", "R40", false, ""},
-		{"Invalid size", "INVALID_SIZE", true, "INVALID_INSTANCE_SIZE"},
-		{"Empty size", "", true, "INVALID_INSTANCE_SIZE"},
-		{"Lowercase m10", "m10", true, "INVALID_INSTANCE_SIZE"},
-		{"Invalid M999", "M999", true, "INVALID_INSTANCE_SIZE"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := &ValidationResult{}
-			validateInstanceSize(tt.size, "test.instanceSize", result)
-
-			hasErr := len(result.Errors) > 0
-			if hasErr != tt.wantErr {
-				t.Errorf("validateInstanceSize() error = %v, wantErr %v", hasErr, tt.wantErr)
-			}
-
-			if tt.wantErr && len(result.Errors) > 0 {
-				if result.Errors[0].Code != tt.errCode {
-					t.Errorf("Expected error code %s, got %s", tt.errCode, result.Errors[0].Code)
-				}
-			}
-		})
-	}
+	assertValidationTable(t, []validationCase[string]{
+		{name: "Valid M10", in: "M10", wantErr: false, errCode: ""},
+		{name: "Valid M20", in: "M20", wantErr: false, errCode: ""},
+		{name: "Valid M700", in: "M700", wantErr: false, errCode: ""},
+		{name: "Valid R40", in: "R40", wantErr: false, errCode: ""},
+		{name: "Invalid size", in: "INVALID_SIZE", wantErr: true, errCode: "INVALID_INSTANCE_SIZE"},
+		{name: "Empty size", in: "", wantErr: true, errCode: "INVALID_INSTANCE_SIZE"},
+		{name: "Lowercase m10", in: "m10", wantErr: true, errCode: "INVALID_INSTANCE_SIZE"},
+		{name: "Invalid M999", in: "M999", wantErr: true, errCode: "INVALID_INSTANCE_SIZE"},
+	}, func(val string, res *ValidationResult) { validateInstanceSize(val, "test.instanceSize", res) })
 }
 
 func TestValidateMongoDBVersion(t *testing.T) {
-	tests := []struct {
-		name    string
-		version string
-		wantErr bool
-		errCode string
-	}{
-		{"Valid 4.4", "4.4", false, ""},
-		{"Valid 5.0", "5.0", false, ""},
-		{"Valid 6.0", "6.0", false, ""},
-		{"Valid 7.0", "7.0", false, ""},
-		{"Invalid 2.0", "2.0", true, "INVALID_MONGODB_VERSION"},
-		{"Invalid 3.6", "3.6", true, "INVALID_MONGODB_VERSION"},
-		{"Empty version", "", true, "INVALID_MONGODB_VERSION"},
-		{"Invalid version", "invalid", true, "INVALID_MONGODB_VERSION"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := &ValidationResult{}
-			validateMongoDBVersion(tt.version, "test.mongoDBVersion", result)
-
-			hasErr := len(result.Errors) > 0
-			if hasErr != tt.wantErr {
-				t.Errorf("validateMongoDBVersion() error = %v, wantErr %v", hasErr, tt.wantErr)
-			}
-
-			if tt.wantErr && len(result.Errors) > 0 {
-				if result.Errors[0].Code != tt.errCode {
-					t.Errorf("Expected error code %s, got %s", tt.errCode, result.Errors[0].Code)
-				}
-			}
-		})
-	}
+	assertValidationTable(t, []validationCase[string]{
+		{name: "Valid 4.4", in: "4.4", wantErr: false, errCode: ""},
+		{name: "Valid 5.0", in: "5.0", wantErr: false, errCode: ""},
+		{name: "Valid 6.0", in: "6.0", wantErr: false, errCode: ""},
+		{name: "Valid 7.0", in: "7.0", wantErr: false, errCode: ""},
+		{name: "Invalid 2.0", in: "2.0", wantErr: true, errCode: "INVALID_MONGODB_VERSION"},
+		{name: "Invalid 3.6", in: "3.6", wantErr: true, errCode: "INVALID_MONGODB_VERSION"},
+		{name: "Empty version", in: "", wantErr: true, errCode: "INVALID_MONGODB_VERSION"},
+		{name: "Invalid version", in: "invalid", wantErr: true, errCode: "INVALID_MONGODB_VERSION"},
+	}, func(val string, res *ValidationResult) { validateMongoDBVersion(val, "test.mongoDBVersion", res) })
 }
 
 func TestValidateResourceName(t *testing.T) {
 	opts := DefaultValidatorOptions()
-
-	tests := []struct {
-		name         string
-		resourceName string
-		wantErr      bool
-		errCode      string
-	}{
-		{"Valid name", "test-cluster", false, ""},
-		{"Valid with underscore", "test_cluster", false, ""},
-		{"Valid with numbers", "cluster123", false, ""},
-		{"Valid single char", "a", false, ""},
-		{"Empty name", "", true, "EMPTY_NAME"},
-		{"Name with space", "test cluster", true, "INVALID_NAME"},
-		{"Name with special char", "test@cluster", true, "INVALID_NAME"},
-		{"Name with uppercase", "Test-Cluster", true, "INVALID_NAME"},
-		{"Name starting with hyphen", "-test", true, "INVALID_NAME"},
-		{"Name ending with hyphen", "test-", true, "INVALID_NAME"},
-		{"Name with double dots", "test..cluster", true, "INVALID_NAME"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := &ValidationResult{}
-			validateResourceName(tt.resourceName, "test.name", result, opts)
-
-			hasErr := len(result.Errors) > 0
-			if hasErr != tt.wantErr {
-				t.Errorf("validateResourceName() error = %v, wantErr %v", hasErr, tt.wantErr)
-			}
-
-			if tt.wantErr && len(result.Errors) > 0 {
-				if result.Errors[0].Code != tt.errCode {
-					t.Errorf("Expected error code %s, got %s", tt.errCode, result.Errors[0].Code)
-				}
-			}
-		})
-	}
+	assertValidationTable(t, []validationCase[string]{
+		{name: "Valid name", in: "test-cluster", wantErr: false, errCode: ""},
+		{name: "Valid with underscore", in: "test_cluster", wantErr: false, errCode: ""},
+		{name: "Valid with numbers", in: "cluster123", wantErr: false, errCode: ""},
+		{name: "Valid single char", in: "a", wantErr: false, errCode: ""},
+		{name: "Empty name", in: "", wantErr: true, errCode: "EMPTY_NAME"},
+		{name: "Name with space", in: "test cluster", wantErr: true, errCode: "INVALID_NAME"},
+		{name: "Name with special char", in: "test@cluster", wantErr: true, errCode: "INVALID_NAME"},
+		{name: "Name with uppercase", in: "Test-Cluster", wantErr: true, errCode: "INVALID_NAME"},
+		{name: "Name starting with hyphen", in: "-test", wantErr: true, errCode: "INVALID_NAME"},
+		{name: "Name ending with hyphen", in: "test-", wantErr: true, errCode: "INVALID_NAME"},
+		{name: "Name with double dots", in: "test..cluster", wantErr: true, errCode: "INVALID_NAME"},
+	}, func(val string, res *ValidationResult) { validateResourceName(val, "test.name", res, opts) })
 }
 
 func TestValidateDatabaseName(t *testing.T) {
-	tests := []struct {
-		name    string
-		dbName  string
-		wantErr bool
-		errCode string
-	}{
-		{"Valid name", "testdb", false, ""},
-		{"Valid with underscore", "test_db", false, ""},
-		{"Valid with numbers", "test123", false, ""},
-		{"Valid mixed case", "myDatabase", false, ""},
-		{"Empty name", "", true, "EMPTY_DATABASE_NAME"},
-		{"Name with hyphen", "test-db", true, "INVALID_DATABASE_NAME"},
-		{"Name with space", "test db", true, "INVALID_DATABASE_NAME"},
-		{"Name with dot", "test.db", true, "INVALID_DATABASE_NAME"},
-		{"Name starting with number", "123test", true, "INVALID_DATABASE_NAME"},
-		{"Name with special char", "test$db", true, "INVALID_DATABASE_NAME"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := &ValidationResult{}
-			validateDatabaseName(tt.dbName, "test.databaseName", result)
-
-			hasErr := len(result.Errors) > 0
-			if hasErr != tt.wantErr {
-				t.Errorf("validateDatabaseName() error = %v, wantErr %v", hasErr, tt.wantErr)
-			}
-
-			if tt.wantErr && len(result.Errors) > 0 {
-				if result.Errors[0].Code != tt.errCode {
-					t.Errorf("Expected error code %s, got %s", tt.errCode, result.Errors[0].Code)
-				}
-			}
-		})
-	}
+	assertValidationTable(t, []validationCase[string]{
+		{name: "Valid name", in: "testdb", wantErr: false, errCode: ""},
+		{name: "Valid with underscore", in: "test_db", wantErr: false, errCode: ""},
+		{name: "Valid with numbers", in: "test123", wantErr: false, errCode: ""},
+		{name: "Valid mixed case", in: "myDatabase", wantErr: false, errCode: ""},
+		{name: "Empty name", in: "", wantErr: true, errCode: "EMPTY_DATABASE_NAME"},
+		{name: "Name with hyphen", in: "test-db", wantErr: true, errCode: "INVALID_DATABASE_NAME"},
+		{name: "Name with space", in: "test db", wantErr: true, errCode: "INVALID_DATABASE_NAME"},
+		{name: "Name with dot", in: "test.db", wantErr: true, errCode: "INVALID_DATABASE_NAME"},
+		{name: "Name starting with number", in: "123test", wantErr: true, errCode: "INVALID_DATABASE_NAME"},
+		{name: "Name with special char", in: "test$db", wantErr: true, errCode: "INVALID_DATABASE_NAME"},
+	}, func(val string, res *ValidationResult) { validateDatabaseName(val, "test.databaseName", res) })
 }
 
 func TestValidateCollectionName(t *testing.T) {
-	tests := []struct {
-		name           string
-		collectionName string
-		wantErr        bool
-		errCode        string
-	}{
-		{"Valid name", "users", false, ""},
-		{"Valid with underscore", "user_data", false, ""},
-		{"Valid camelCase", "userData", false, ""},
-		{"Valid with numbers", "users123", false, ""},
-		{"Empty name", "", true, "EMPTY_COLLECTION_NAME"},
-		{"Name with space", "user data", true, "INVALID_COLLECTION_NAME"},
-		{"Name starting with $", "$users", true, "INVALID_COLLECTION_NAME"},
-		{"System collection", "system.users", true, "INVALID_COLLECTION_NAME"},
-	}
+	assertValidationTable(t, []validationCase[string]{
+		{name: "Valid name", in: "users", wantErr: false, errCode: ""},
+		{name: "Valid with underscore", in: "user_data", wantErr: false, errCode: ""},
+		{name: "Valid camelCase", in: "userData", wantErr: false, errCode: ""},
+		{name: "Valid with numbers", in: "users123", wantErr: false, errCode: ""},
+		{name: "Empty name", in: "", wantErr: true, errCode: "EMPTY_COLLECTION_NAME"},
+		{name: "Name with space", in: "user data", wantErr: true, errCode: "INVALID_COLLECTION_NAME"},
+		{name: "Name starting with $", in: "$users", wantErr: true, errCode: "INVALID_COLLECTION_NAME"},
+		{name: "System collection", in: "system.users", wantErr: true, errCode: "INVALID_COLLECTION_NAME"},
+	}, func(val string, res *ValidationResult) { validateCollectionName(val, "test.collectionName", res) })
+}
 
-	for _, tt := range tests {
+// Generic validation helpers to reduce duplication
+type validationCase[T any] struct {
+	name    string
+	in      T
+	wantErr bool
+	errCode string
+}
+
+func assertValidationTable[T any](t *testing.T, cases []validationCase[T], validate func(val T, res *ValidationResult)) {
+	t.Helper()
+	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			result := &ValidationResult{}
-			validateCollectionName(tt.collectionName, "test.collectionName", result)
+			validate(tt.in, result)
 
 			hasErr := len(result.Errors) > 0
 			if hasErr != tt.wantErr {
-				t.Errorf("validateCollectionName() error = %v, wantErr %v", hasErr, tt.wantErr)
+				t.Errorf("unexpected error presence: got %v, want %v", hasErr, tt.wantErr)
 			}
 
 			if tt.wantErr && len(result.Errors) > 0 {

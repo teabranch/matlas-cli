@@ -34,116 +34,29 @@ func TestNewFormatter(t *testing.T) {
 	}
 }
 
-func TestFormatter_Format_JSON(t *testing.T) {
+func TestFormatter_Format_Serialization(t *testing.T) {
 	tests := []struct {
 		name     string
+		format   config.OutputFormat
 		data     interface{}
 		expected string
 	}{
-		{
-			name: "simple string",
-			data: "hello",
-			expected: `"hello"
-`,
-		},
-		{
-			name: "simple object",
-			data: map[string]string{"key": "value"},
-			expected: `{
-  "key": "value"
-}
-`,
-		},
-		{
-			name: "array",
-			data: []string{"item1", "item2"},
-			expected: `[
-  "item1",
-  "item2"
-]
-`,
-		},
-		{
-			name: "complex object",
-			data: map[string]interface{}{
-				"name":    "test",
-				"number":  42,
-				"enabled": true,
-			},
-			expected: `{
-  "enabled": true,
-  "name": "test",
-  "number": 42
-}
-`,
-		},
-		{
-			name: "nil data",
-			data: nil,
-			expected: `null
-`,
-		},
+		{name: "json simple string", format: config.OutputJSON, data: "hello", expected: "\"hello\"\n"},
+		{name: "yaml simple string", format: config.OutputYAML, data: "hello", expected: "hello\n"},
+		{name: "json simple object", format: config.OutputJSON, data: map[string]string{"key": "value"}, expected: "{\n  \"key\": \"value\"\n}\n"},
+		{name: "yaml simple object", format: config.OutputYAML, data: map[string]string{"key": "value"}, expected: "key: value\n"},
+		{name: "json array", format: config.OutputJSON, data: []string{"item1", "item2"}, expected: "[\n  \"item1\",\n  \"item2\"\n]\n"},
+		{name: "yaml array", format: config.OutputYAML, data: []string{"item1", "item2"}, expected: "- item1\n- item2\n"},
+		{name: "json complex object", format: config.OutputJSON, data: map[string]interface{}{"name": "test", "number": 42, "enabled": true}, expected: "{\n  \"enabled\": true,\n  \"name\": \"test\",\n  \"number\": 42\n}\n"},
+		{name: "yaml complex object", format: config.OutputYAML, data: map[string]interface{}{"name": "test", "number": 42, "enabled": true}, expected: "enabled: true\nname: test\nnumber: 42\n"},
+		{name: "json nil", format: config.OutputJSON, data: nil, expected: "null\n"},
+		{name: "yaml nil", format: config.OutputYAML, data: nil, expected: "null\n"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
-			formatter := NewFormatter(config.OutputJSON, &buf)
-
-			err := formatter.Format(tt.data)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, buf.String())
-		})
-	}
-}
-
-func TestFormatter_Format_YAML(t *testing.T) {
-	tests := []struct {
-		name     string
-		data     interface{}
-		expected string
-	}{
-		{
-			name:     "simple string",
-			data:     "hello",
-			expected: "hello\n",
-		},
-		{
-			name: "simple object",
-			data: map[string]string{"key": "value"},
-			expected: `key: value
-`,
-		},
-		{
-			name: "array",
-			data: []string{"item1", "item2"},
-			expected: `- item1
-- item2
-`,
-		},
-		{
-			name: "complex object",
-			data: map[string]interface{}{
-				"name":    "test",
-				"number":  42,
-				"enabled": true,
-			},
-			expected: `enabled: true
-name: test
-number: 42
-`,
-		},
-		{
-			name:     "nil data",
-			data:     nil,
-			expected: "null\n",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var buf bytes.Buffer
-			formatter := NewFormatter(config.OutputYAML, &buf)
+			formatter := NewFormatter(tt.format, &buf)
 
 			err := formatter.Format(tt.data)
 			assert.NoError(t, err)

@@ -610,55 +610,20 @@ func createTestOperationWithError(id string, opType OperationType, resourceKind 
 }
 
 func TestAtlasExecutor_DatabaseUserOperations_TypeCasting(t *testing.T) {
-	// Test that the executor properly handles DatabaseUserManifest objects
-	// without the "invalid resource type for database user operation" error
-
-	userManifest := &types.DatabaseUserManifest{
-		APIVersion: types.APIVersionV1,
-		Kind:       types.KindDatabaseUser,
-		Metadata: types.ResourceMetadata{
-			Name: "test-user",
-		},
-		Spec: types.DatabaseUserSpec{
-			ProjectName:  "test-project",
-			Username:     "testuser",
-			Password:     "testpass",
-			AuthDatabase: "admin",
-			Roles: []types.DatabaseRoleConfig{
-				{
-					RoleName:     "readWrite",
-					DatabaseName: "admin",
-				},
-			},
-		},
-	}
-
-	operation := &PlannedOperation{
-		Operation: Operation{
-			Type:         OperationCreate,
-			ResourceType: types.KindDatabaseUser,
-			ResourceName: "test-user",
-			Desired:      userManifest,
-		},
-	}
-
-	// Create executor without services (will fail later, but should not fail on type casting)
-	executor := &AtlasExecutor{}
-
-	result := &OperationResult{
-		Metadata: make(map[string]interface{}),
-	}
-
-	// This should fail with "database user service not available", not "invalid resource type"
-	err := executor.createDatabaseUser(context.Background(), operation, result)
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "database user service not available")
-	assert.NotContains(t, err.Error(), "invalid resource type for database user operation")
+	runDBUserOpAndAssert(t, OperationCreate, "testpass")
 }
 
 func TestAtlasExecutor_DatabaseUserUpdate_TypeCasting(t *testing.T) {
-	userManifest := &types.DatabaseUserManifest{
+	runDBUserOpAndAssert(t, OperationUpdate, "newpass")
+}
+
+func TestAtlasExecutor_DatabaseUserDelete_TypeCasting(t *testing.T) {
+	runDBUserOpAndAssert(t, OperationDelete, "")
+}
+
+// Helpers to reduce duplication in database user tests
+func createDBUserManifest(password string) *types.DatabaseUserManifest {
+	manifest := &types.DatabaseUserManifest{
 		APIVersion: types.APIVersionV1,
 		Kind:       types.KindDatabaseUser,
 		Metadata: types.ResourceMetadata{
@@ -667,7 +632,6 @@ func TestAtlasExecutor_DatabaseUserUpdate_TypeCasting(t *testing.T) {
 		Spec: types.DatabaseUserSpec{
 			ProjectName:  "test-project",
 			Username:     "testuser",
-			Password:     "newpass",
 			AuthDatabase: "admin",
 			Roles: []types.DatabaseRoleConfig{
 				{
@@ -677,57 +641,41 @@ func TestAtlasExecutor_DatabaseUserUpdate_TypeCasting(t *testing.T) {
 			},
 		},
 	}
-
-	operation := &PlannedOperation{
-		Operation: Operation{
-			Type:         OperationUpdate,
-			ResourceType: types.KindDatabaseUser,
-			ResourceName: "test-user",
-			Desired:      userManifest,
-		},
+	if password != "" {
+		manifest.Spec.Password = password
 	}
-
-	executor := &AtlasExecutor{}
-	result := &OperationResult{
-		Metadata: make(map[string]interface{}),
-	}
-
-	err := executor.updateDatabaseUser(context.Background(), operation, result)
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "database user service not available")
-	assert.NotContains(t, err.Error(), "invalid resource type for database user operation")
+	return manifest
 }
 
-func TestAtlasExecutor_DatabaseUserDelete_TypeCasting(t *testing.T) {
-	userManifest := &types.DatabaseUserManifest{
-		APIVersion: types.APIVersionV1,
-		Kind:       types.KindDatabaseUser,
-		Metadata: types.ResourceMetadata{
-			Name: "test-user",
-		},
-		Spec: types.DatabaseUserSpec{
-			ProjectName:  "test-project",
-			Username:     "testuser",
-			AuthDatabase: "admin",
-		},
-	}
+func runDBUserOpAndAssert(t *testing.T, opType OperationType, password string) {
+	t.Helper()
 
-	operation := &PlannedOperation{
-		Operation: Operation{
-			Type:         OperationDelete,
-			ResourceType: types.KindDatabaseUser,
-			ResourceName: "test-user",
-			Current:      userManifest,
-		},
+	userManifest := createDBUserManifest(password)
+	operation := &PlannedOperation{Operation: Operation{
+		Type:         opType,
+		ResourceType: types.KindDatabaseUser,
+		ResourceName: "test-user",
+	}}
+	// Attach manifest as Desired/Current depending on op
+	switch opType {
+	case OperationCreate, OperationUpdate:
+		operation.Desired = userManifest
+	case OperationDelete:
+		operation.Current = userManifest
 	}
 
 	executor := &AtlasExecutor{}
-	result := &OperationResult{
-		Metadata: make(map[string]interface{}),
-	}
+	result := &OperationResult{Metadata: make(map[string]interface{})}
 
-	err := executor.deleteDatabaseUser(context.Background(), operation, result)
+	var err error
+	switch opType {
+	case OperationCreate:
+		err = executor.createDatabaseUser(context.Background(), operation, result)
+	case OperationUpdate:
+		err = executor.updateDatabaseUser(context.Background(), operation, result)
+	case OperationDelete:
+		err = executor.deleteDatabaseUser(context.Background(), operation, result)
+	}
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "database user service not available")

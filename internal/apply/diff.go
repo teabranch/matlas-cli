@@ -170,43 +170,24 @@ func (d *DiffEngine) computeProjectSettingsDiff(desired *ProjectState, current *
 
 // computeClustersDiff computes diffs for clusters
 func (d *DiffEngine) computeClustersDiff(desired *ProjectState, current *ProjectState, diff *Diff) error {
-	desiredClusters := make(map[string]*types.ClusterManifest)
-	currentClusters := make(map[string]*types.ClusterManifest)
+	desiredMap := make(map[string]interface{})
+	currentMap := make(map[string]interface{})
 
 	if desired != nil {
 		for i := range desired.Clusters {
 			cluster := &desired.Clusters[i]
-			desiredClusters[cluster.Metadata.Name] = cluster
+			desiredMap[cluster.Metadata.Name] = cluster
 		}
 	}
 
 	if current != nil {
 		for i := range current.Clusters {
 			cluster := &current.Clusters[i]
-			currentClusters[cluster.Metadata.Name] = cluster
+			currentMap[cluster.Metadata.Name] = cluster
 		}
 	}
 
-	// Find all unique cluster names
-	allNames := make(map[string]bool)
-	for name := range desiredClusters {
-		allNames[name] = true
-	}
-	for name := range currentClusters {
-		allNames[name] = true
-	}
-
-	// Compute diff for each cluster
-	for name := range allNames {
-		desired := desiredClusters[name]
-		current := currentClusters[name]
-
-		op := d.computeResourceDiff(types.KindCluster, name, desired, current)
-		if op != nil {
-			diff.Operations = append(diff.Operations, *op)
-		}
-	}
-
+	d.computeDiffFromNamedMaps(types.KindCluster, desiredMap, currentMap, diff)
 	return nil
 }
 
@@ -264,44 +245,48 @@ func (d *DiffEngine) computeDatabaseUsersDiff(desired *ProjectState, current *Pr
 
 // computeNetworkAccessDiff computes diffs for network access entries
 func (d *DiffEngine) computeNetworkAccessDiff(desired *ProjectState, current *ProjectState, diff *Diff) error {
-	desiredEntries := make(map[string]*types.NetworkAccessManifest)
-	currentEntries := make(map[string]*types.NetworkAccessManifest)
+	desiredMap := make(map[string]interface{})
+	currentMap := make(map[string]interface{})
 
 	if desired != nil {
 		for i := range desired.NetworkAccess {
 			entry := &desired.NetworkAccess[i]
-			desiredEntries[entry.Metadata.Name] = entry
+			desiredMap[entry.Metadata.Name] = entry
 		}
 	}
 
 	if current != nil {
 		for i := range current.NetworkAccess {
 			entry := &current.NetworkAccess[i]
-			currentEntries[entry.Metadata.Name] = entry
+			currentMap[entry.Metadata.Name] = entry
 		}
 	}
 
-	// Find all unique entry names
-	allNames := make(map[string]bool)
-	for name := range desiredEntries {
-		allNames[name] = true
+	d.computeDiffFromNamedMaps(types.KindNetworkAccess, desiredMap, currentMap, diff)
+	return nil
+}
+
+// computeDiffFromNamedMaps computes diffs given name-indexed desired and current maps
+func (d *DiffEngine) computeDiffFromNamedMaps(resourceType types.ResourceKind, desiredMap, currentMap map[string]interface{}, diff *Diff) {
+	// Find all unique names
+	allNames := make(map[string]struct{})
+	for name := range desiredMap {
+		allNames[name] = struct{}{}
 	}
-	for name := range currentEntries {
-		allNames[name] = true
+	for name := range currentMap {
+		allNames[name] = struct{}{}
 	}
 
-	// Compute diff for each network access entry
+	// Compute diff for each name
 	for name := range allNames {
-		desired := desiredEntries[name]
-		current := currentEntries[name]
+		desired := desiredMap[name]
+		current := currentMap[name]
 
-		op := d.computeResourceDiff(types.KindNetworkAccess, name, desired, current)
+		op := d.computeResourceDiff(resourceType, name, desired, current)
 		if op != nil {
 			diff.Operations = append(diff.Operations, *op)
 		}
 	}
-
-	return nil
 }
 
 // computeResourceDiff computes the diff for a single resource

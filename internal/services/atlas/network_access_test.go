@@ -2,7 +2,6 @@ package atlas
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -148,7 +147,7 @@ func TestNetworkAccessListsService_Create_DuplicateEntry(t *testing.T) {
 	t.Logf("Duplicate entry error (expected): %v", err)
 }
 
-func TestNetworkAccessListsService_Create_InvalidIPAddress(t *testing.T) {
+func TestNetworkAccessListsService_Create_InvalidInputs(t *testing.T) {
 	_ = gotenv.Load("../../.env", "../.env", ".env")
 
 	pid := os.Getenv("PROJECT_ID")
@@ -165,68 +164,32 @@ func TestNetworkAccessListsService_Create_InvalidIPAddress(t *testing.T) {
 	}
 	svc := NewNetworkAccessListsService(client)
 
-	invalidIPs := []string{
-		"999.999.999.999",   // invalid IP range
-		"192.168.1",         // incomplete IP
-		"192.168.1.1.1",     // too many octets
-		"not.an.ip.address", // non-numeric
-		"",                  // empty
+	type testCase struct {
+		name  string
+		entry admin.NetworkPermissionEntry
+		key   string
 	}
 
-	for i, invalidIP := range invalidIPs {
-		t.Run(fmt.Sprintf("InvalidIP_%d", i), func(t *testing.T) {
-			testEntry := admin.NetworkPermissionEntry{
-				IpAddress: admin.PtrString(invalidIP),
-				Comment:   admin.PtrString("Invalid IP test"),
-			}
+	cases := []testCase{
+		{name: "invalid ip - range", entry: admin.NetworkPermissionEntry{IpAddress: admin.PtrString("999.999.999.999"), Comment: admin.PtrString("Invalid IP test")}, key: "999.999.999.999"},
+		{name: "invalid ip - incomplete", entry: admin.NetworkPermissionEntry{IpAddress: admin.PtrString("192.168.1"), Comment: admin.PtrString("Invalid IP test")}, key: "192.168.1"},
+		{name: "invalid ip - too many octets", entry: admin.NetworkPermissionEntry{IpAddress: admin.PtrString("192.168.1.1.1"), Comment: admin.PtrString("Invalid IP test")}, key: "192.168.1.1.1"},
+		{name: "invalid ip - non numeric", entry: admin.NetworkPermissionEntry{IpAddress: admin.PtrString("not.an.ip.address"), Comment: admin.PtrString("Invalid IP test")}, key: "not.an.ip.address"},
+		{name: "invalid ip - empty", entry: admin.NetworkPermissionEntry{IpAddress: admin.PtrString(""), Comment: admin.PtrString("Invalid IP test")}, key: ""},
+		{name: "invalid cidr - prefix length", entry: admin.NetworkPermissionEntry{CidrBlock: admin.PtrString("192.168.1.0/99"), Comment: admin.PtrString("Invalid CIDR test")}, key: "192.168.1.0/99"},
+		{name: "invalid cidr - negative prefix", entry: admin.NetworkPermissionEntry{CidrBlock: admin.PtrString("192.168.1.0/-1"), Comment: admin.PtrString("Invalid CIDR test")}, key: "192.168.1.0/-1"},
+		{name: "invalid cidr - missing prefix", entry: admin.NetworkPermissionEntry{CidrBlock: admin.PtrString("192.168.1.0/"), Comment: admin.PtrString("Invalid CIDR test")}, key: "192.168.1.0/"},
+		{name: "invalid cidr - non-numeric prefix", entry: admin.NetworkPermissionEntry{CidrBlock: admin.PtrString("192.168.1.0/abc"), Comment: admin.PtrString("Invalid CIDR test")}, key: "192.168.1.0/abc"},
+		{name: "invalid cidr - invalid ip", entry: admin.NetworkPermissionEntry{CidrBlock: admin.PtrString("999.999.999.0/24"), Comment: admin.PtrString("Invalid CIDR test")}, key: "999.999.999.0/24"},
+	}
 
-			_, err := svc.Create(ctx, pid, []admin.NetworkPermissionEntry{testEntry})
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := svc.Create(ctx, pid, []admin.NetworkPermissionEntry{tc.entry})
 			if err == nil {
-				t.Errorf("Expected error for invalid IP '%s', got nil", invalidIP)
+				t.Errorf("Expected error for invalid input '%s', got nil", tc.key)
 				// Clean up if it somehow succeeded
-				_ = svc.Delete(ctx, pid, invalidIP)
-			}
-		})
-	}
-}
-
-func TestNetworkAccessListsService_Create_InvalidCIDR(t *testing.T) {
-	_ = gotenv.Load("../../.env", "../.env", ".env")
-
-	pid := os.Getenv("PROJECT_ID")
-	if pid == "" {
-		t.Skip("PROJECT_ID env not set; skipping network access error tests")
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
-	defer cancel()
-
-	client, err := atlasclient.NewClient(atlasclient.Config{})
-	if err != nil {
-		t.Fatalf("client err: %v", err)
-	}
-	svc := NewNetworkAccessListsService(client)
-
-	invalidCIDRs := []string{
-		"192.168.1.0/99",   // invalid prefix length
-		"192.168.1.0/-1",   // negative prefix
-		"192.168.1.0/",     // missing prefix
-		"192.168.1.0/abc",  // non-numeric prefix
-		"999.999.999.0/24", // invalid IP in CIDR
-	}
-
-	for i, invalidCIDR := range invalidCIDRs {
-		t.Run(fmt.Sprintf("InvalidCIDR_%d", i), func(t *testing.T) {
-			testEntry := admin.NetworkPermissionEntry{
-				CidrBlock: admin.PtrString(invalidCIDR),
-				Comment:   admin.PtrString("Invalid CIDR test"),
-			}
-
-			_, err := svc.Create(ctx, pid, []admin.NetworkPermissionEntry{testEntry})
-			if err == nil {
-				t.Errorf("Expected error for invalid CIDR '%s', got nil", invalidCIDR)
-				// Clean up if it somehow succeeded
-				_ = svc.Delete(ctx, pid, invalidCIDR)
+				_ = svc.Delete(ctx, pid, tc.key)
 			}
 		})
 	}
