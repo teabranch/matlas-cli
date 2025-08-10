@@ -125,6 +125,9 @@ func init() {
 	rootCmd.AddCommand(discover.NewDiscoverCmd())
 	rootCmd.AddCommand(configcmd.NewConfigCmd())
 
+	// Replace default help with enhanced help that supports --format markdown
+	rootCmd.SetHelpCommand(newHelpCmd(rootCmd))
+
 	// Configure error handling for all commands to prevent help text on errors
 	cli.ConfigureCommandErrorHandling(rootCmd)
 
