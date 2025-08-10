@@ -1,0 +1,100 @@
+{"0": {
+    "doc": "Atlas commands",
+    "title": "Atlas commands",
+    "content": "Projects . | List: matlas atlas projects list [--org-id &lt;org&gt;] | Get: matlas atlas projects get --project-id &lt;id&gt; | Create: matlas atlas projects create &lt;name&gt; --org-id &lt;org&gt; [--tag k=v]... | Update: matlas atlas projects update --project-id &lt;id&gt; [--name new] [--tag k=v]... [--clear-tags] | Delete: matlas atlas projects delete &lt;project-id&gt; [--yes] | . Users . | List: matlas atlas users list --project-id &lt;id&gt; [--page N --limit M --all] | Get: matlas atlas users get &lt;username&gt; --project-id &lt;id&gt; [--database-name admin] | Create: matlas atlas users create --project-id &lt;id&gt; --username u --database-name admin --roles role@db[,role@db] | Update: matlas atlas users update &lt;username&gt; --project-id &lt;id&gt; [--database-name admin] [--password] [--roles ...] | Delete: matlas atlas users delete &lt;username&gt; --project-id &lt;id&gt; [--database-name admin] [--yes] | . Network access . | List: matlas atlas network list --project-id &lt;id&gt; | Get: matlas atlas network get &lt;ip-or-cidr&gt; --project-id &lt;id&gt; | Create: matlas atlas network create --project-id &lt;id&gt; [--ip-address x.x.x.x | --cidr-block x/x | --aws-security-group sg-...] [--comment] | Delete: matlas atlas network delete &lt;ip-or-cidr&gt; --project-id &lt;id&gt; [--yes] | . Network peering . | List/Get/Create/Delete with matlas atlas network-peering ... (see --help for required flags) | . Network containers . | List/Get/Create/Delete with matlas atlas network-containers ... (see --help) | . Unsupported/hidden in this build . | matlas atlas search ... | matlas atlas vpc-endpoints ... | . ",
+    "url": "/atlas.html",
+    
+    "relUrl": "/atlas.html"
+  },"1": {
+    "doc": "Authentication and configuration",
+    "title": "Authentication and configuration",
+    "content": "Sources and precedence 1) Defaults (output=table, timeout=30s) 2) Config file: ~/.matlas/config.yaml or --config/ATLAS_CONFIG_FILE 3) Env vars (prefix ATLAS_), e.g. ATLAS_API_KEY, ATLAS_PUB_KEY, ATLAS_PROJECT_ID, ATLAS_ORG_ID 4) Flags on the command line . ",
+    "url": "/auth.html",
+    
+    "relUrl": "/auth.html"
+  },"2": {
+    "doc": "Authentication and configuration",
+    "title": "Config file example (~/.matlas/config.yaml)",
+    "content": "output: table timeout: 30s projectId: \"507f1f77bcf86cd799439011\" apiKey: \"&lt;private&gt;\" publicKey: \"&lt;public&gt;\" . ",
+    "url": "/auth.html#config-file-example-matlasconfigyaml",
+    
+    "relUrl": "/auth.html#config-file-example-matlasconfigyaml"
+  },"3": {
+    "doc": "Authentication and configuration",
+    "title": "Environment",
+    "content": ". | ATLAS_API_KEY: private key | ATLAS_PUB_KEY: public key | Optional: ATLAS_PROJECT_ID, ATLAS_ORG_ID | . ",
+    "url": "/auth.html#environment",
+    
+    "relUrl": "/auth.html#environment"
+  },"4": {
+    "doc": "Authentication and configuration",
+    "title": "Flags",
+    "content": ". | --api-key, --pub-key, --project-id, --org-id, --output, --timeout, --config | . ",
+    "url": "/auth.html#flags",
+    
+    "relUrl": "/auth.html#flags"
+  },"5": {
+    "doc": "Authentication and configuration",
+    "title": "macOS Keychain fallback",
+    "content": ". | If keys aren’t found in flags/env/file, the CLI attempts a macOS keychain lookup: . | service “api-key” account “matlas” for ATLAS_API_KEY | service “pub-key” account “matlas” for ATLAS_PUB_KEY | . | . ",
+    "url": "/auth.html#macos-keychain-fallback",
+    
+    "relUrl": "/auth.html#macos-keychain-fallback"
+  },"6": {
+    "doc": "Authentication and configuration",
+    "title": "Best practices",
+    "content": ". | Prefer environment variables over flags for secrets | Limit scope of API keys to required permissions | For DB enumeration, use --use-temp-user to create a short‑lived user | . ",
+    "url": "/auth.html#best-practices",
+    
+    "relUrl": "/auth.html#best-practices"
+  },"7": {
+    "doc": "Database commands",
+    "title": "Database commands",
+    "content": "Connection options . | Direct: --connection-string \"mongodb+srv://user:pass@host/\" | Via Atlas: --cluster &lt;name&gt; --project-id &lt;id&gt; (optionally --use-temp-user and --database &lt;db&gt;) | . Databases . | List: matlas database list [--connection-string ... | --cluster &lt;name&gt; --project-id &lt;id&gt; [--use-temp-user] [--database &lt;db&gt;]] | Create: matlas database create &lt;db&gt; [--connection-string ... | --cluster &lt;name&gt; --project-id &lt;id&gt;] | Delete: matlas database delete &lt;db&gt; [--connection-string ... | --cluster &lt;name&gt; --project-id &lt;id&gt;] [--yes] | . Collections . | List: matlas database collections list [--connection-string ... | --cluster &lt;name&gt; --project-id &lt;id&gt;] --database &lt;db&gt; | Create: matlas database collections create &lt;collection&gt; [--connection-string ... | --cluster &lt;name&gt; --project-id &lt;id&gt;] --database &lt;db&gt; [--capped --size BYTES --max-documents N] | Delete: matlas database collections delete &lt;collection&gt; [--connection-string ... | --cluster &lt;name&gt; --project-id &lt;id&gt;] --database &lt;db&gt; [--yes] | . Indexes . | List: matlas database collections indexes list [--connection-string ... | --cluster &lt;name&gt; --project-id &lt;id&gt;] --database &lt;db&gt; --collection &lt;coll&gt; | Create: matlas database collections indexes create &lt;field:order&gt; [...] [--connection-string ... | --cluster &lt;name&gt; --project-id &lt;id&gt;] --database &lt;db&gt; --collection &lt;coll&gt; [--name NAME] [--unique] [--sparse] [--background] | Delete: matlas database collections indexes delete &lt;name&gt; [--connection-string ... | --cluster &lt;name&gt; --project-id &lt;id&gt;] --database &lt;db&gt; --collection &lt;coll&gt; [--yes] | . ",
+    "url": "/database.html",
+    
+    "relUrl": "/database.html"
+  },"8": {
+    "doc": "Welcome",
+    "title": "matlas",
+    "content": "One CLI for MongoDB Atlas and MongoDB databases. Matlas bridges the Atlas SDK and the MongoDB Go Driver so you can manage infrastructure and data workflows without switching tools. ",
+    "url": "/#matlas",
+    
+    "relUrl": "/#matlas"
+  },"9": {
+    "doc": "Welcome",
+    "title": "Quick links",
+    "content": ". | Authentication and configuration | Atlas commands | Database commands | Infra: discover/plan/diff/apply/destroy | . ",
+    "url": "/#quick-links",
+    
+    "relUrl": "/#quick-links"
+  },"10": {
+    "doc": "Welcome",
+    "title": "Why matlas",
+    "content": ". | A single mental model for both Atlas and database operations | Discover -&gt; Plan/Diff -&gt; Apply inspired by Terraform and kubectl | Consistent flags, output, and ergonomics | . Get started from the repository README, or dive straight into the topics above. ",
+    "url": "/#why-matlas",
+    
+    "relUrl": "/#why-matlas"
+  },"11": {
+    "doc": "Welcome",
+    "title": "Welcome",
+    "content": " ",
+    "url": "/",
+    
+    "relUrl": "/"
+  },"12": {
+    "doc": "Infra workflows",
+    "title": "Infrastructure workflows",
+    "content": "File formats . | DiscoveredProject: output from matlas discover | ApplyDocument / ApplyConfig: inputs for matlas infra | . Discover . | Enumerate Atlas resources for a project | Flags: --project-id, --include [project,clusters,users,network,databases], --exclude, --mask-secrets, --include-databases, --use-temp-user, --resource-type, --resource-name, --convert-to-apply, --output [yaml|json], -o file | Example: matlas discover --project-id &lt;id&gt; --include-databases --use-temp-user --output yaml -o project.yaml | . Plan . | Generate an execution plan without applying | Example: matlas infra plan -f config.yaml --output table | . Diff . | Show differences between desired config and current Atlas state | Example: matlas infra diff -f config.yaml --detailed --show-context 3 | . Apply . | Reconcile desired state | Key flags: --dry-run, --dry-run-mode [quick|thorough|detailed], --auto-approve, --preserve-existing, --watch | Example: matlas infra -f config.yaml --dry-run --output summary | . Show . | Display current Atlas project state | Example: matlas infra show --project-id &lt;id&gt; --output table | . Destroy . | Delete resources defined in config or everything discovered (--discovery-only) | Confirmation required unless --auto-approve/--force | Example: matlas infra destroy -f config.yaml or matlas infra destroy --discovery-only --project-id &lt;id&gt; | . ",
+    "url": "/infra.html#infrastructure-workflows",
+    
+    "relUrl": "/infra.html#infrastructure-workflows"
+  },"13": {
+    "doc": "Infra workflows",
+    "title": "Infra workflows",
+    "content": " ",
+    "url": "/infra.html",
+    
+    "relUrl": "/infra.html"
+  }
+}

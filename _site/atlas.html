@@ -1,0 +1,47 @@
+<h1 id="atlas-commands">Atlas commands</h1>
+
+<p>Projects</p>
+<ul>
+  <li>List: <code class="language-plaintext highlighter-rouge">matlas atlas projects list [--org-id &lt;org&gt;]</code></li>
+  <li>Get: <code class="language-plaintext highlighter-rouge">matlas atlas projects get --project-id &lt;id&gt;</code></li>
+  <li>Create: <code class="language-plaintext highlighter-rouge">matlas atlas projects create &lt;name&gt; --org-id &lt;org&gt; [--tag k=v]...</code></li>
+  <li>Update: <code class="language-plaintext highlighter-rouge">matlas atlas projects update --project-id &lt;id&gt; [--name new] [--tag k=v]... [--clear-tags]</code></li>
+  <li>Delete: <code class="language-plaintext highlighter-rouge">matlas atlas projects delete &lt;project-id&gt; [--yes]</code></li>
+</ul>
+
+<p>Users</p>
+<ul>
+  <li>List: <code class="language-plaintext highlighter-rouge">matlas atlas users list --project-id &lt;id&gt; [--page N --limit M --all]</code></li>
+  <li>Get: <code class="language-plaintext highlighter-rouge">matlas atlas users get &lt;username&gt; --project-id &lt;id&gt; [--database-name admin]</code></li>
+  <li>Create: <code class="language-plaintext highlighter-rouge">matlas atlas users create --project-id &lt;id&gt; --username u --database-name admin --roles role@db[,role@db]</code></li>
+  <li>Update: <code class="language-plaintext highlighter-rouge">matlas atlas users update &lt;username&gt; --project-id &lt;id&gt; [--database-name admin] [--password] [--roles ...]</code></li>
+  <li>Delete: <code class="language-plaintext highlighter-rouge">matlas atlas users delete &lt;username&gt; --project-id &lt;id&gt; [--database-name admin] [--yes]</code></li>
+</ul>
+
+<p>Network access</p>
+<ul>
+  <li>List: <code class="language-plaintext highlighter-rouge">matlas atlas network list --project-id &lt;id&gt;</code></li>
+  <li>Get: <code class="language-plaintext highlighter-rouge">matlas atlas network get &lt;ip-or-cidr&gt; --project-id &lt;id&gt;</code></li>
+  <li>Create: <code class="language-plaintext highlighter-rouge">matlas atlas network create --project-id &lt;id&gt; [--ip-address x.x.x.x | --cidr-block x/x | --aws-security-group sg-...] [--comment]</code></li>
+  <li>Delete: <code class="language-plaintext highlighter-rouge">matlas atlas network delete &lt;ip-or-cidr&gt; --project-id &lt;id&gt; [--yes]</code></li>
+</ul>
+
+<p>Network peering</p>
+<ul>
+  <li>List/Get/Create/Delete with <code class="language-plaintext highlighter-rouge">matlas atlas network-peering ...</code> (see <code class="language-plaintext highlighter-rouge">--help</code> for required flags)</li>
+</ul>
+
+<p>Network containers</p>
+<ul>
+  <li>List/Get/Create/Delete with <code class="language-plaintext highlighter-rouge">matlas atlas network-containers ...</code> (see <code class="language-plaintext highlighter-rouge">--help</code>)</li>
+</ul>
+
+<p>Unsupported/hidden in this build</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">matlas atlas search ...</code></li>
+  <li><code class="language-plaintext highlighter-rouge">matlas atlas vpc-endpoints ...</code></li>
+</ul>
+
+
+
+

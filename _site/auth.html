@@ -1,0 +1,48 @@
+<h1 id="authentication-and-configuration">Authentication and configuration</h1>
+
+<p>Sources and precedence
+1) Defaults (output=table, timeout=30s)
+2) Config file: <code class="language-plaintext highlighter-rouge">~/.matlas/config.yaml</code> or <code class="language-plaintext highlighter-rouge">--config</code>/<code class="language-plaintext highlighter-rouge">ATLAS_CONFIG_FILE</code>
+3) Env vars (prefix <code class="language-plaintext highlighter-rouge">ATLAS_</code>), e.g. <code class="language-plaintext highlighter-rouge">ATLAS_API_KEY</code>, <code class="language-plaintext highlighter-rouge">ATLAS_PUB_KEY</code>, <code class="language-plaintext highlighter-rouge">ATLAS_PROJECT_ID</code>, <code class="language-plaintext highlighter-rouge">ATLAS_ORG_ID</code>
+4) Flags on the command line</p>
+
+<h2 id="config-file-example-matlasconfigyaml">Config file example (<code class="language-plaintext highlighter-rouge">~/.matlas/config.yaml</code>)</h2>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>output: table
+timeout: 30s
+projectId: "507f1f77bcf86cd799439011"
+apiKey: "&lt;private&gt;"
+publicKey: "&lt;public&gt;"
+</code></pre></div></div>
+
+<h2 id="environment">Environment</h2>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">ATLAS_API_KEY</code>: private key</li>
+  <li><code class="language-plaintext highlighter-rouge">ATLAS_PUB_KEY</code>: public key</li>
+  <li>Optional: <code class="language-plaintext highlighter-rouge">ATLAS_PROJECT_ID</code>, <code class="language-plaintext highlighter-rouge">ATLAS_ORG_ID</code></li>
+</ul>
+
+<h2 id="flags">Flags</h2>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">--api-key</code>, <code class="language-plaintext highlighter-rouge">--pub-key</code>, <code class="language-plaintext highlighter-rouge">--project-id</code>, <code class="language-plaintext highlighter-rouge">--org-id</code>, <code class="language-plaintext highlighter-rouge">--output</code>, <code class="language-plaintext highlighter-rouge">--timeout</code>, <code class="language-plaintext highlighter-rouge">--config</code></li>
+</ul>
+
+<h2 id="macos-keychain-fallback">macOS Keychain fallback</h2>
+<ul>
+  <li>If keys aren’t found in flags/env/file, the CLI attempts a macOS keychain lookup:
+    <ul>
+      <li>service “api-key” account “matlas” for <code class="language-plaintext highlighter-rouge">ATLAS_API_KEY</code></li>
+      <li>service “pub-key” account “matlas” for <code class="language-plaintext highlighter-rouge">ATLAS_PUB_KEY</code></li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="best-practices">Best practices</h2>
+<ul>
+  <li>Prefer environment variables over flags for secrets</li>
+  <li>Limit scope of API keys to required permissions</li>
+  <li>For DB enumeration, use <code class="language-plaintext highlighter-rouge">--use-temp-user</code> to create a short‑lived user</li>
+</ul>
+
+
+
+
