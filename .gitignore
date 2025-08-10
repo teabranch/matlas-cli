@@ -31,6 +31,11 @@ bin/
 # Built documentation site
 _site/
 
+# Jekyll files
+docs/vendor/
+docs/Gemfile.lock
+docs/.bundle/
+
 # Editor/IDE
 # .idea/
 # .vscode/
