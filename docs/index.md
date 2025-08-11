@@ -19,28 +19,28 @@ title: Home
     <div class="feature-icon">🔐</div>
     <h3 class="feature-title">Authentication & Configuration</h3>
     <p class="feature-description">Flexible authentication with API keys, config files, environment variables, and macOS Keychain integration.</p>
-    <a href="auth" class="btn btn-outline">Learn more</a>
+    <a href="{{ '/auth.html' | relative_url }}" class="btn btn-outline">Learn more</a>
   </div>
   
   <div class="card feature">
     <div class="feature-icon">☁️</div>
     <h3 class="feature-title">Atlas Commands</h3>
     <p class="feature-description">Manage MongoDB Atlas projects, clusters, users, and networking with intuitive commands.</p>
-    <a href="atlas" class="btn btn-outline">Learn more</a>
+    <a href="{{ '/atlas.html' | relative_url }}" class="btn btn-outline">Learn more</a>
   </div>
   
   <div class="card feature">
     <div class="feature-icon">🗄️</div>
     <h3 class="feature-title">Database Commands</h3>
     <p class="feature-description">Work directly with MongoDB databases, collections, and indexes through Atlas or direct connections.</p>
-    <a href="database" class="btn btn-outline">Learn more</a>
+    <a href="{{ '/database.html' | relative_url }}" class="btn btn-outline">Learn more</a>
   </div>
   
   <div class="card feature">
     <div class="feature-icon">🏗️</div>
     <h3 class="feature-title">Infrastructure Workflows</h3>
     <p class="feature-description">Terraform-inspired infrastructure-as-code workflows: discover, plan, diff, apply, destroy.</p>
-    <a href="infra" class="btn btn-outline">Learn more</a>
+    <a href="{{ '/infra.html' | relative_url }}" class="btn btn-outline">Learn more</a>
   </div>
 </div>
 
