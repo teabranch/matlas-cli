@@ -39,8 +39,8 @@ type CacheEntry struct {
 	ExpiresAt  time.Time     `json:"expiresAt"`
 	AccessedAt time.Time     `json:"accessedAt"`
 	HitCount   int64         `json:"hitCount"`
-    // Monotonic sequence to break ties when AccessedAt times are equal across platforms
-    LastAccessSeq uint64 `json:"lastAccessSeq"`
+	// Monotonic sequence to break ties when AccessedAt times are equal across platforms
+	LastAccessSeq uint64 `json:"lastAccessSeq"`
 }
 
 // CacheStats provides statistics about cache usage
@@ -65,8 +65,8 @@ type InMemoryStateCache struct {
 	defaultTTL    time.Duration
 	cleanupTicker *time.Ticker
 	stopCleanup   chan struct{}
-    // Monotonic counter incremented on every Set/Get that touches entries
-    accessCounter uint64
+	// Monotonic counter incremented on every Set/Get that touches entries
+	accessCounter uint64
 }
 
 // NewInMemoryStateCache creates a new in-memory state cache
@@ -90,13 +90,13 @@ func NewInMemoryStateCache(maxEntries int, defaultTTL time.Duration) *InMemorySt
 
 // Get retrieves a cached project state
 func (c *InMemoryStateCache) Get(projectID string) (*ProjectState, bool) {
-    // Use write lock to safely mutate access metadata and stats
-    c.mu.Lock()
-    defer c.mu.Unlock()
+	// Use write lock to safely mutate access metadata and stats
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	entry, exists := c.entries[projectID]
 	if !exists {
-        c.stats.MissCount++
+		c.stats.MissCount++
 		return nil, false
 	}
 
@@ -104,14 +104,14 @@ func (c *InMemoryStateCache) Get(projectID string) (*ProjectState, bool) {
 	if time.Now().After(entry.ExpiresAt) {
 		delete(c.entries, projectID)
 		c.stats.ExpireCount++
-        c.stats.MissCount++
+		c.stats.MissCount++
 		return nil, false
 	}
 
 	// Update access statistics
 	entry.AccessedAt = time.Now()
-    c.accessCounter++
-    entry.LastAccessSeq = c.accessCounter
+	c.accessCounter++
+	entry.LastAccessSeq = c.accessCounter
 	entry.HitCount++
 	c.stats.HitCount++
 
@@ -133,11 +133,11 @@ func (c *InMemoryStateCache) Set(projectID string, state *ProjectState, ttl time
 		CachedAt:   now,
 		ExpiresAt:  now.Add(ttl),
 		AccessedAt: now,
-        HitCount:   0,
+		HitCount:   0,
 	}
-    // Assign initial access sequence so insertion order is tracked deterministically
-    c.accessCounter++
-    entry.LastAccessSeq = c.accessCounter
+	// Assign initial access sequence so insertion order is tracked deterministically
+	c.accessCounter++
+	entry.LastAccessSeq = c.accessCounter
 
 	// Check if we need to evict entries to make room
 	if len(c.entries) >= c.maxEntries {
@@ -264,29 +264,29 @@ func (c *InMemoryStateCache) cleanup() {
 
 // evictLRU evicts the least recently used entry
 func (c *InMemoryStateCache) evictLRU() {
-    var lruProjectID string
-    var lruSeq uint64
-    var lruTime time.Time
+	var lruProjectID string
+	var lruSeq uint64
+	var lruTime time.Time
 
 	for projectID, entry := range c.entries {
-        // Prefer sequence comparison to avoid platform-dependent time resolution ties
-        if lruProjectID == "" {
-            lruProjectID = projectID
-            lruSeq = entry.LastAccessSeq
-            lruTime = entry.AccessedAt
-            continue
-        }
-        if entry.LastAccessSeq < lruSeq {
-            lruProjectID = projectID
-            lruSeq = entry.LastAccessSeq
-            lruTime = entry.AccessedAt
-            continue
-        }
-        // As a secondary check, fall back to time for older entries without seq
-        if entry.LastAccessSeq == lruSeq && entry.AccessedAt.Before(lruTime) {
-            lruProjectID = projectID
-            lruTime = entry.AccessedAt
-        }
+		// Prefer sequence comparison to avoid platform-dependent time resolution ties
+		if lruProjectID == "" {
+			lruProjectID = projectID
+			lruSeq = entry.LastAccessSeq
+			lruTime = entry.AccessedAt
+			continue
+		}
+		if entry.LastAccessSeq < lruSeq {
+			lruProjectID = projectID
+			lruSeq = entry.LastAccessSeq
+			lruTime = entry.AccessedAt
+			continue
+		}
+		// As a secondary check, fall back to time for older entries without seq
+		if entry.LastAccessSeq == lruSeq && entry.AccessedAt.Before(lruTime) {
+			lruProjectID = projectID
+			lruTime = entry.AccessedAt
+		}
 	}
 
 	if lruProjectID != "" {
