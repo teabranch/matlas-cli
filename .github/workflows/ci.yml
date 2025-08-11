@@ -322,32 +322,3 @@ jobs:
   # Deployment and Notifications
   # ==============================================================================
   
-  deploy:
-    name: 🚀 Deploy Documentation
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [build]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Generate Documentation
-        run: |
-          go build -o matlas .
-          ./matlas help --format markdown > docs/cli-reference.md
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        if: success()
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
-          publish_branch: gh-pages
-          enable_jekyll: true
-
