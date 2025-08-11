@@ -1,17 +1,14 @@
 ---
+layout: page
 title: Infrastructure Workflows
-nav_order: 5
+description: Terraform-inspired workflows for managing MongoDB Atlas infrastructure as code.
 ---
 
 # Infrastructure Workflows
 
 Terraform-inspired workflows for managing MongoDB Atlas infrastructure as code.
 
-## Table of contents
-{: .no_toc .text-delta }
 
-1. TOC
-{:toc}
 
 ---
 

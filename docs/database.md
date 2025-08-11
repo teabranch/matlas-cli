@@ -1,17 +1,14 @@
 ---
+layout: page
 title: Database Commands
-nav_order: 4
+description: Work directly with MongoDB databases, collections, and indexes through Atlas clusters or direct connections.
 ---
 
 # Database Commands
 
 Work directly with MongoDB databases, collections, and indexes through Atlas clusters or direct connections.
 
-## Table of contents
-{: .no_toc .text-delta }
 
-1. TOC
-{:toc}
 
 ---
 

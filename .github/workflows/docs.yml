@@ -37,6 +37,11 @@ jobs:
         id: pages
         uses: actions/configure-pages@v4
 
+      - name: Install dependencies
+        working-directory: docs
+        run: |
+          bundle install
+
       - name: Build site
         working-directory: docs
         env:

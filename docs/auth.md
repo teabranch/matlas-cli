@@ -1,17 +1,14 @@
 ---
+layout: page
 title: Authentication & Configuration
-nav_order: 2
+description: Configure matlas to authenticate with MongoDB Atlas and set default behaviors.
 ---
 
 # Authentication & Configuration
 
 Configure matlas to authenticate with MongoDB Atlas and set default behaviors.
 
-## Table of contents
-{: .no_toc .text-delta }
 
-1. TOC
-{:toc}
 
 ---
 

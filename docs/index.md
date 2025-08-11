@@ -1,34 +1,48 @@
 ---
+layout: home
 title: Home
-nav_order: 1
 ---
 
-# matlas
-
-One CLI for MongoDB Atlas and MongoDB databases. Matlas bridges the Atlas SDK and the MongoDB Go Driver so you can manage infrastructure and data workflows without switching tools.
-
-[Get started now](#getting-started){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
-[View it on GitHub](https://github.com/teabranch/matlas-cli){: .btn .fs-5 .mb-4 .mb-md-0 }
-
----
+<div class="hero">
+  <h1 class="hero-title">matlas</h1>
+  <p class="hero-subtitle">One CLI for MongoDB Atlas and MongoDB databases. Matlas bridges the Atlas SDK and the MongoDB Go Driver so you can manage infrastructure and data workflows without switching tools.</p>
+  <div class="hero-actions">
+    <a href="#getting-started" class="btn btn-primary">Get Started</a>
+    <a href="https://github.com/teabranch/matlas-cli" class="btn btn-outline" target="_blank">View on GitHub</a>
+  </div>
+</div>
 
 ## Core Features
 
-### 🔐 Authentication & Configuration
-Flexible authentication with API keys, config files, environment variables, and macOS Keychain integration.
-[Learn more](auth){: .btn .btn-outline }
-
-### ☁️ Atlas Commands
-Manage MongoDB Atlas projects, clusters, users, and networking with intuitive commands.
-[Learn more](atlas){: .btn .btn-outline }
-
-### 🗄️ Database Commands
-Work directly with MongoDB databases, collections, and indexes through Atlas or direct connections.
-[Learn more](database){: .btn .btn-outline }
-
-### 🏗️ Infrastructure Workflows
-Terraform-inspired infrastructure-as-code workflows: discover, plan, diff, apply, destroy.
-[Learn more](infra){: .btn .btn-outline }
+<div class="features grid grid-cols-2">
+  <div class="card feature">
+    <div class="feature-icon">🔐</div>
+    <h3 class="feature-title">Authentication & Configuration</h3>
+    <p class="feature-description">Flexible authentication with API keys, config files, environment variables, and macOS Keychain integration.</p>
+    <a href="auth" class="btn btn-outline">Learn more</a>
+  </div>
+  
+  <div class="card feature">
+    <div class="feature-icon">☁️</div>
+    <h3 class="feature-title">Atlas Commands</h3>
+    <p class="feature-description">Manage MongoDB Atlas projects, clusters, users, and networking with intuitive commands.</p>
+    <a href="atlas" class="btn btn-outline">Learn more</a>
+  </div>
+  
+  <div class="card feature">
+    <div class="feature-icon">🗄️</div>
+    <h3 class="feature-title">Database Commands</h3>
+    <p class="feature-description">Work directly with MongoDB databases, collections, and indexes through Atlas or direct connections.</p>
+    <a href="database" class="btn btn-outline">Learn more</a>
+  </div>
+  
+  <div class="card feature">
+    <div class="feature-icon">🏗️</div>
+    <h3 class="feature-title">Infrastructure Workflows</h3>
+    <p class="feature-description">Terraform-inspired infrastructure-as-code workflows: discover, plan, diff, apply, destroy.</p>
+    <a href="infra" class="btn btn-outline">Learn more</a>
+  </div>
+</div>
 
 ---
 

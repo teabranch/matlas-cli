@@ -1,17 +1,14 @@
 ---
+layout: page
 title: Atlas Commands
-nav_order: 3
+description: Manage MongoDB Atlas infrastructure including projects, users, clusters, and networking.
 ---
 
 # Atlas Commands
 
 Manage MongoDB Atlas infrastructure including projects, users, clusters, and networking.
 
-## Table of contents
-{: .no_toc .text-delta }
 
-1. TOC
-{:toc}
 
 ---
 
