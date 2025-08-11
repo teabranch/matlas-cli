@@ -4,10 +4,8 @@ nav_order: 3
 ---
 
 # Atlas Commands
-{: .no_toc }
 
 Manage MongoDB Atlas infrastructure including projects, users, clusters, and networking.
-{: .fs-6 .fw-300 }
 
 ## Table of contents
 {: .no_toc .text-delta }
@@ -116,7 +114,6 @@ matlas atlas network delete <ip-or-cidr> --project-id <id> [--yes]
 
 ## Network peering
 
-{: .note }
 Network peering enables private connectivity between your Atlas clusters and cloud infrastructure.
 
 ### Available commands
@@ -131,7 +128,6 @@ Use `matlas atlas network-peering <command> --help` for detailed flag informatio
 
 ## Network containers
 
-{: .note }
 Network containers define the CIDR blocks for your Atlas clusters in specific cloud regions.
 
 ### Available commands
@@ -146,13 +142,10 @@ Use `matlas atlas network-containers <command> --help` for detailed flag informa
 
 ## Clusters
 
-{: .important }
-Cluster management is primarily handled through the [infrastructure workflows](infra). Use `matlas discover` and `matlas infra` commands for cluster operations.
+**Note:** Cluster management is primarily handled through the [infrastructure workflows](infra). Use `matlas discover` and `matlas infra` commands for cluster operations.
 
 ## Feature availability
 
-{: .warning }
-The following features are not supported in the current build:
-- Search indexes: `matlas atlas search ...`  
+**Warning:** The following features are not supported in the current build:
+- Search indexes: `matlas atlas search ...`
 - VPC endpoints: `matlas atlas vpc-endpoints ...`
-

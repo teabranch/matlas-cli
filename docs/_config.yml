@@ -1,29 +1,22 @@
-title: "matlas"
-description: "Unified CLI for MongoDB Atlas and MongoDB databases"
-url: "https://teabranch.github.io"
-baseurl: "/matlas-cli"
+title: matlas
+description: Unified CLI for MongoDB Atlas and MongoDB databases
+url: https://teabranch.github.io
+baseurl: /matlas-cli
 
-# Theme
 remote_theme: just-the-docs/just-the-docs
 
-# Required plugins
 plugins:
   - jekyll-remote-theme
-  - jekyll-seo-tag
 
-# Just the Docs theme settings
 search_enabled: true
 color_scheme: light
 
-# Navigation
 nav_external_links:
-  - title: "GitHub"
-    url: "https://github.com/teabranch/matlas-cli"
+  - title: GitHub
+    url: https://github.com/teabranch/matlas-cli
 
-# Exclude files
 exclude:
   - vendor/
   - node_modules/
   - Gemfile
   - Gemfile.lock
-

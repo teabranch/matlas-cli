@@ -37,15 +37,13 @@ jobs:
         id: pages
         uses: actions/configure-pages@v4
 
-      - name: Clean and install dependencies
+      - name: Install dependencies
         working-directory: docs
         run: |
-          # Remove old vendor directory and lock file that may have incompatible versions
-          rm -rf vendor Gemfile.lock
-          # Install latest bundler
-          gem install bundler
-          # Install dependencies with specific versions for stability
-          bundle install --jobs 4 --retry 3
+          # Clean start
+          rm -rf vendor/ Gemfile.lock .bundle/
+          # Install dependencies
+          bundle install
 
       - name: Build site
         working-directory: docs

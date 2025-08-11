@@ -4,10 +4,8 @@ nav_order: 4
 ---
 
 # Database Commands
-{: .no_toc }
 
 Work directly with MongoDB databases, collections, and indexes through Atlas clusters or direct connections.
-{: .fs-6 .fw-300 }
 
 ## Table of contents
 {: .no_toc .text-delta }
@@ -26,13 +24,12 @@ Matlas supports two ways to connect to MongoDB databases:
 --connection-string "mongodb+srv://user:pass@cluster.mongodb.net/"
 ```
 
-### Via Atlas cluster  
+### Via Atlas cluster
 ```bash
 --cluster <cluster-name> --project-id <project-id>
 ```
 
-{: .highlight }
-When using Atlas cluster connection, you can optionally use `--use-temp-user` to create a temporary database user for the operation.
+**Note:** When using Atlas cluster connection, you can optionally use `--use-temp-user` to create a temporary database user for the operation.
 
 ---
 
@@ -52,7 +49,7 @@ matlas database list --cluster <name> --project-id <id> [--use-temp-user] [--dat
 # Direct connection
 matlas database create <database-name> --connection-string "mongodb+srv://user:pass@host/"
 
-# Via Atlas cluster  
+# Via Atlas cluster
 matlas database create <database-name> --cluster <name> --project-id <id>
 ```
 
@@ -184,4 +181,3 @@ matlas database collections indexes create category:1 price:-1 --cluster my-clus
 # 4. List the created indexes
 matlas database collections indexes list --cluster my-cluster --project-id abc123 --database inventory --collection products
 ```
-

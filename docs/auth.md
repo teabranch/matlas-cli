@@ -4,10 +4,8 @@ nav_order: 2
 ---
 
 # Authentication & Configuration
-{: .no_toc }
 
 Configure matlas to authenticate with MongoDB Atlas and set default behaviors.
-{: .fs-6 .fw-300 }
 
 ## Table of contents
 {: .no_toc .text-delta }
@@ -73,7 +71,6 @@ Override any configuration using command line flags:
 
 ## macOS Keychain integration
 
-{: .highlight }
 On macOS, matlas can fallback to keychain lookup if credentials aren't found elsewhere.
 
 If API keys aren't found in flags/environment/config file, matlas attempts keychain lookup:
@@ -82,11 +79,10 @@ If API keys aren't found in flags/environment/config file, matlas attempts keych
 
 ## Best practices
 
-{: .important }
-> **Security recommendations**
-> - Use environment variables instead of command line flags for secrets
-> - Limit API key scope to required permissions only
-> - For database enumeration, use `--use-temp-user` to create short-lived database users
+**Security recommendations:**
+- Use environment variables instead of command line flags for secrets
+- Limit API key scope to required permissions only
+- For database enumeration, use `--use-temp-user` to create short-lived database users
 
 ### Getting API keys
 
@@ -94,4 +90,3 @@ If API keys aren't found in flags/environment/config file, matlas attempts keych
 2. Go to **Organization Access Manager** → **API Keys**
 3. Create a new API key with appropriate permissions
 4. Save the public and private keys securely
-

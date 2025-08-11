@@ -4,10 +4,8 @@ nav_order: 5
 ---
 
 # Infrastructure Workflows
-{: .no_toc }
 
 Terraform-inspired workflows for managing MongoDB Atlas infrastructure as code.
-{: .fs-6 .fw-300 }
 
 ## Table of contents
 {: .no_toc .text-delta }
@@ -22,7 +20,7 @@ Terraform-inspired workflows for managing MongoDB Atlas infrastructure as code.
 Matlas provides infrastructure-as-code workflows inspired by Terraform and kubectl:
 
 1. **Discover** → Enumerate current Atlas resources
-2. **Plan/Diff** → Preview changes before applying  
+2. **Plan/Diff** → Preview changes before applying
 3. **Apply** → Reconcile desired state
 4. **Show** → Display current state
 5. **Destroy** → Clean up resources
@@ -60,7 +58,7 @@ matlas discover \
 # Include specific resource types
 matlas discover --project-id <project-id> --include project,clusters,users
 
-# Exclude specific resource types  
+# Exclude specific resource types
 matlas discover --project-id <project-id> --exclude network,databases
 
 # Filter by resource name
@@ -105,7 +103,7 @@ matlas infra plan -f config.yaml --output table
 
 The plan shows:
 - Resources to be created (+)
-- Resources to be updated (~)  
+- Resources to be updated (~)
 - Resources to be deleted (-)
 - Resources that will remain unchanged
 
@@ -218,9 +216,7 @@ matlas infra destroy --discovery-only --project-id <project-id>
 matlas infra destroy --discovery-only --project-id <project-id> --auto-approve
 ```
 
-{: .warning }
-> **Destroy is permanent**  
-> Always run with `--dry-run` first to preview what will be deleted.
+**Warning:** Destroy is permanent. Always run with `--dry-run` first to preview what will be deleted.
 
 ### Destroy flags
 
@@ -291,4 +287,3 @@ spec:
     - ipAddress: "203.0.113.0/24"
       comment: "Office network"
 ```
-
