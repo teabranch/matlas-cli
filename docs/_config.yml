@@ -3,64 +3,26 @@ description: "Unified CLI for MongoDB Atlas and MongoDB databases"
 url: "https://teabranch.github.io"
 baseurl: "/matlas-cli"
 
-# Use a maintained docs theme with built-in navigation and search
-remote_theme: just-the-docs/just-the-docs@v0.8.0
+# Theme
+remote_theme: just-the-docs/just-the-docs
+
+# Required plugins
 plugins:
   - jekyll-remote-theme
-  - jekyll-seo-tag
 
-# Theme settings
+# Just the Docs theme settings
 search_enabled: true
 color_scheme: light
-heading_anchors: true
 
-# Site branding will be handled by CSS
-
-# Custom styling
-callouts:
-  highlight:
-    color: blue
-  important:
-    title: Important
-    color: red
-  new:
-    title: New
-    color: green
-  note:
-    title: Note
-    color: purple
-  warning:
-    title: Warning
-    color: yellow
-
-# Navigation settings
+# Navigation
 nav_external_links:
   - title: "GitHub"
     url: "https://github.com/teabranch/matlas-cli"
 
-# Site configuration
-markdown: kramdown
-highlighter: rouge
-kramdown:
-  syntax_highlighter: rouge
-  input: GFM
-  hard_wrap: false
-
-# Navigation order defaults
-defaults:
-  - scope:
-      path: ""
-    values:
-      layout: "default"
-
-# Exclude non-docs content from the site build
+# Exclude files
 exclude:
   - vendor/
   - node_modules/
   - Gemfile
   - Gemfile.lock
-  - README.md
-  - _pages/sidebar.md
-  - scripts/
-  - .github/
 

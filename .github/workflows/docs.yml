@@ -44,8 +44,8 @@ jobs:
           rm -rf vendor Gemfile.lock
           # Install latest bundler
           gem install bundler
-          # Install dependencies
-          bundle install
+          # Install dependencies with specific versions for stability
+          bundle install --jobs 4 --retry 3
 
       - name: Build site
         working-directory: docs
