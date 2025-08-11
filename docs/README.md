@@ -1,17 +1,30 @@
 ---
-title: Docs overview
+title: About
 nav_order: 99
 ---
 
-# matlas docs overview
+# About This Documentation
 
-This repository hosts the documentation site for matlas. Use the sidebar or the quick links below:
+This site provides comprehensive documentation for the matlas CLI tool.
 
-- [Authentication and configuration](auth.md)
-- [Atlas commands](atlas.md)
-- [Database commands](database.md)
-- [Infra: discover/plan/diff/apply/destroy](infra.md)
+## Quick Navigation
 
-Additional topics:
-- Output formats and pagination
-- Troubleshooting
+- [Authentication and configuration](auth) - Set up API keys and config
+- [Atlas commands](atlas) - Manage clusters, users, and networking
+- [Database commands](database) - Work with databases and collections
+- [Infrastructure workflows](infra) - Discover, plan, diff, apply, destroy
+
+## Local Development
+
+If you want to contribute to this documentation:
+
+```bash
+cd docs
+bundle install
+bundle exec jekyll serve
+```
+
+## Support
+
+- [GitHub Issues](https://github.com/teabranch/matlas-cli/issues)
+- [GitHub Repository](https://github.com/teabranch/matlas-cli)

@@ -147,7 +147,7 @@ Use `matlas atlas network-containers <command> --help` for detailed flag informa
 ## Clusters
 
 {: .important }
-Cluster management is primarily handled through the [infrastructure workflows]({{ site.baseurl }}{% link infra.md %}). Use `matlas discover` and `matlas infra` commands for cluster operations.
+Cluster management is primarily handled through the [infrastructure workflows](infra). Use `matlas discover` and `matlas infra` commands for cluster operations.
 
 ## Feature availability
 

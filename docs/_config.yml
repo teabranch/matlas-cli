@@ -14,6 +14,25 @@ search_enabled: true
 color_scheme: light
 heading_anchors: true
 
+# Site branding will be handled by CSS
+
+# Custom styling
+callouts:
+  highlight:
+    color: blue
+  important:
+    title: Important
+    color: red
+  new:
+    title: New
+    color: green
+  note:
+    title: Note
+    color: purple
+  warning:
+    title: Warning
+    color: yellow
+
 # Navigation settings
 nav_external_links:
   - title: "GitHub"

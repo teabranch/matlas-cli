@@ -2,40 +2,70 @@
 title: "Home"
 nav_order: 1
 permalink: /
+layout: default
 ---
 
-# matlas
-{: .fs-9 }
-
-One CLI for MongoDB Atlas and MongoDB databases. Matlas bridges the Atlas SDK and the MongoDB Go Driver so you can manage infrastructure and data workflows without switching tools.
-{: .fs-6 .fw-300 }
-
-[Get started now](#getting-started){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
-[View on GitHub](https://github.com/teabranch/matlas-cli){: .btn .fs-5 .mb-4 .mb-md-0 }
-
----
-
-## Quick navigation
-
-<div class="code-example" markdown="1">
-
-**Core features**
-- [Authentication and configuration]({{ site.baseurl }}{% link auth.md %}) - Set up API keys and config
-- [Atlas commands]({{ site.baseurl }}{% link atlas.md %}) - Manage clusters, users, and networking  
-- [Database commands]({{ site.baseurl }}{% link database.md %}) - Work with databases and collections
-- [Infrastructure workflows]({{ site.baseurl }}{% link infra.md %}) - Discover, plan, diff, apply, destroy
-
+<div class="hero">
+  <h1>🚀 matlas</h1>
+  <p class="tagline">One CLI for MongoDB Atlas and MongoDB databases</p>
+  <p>Matlas bridges the Atlas SDK and the MongoDB Go Driver so you can manage infrastructure and data workflows without switching tools.</p>
+  
+  <div style="margin-top: 2rem;">
+    <a href="#getting-started" class="btn btn-primary" style="margin-right: 1rem;">Get Started Now</a>
+    <a href="https://github.com/teabranch/matlas-cli" class="btn" style="background: white; color: #333;">View on GitHub</a>
+  </div>
 </div>
 
-## Why matlas?
+## 🎯 Core Features
 
-<div class="code-example" markdown="1">
+<div class="feature-grid">
+  <div class="feature-card">
+    <h3>🔐 Authentication & Configuration</h3>
+    <p>Flexible authentication with API keys, config files, environment variables, and macOS Keychain integration.</p>
+    <a href="auth">Learn more →</a>
+  </div>
+  
+  <div class="feature-card">
+    <h3>☁️ Atlas Commands</h3>
+    <p>Manage MongoDB Atlas projects, clusters, users, and networking with intuitive commands.</p>
+    <a href="atlas">Learn more →</a>
+  </div>
+  
+  <div class="feature-card">
+    <h3>🗄️ Database Commands</h3>
+    <p>Work directly with MongoDB databases, collections, and indexes through Atlas or direct connections.</p>
+    <a href="database">Learn more →</a>
+  </div>
+  
+  <div class="feature-card">
+    <h3>🏗️ Infrastructure Workflows</h3>
+    <p>Terraform-inspired infrastructure-as-code workflows: discover, plan, diff, apply, destroy.</p>
+    <a href="infra">Learn more →</a>
+  </div>
+</div>
 
-✅ **Single mental model** for both Atlas and database operations  
-✅ **Terraform-inspired workflow**: Discover → Plan/Diff → Apply  
-✅ **Consistent interface**: Same flags, output formats, and ergonomics across all commands  
-✅ **MongoDB native**: Built on Atlas SDK and MongoDB Go Driver  
+## ✨ Why Choose matlas?
 
+<div class="feature-grid">
+  <div class="feature-card">
+    <h3><span class="checkmark">✅</span> Single Mental Model</h3>
+    <p>Unified interface for both Atlas infrastructure and database operations</p>
+  </div>
+  
+  <div class="feature-card">
+    <h3><span class="checkmark">✅</span> Terraform-Inspired</h3>
+    <p>Familiar workflow: Discover → Plan/Diff → Apply</p>
+  </div>
+  
+  <div class="feature-card">
+    <h3><span class="checkmark">✅</span> Consistent Interface</h3>
+    <p>Same flags, output formats, and ergonomics across all commands</p>
+  </div>
+  
+  <div class="feature-card">
+    <h3><span class="checkmark">✅</span> MongoDB Native</h3>
+    <p>Built on official Atlas SDK and MongoDB Go Driver</p>
+  </div>
 </div>
 
 ## Getting started
