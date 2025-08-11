@@ -2,6 +2,7 @@
 layout: page
 title: Atlas Commands
 description: Manage MongoDB Atlas infrastructure including projects, users, clusters, and networking.
+permalink: /atlas/
 ---
 
 # Atlas Commands

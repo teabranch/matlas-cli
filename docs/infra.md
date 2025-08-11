@@ -2,6 +2,7 @@
 layout: page
 title: Infrastructure Workflows
 description: Terraform-inspired workflows for managing MongoDB Atlas infrastructure as code.
+permalink: /infra/
 ---
 
 # Infrastructure Workflows

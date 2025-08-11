@@ -2,6 +2,7 @@
 layout: page
 title: Authentication & Configuration
 description: Configure matlas to authenticate with MongoDB Atlas and set default behaviors.
+permalink: /auth/
 ---
 
 # Authentication & Configuration

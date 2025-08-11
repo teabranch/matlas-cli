@@ -2,6 +2,7 @@
 layout: page
 title: Database Commands
 description: Work directly with MongoDB databases, collections, and indexes through Atlas clusters or direct connections.
+permalink: /database/
 ---
 
 # Database Commands

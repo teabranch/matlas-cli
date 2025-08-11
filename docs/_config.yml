@@ -36,13 +36,13 @@ navigation:
   - title: Home
     url: /
   - title: Authentication
-    url: /auth.html
+    url: /auth/
   - title: Atlas Commands
-    url: /atlas.html
+    url: /atlas/
   - title: Database Commands
-    url: /database.html
+    url: /database/
   - title: Infrastructure
-    url: /infra.html
+    url: /infra/
 
 # Social links
 github_username: teabranch
