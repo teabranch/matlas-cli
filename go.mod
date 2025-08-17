@@ -46,7 +46,6 @@ require (
 	github.com/subosito/gotenv v1.6.0
 	go.mongodb.org/atlas-sdk/v20250312005 v20250312005.0.0
 	go.mongodb.org/mongo-driver v1.17.4
-	go.uber.org/zap v1.27.0
 	golang.org/x/term v0.33.0
 	gopkg.in/yaml.v3 v3.0.1
 )
