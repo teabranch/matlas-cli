@@ -25,7 +25,7 @@ List and generate config templates.
 
 ```bash
 matlas config template list
-matlas config template generate <basic|atlas|database|apply|complete> [-o file] [-f yaml|json]
+matlas config template generate <basic|atlas|database|apply|complete> [--file output-file] [--format yaml|json]
 ```
 
 Notes:

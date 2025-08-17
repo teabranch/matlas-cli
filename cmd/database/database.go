@@ -92,7 +92,10 @@ available databases, including their size, whether they're empty, and collection
 
 	// Hidden flag for advanced users to specify custom roles for temporary users
 	cmd.Flags().String("temp-user-roles", "", "Advanced: Multiple custom roles for temporary user (format: 'role1@db1,role2@db2'). Default: readWriteAnyDatabase@admin")
-	cmd.Flags().MarkHidden("temp-user-roles")
+	if err := cmd.Flags().MarkHidden("temp-user-roles"); err != nil {
+		// This should not fail as the flag was just added
+		panic(fmt.Errorf("failed to mark temp-user-roles flag as hidden: %w", err))
+	}
 
 	// At least one connection method is required
 	cmd.MarkFlagsOneRequired("connection-string", "cluster")
@@ -164,7 +167,10 @@ Authentication options:
 
 	// Hidden flag for advanced users to specify custom roles for temporary users
 	cmd.Flags().String("temp-user-roles", "", "Advanced: Multiple custom roles for temporary user (format: 'role1@db1,role2@db2'). Default: readWrite@<database>")
-	cmd.Flags().MarkHidden("temp-user-roles")
+	if err := cmd.Flags().MarkHidden("temp-user-roles"); err != nil {
+		// This should not fail as the flag was just added
+		panic(fmt.Errorf("failed to mark temp-user-roles flag as hidden: %w", err))
+	}
 
 	// At least one connection method is required
 	cmd.MarkFlagsOneRequired("connection-string", "cluster")
@@ -228,7 +234,10 @@ Use with caution in production environments.`,
 
 	// Hidden flag for advanced users to specify custom roles for temporary users
 	cmd.Flags().String("temp-user-roles", "", "Advanced: Multiple custom roles for temporary user (format: 'role1@db1,role2@db2'). Default: readWriteAnyDatabase@admin")
-	cmd.Flags().MarkHidden("temp-user-roles")
+	if err := cmd.Flags().MarkHidden("temp-user-roles"); err != nil {
+		// This should not fail as the flag was just added
+		panic(fmt.Errorf("failed to mark temp-user-roles flag as hidden: %w", err))
+	}
 
 	// At least one connection method is required
 	cmd.MarkFlagsOneRequired("connection-string", "cluster")

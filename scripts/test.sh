@@ -47,6 +47,7 @@ COMMANDS:
     discovery   Run discovery lifecycle tests (comprehensive discovery feature testing)
                 Use --cluster-lifecycle flag to include cluster creation/deletion tests (costs money!)
     applydoc    Run ApplyDocument format tests (comprehensive coverage)
+    config      Run configuration command tests (validate, template generation, experimental commands)
     all         Run all tests (unit + integration + e2e)
     comprehensive Run all tests including cluster and applydoc tests
     clean       Clean test cache and artifacts
@@ -67,6 +68,8 @@ EXAMPLES:
     $0 discovery            # Run discovery lifecycle tests
     $0 discovery --cluster-lifecycle  # Run discovery tests with cluster creation (costs money!)
     $0 applydoc             # Run ApplyDocument format tests
+    $0 config               # Run configuration command tests
+    $0 config --verbose     # Run config tests with verbose output
     $0 e2e                  # Run e2e tests (users/network only)
     $0 e2e --include-clusters  # Run e2e tests with real clusters
     $0 users                # Run live users lifecycle tests
@@ -237,6 +240,16 @@ main() {
                 return 1
             fi
             ;;
+        config)
+            print_info "Running configuration command tests..."
+            print_info "Testing: validate, template generation, experimental commands, error handling"
+            if "$SCRIPT_DIR/test/config-test.sh" "${args[@]}"; then
+                print_success "Configuration command tests passed"
+            else
+                print_error "Configuration command tests failed"
+                return 1
+            fi
+            ;;
         comprehensive)
             local failed=0
             print_info "Running comprehensive test suite (all test types)..."
@@ -244,10 +257,12 @@ main() {
             run_test_type "integration" "${args[@]}" || ((failed++))
             run_test_type "e2e" "${args[@]}" || ((failed++))
             
-            print_warning "⚠️  Including ApplyDocument, discovery, and cluster tests - CLUSTER TESTS CREATE/DELETE REAL CLUSTERS!"
+            print_warning "⚠️  Including ApplyDocument, discovery, config, and cluster tests - CLUSTER TESTS CREATE/DELETE REAL CLUSTERS!"
             print_success "✓ SAFE MODE: Cluster tests use --preserve-existing to protect existing clusters"
             print_info "ℹ️  Database and discovery tests require existing cluster but do NOT create/delete clusters"
+            print_info "ℹ️  Config tests are safe and do not require external resources"
             "$SCRIPT_DIR/test/applydocument-test.sh" "${args[@]}" || ((failed++))
+            "$SCRIPT_DIR/test/config-test.sh" "${args[@]}" || ((failed++))
             "$SCRIPT_DIR/test/discovery-lifecycle.sh" "${args[@]}" || ((failed++))
             "$SCRIPT_DIR/test/database-operations.sh" "${args[@]}" || ((failed++))
             "$SCRIPT_DIR/test/cluster-lifecycle.sh" "${args[@]}" || ((failed++))

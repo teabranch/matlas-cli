@@ -312,7 +312,11 @@ func runListDatabaseUsers(cmd *cobra.Command, connectionString, clusterName, pro
 		progress.StopSpinnerWithError("Failed to connect to MongoDB")
 		return fmt.Errorf("failed to connect to MongoDB: %w", err)
 	}
-	defer client.Disconnect(ctx)
+	defer func() {
+		if err := client.Disconnect(ctx); err != nil {
+			fmt.Printf("Warning: Failed to disconnect from MongoDB: %v\n", err)
+		}
+	}()
 
 	// Get the admin database for user operations
 	// Note: All user management operations should be performed on admin database

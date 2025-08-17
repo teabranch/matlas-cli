@@ -242,7 +242,11 @@ func runListRoles(cmd *cobra.Command, connectionString, clusterName, projectID, 
 		progress.StopSpinnerWithError("Failed to connect to MongoDB")
 		return fmt.Errorf("failed to connect to MongoDB: %w", err)
 	}
-	defer client.Disconnect(ctx)
+	defer func() {
+		if err := client.Disconnect(ctx); err != nil {
+			fmt.Printf("Warning: Failed to disconnect from MongoDB: %v\n", err)
+		}
+	}()
 
 	// Get the database
 	db := client.Database(databaseName)
@@ -336,7 +340,11 @@ func runCreateRole(cmd *cobra.Command, connectionString, clusterName, projectID,
 		progress.StopSpinnerWithError("Failed to connect to MongoDB")
 		return fmt.Errorf("failed to connect to MongoDB: %w", err)
 	}
-	defer client.Disconnect(ctx)
+	defer func() {
+		if err := client.Disconnect(ctx); err != nil {
+			fmt.Printf("Warning: Failed to disconnect from MongoDB: %v\n", err)
+		}
+	}()
 
 	// Get the database
 	db := client.Database(databaseName)
@@ -444,7 +452,11 @@ func runDeleteRole(cmd *cobra.Command, connectionString, clusterName, projectID,
 		progress.StopSpinnerWithError("Failed to connect to MongoDB")
 		return fmt.Errorf("failed to connect to MongoDB: %w", err)
 	}
-	defer client.Disconnect(ctx)
+	defer func() {
+		if err := client.Disconnect(ctx); err != nil {
+			fmt.Printf("Warning: Failed to disconnect from MongoDB: %v\n", err)
+		}
+	}()
 
 	// Get the database
 	db := client.Database(databaseName)
@@ -484,7 +496,11 @@ func runGetRole(cmd *cobra.Command, connectionString, clusterName, projectID, da
 		progress.StopSpinnerWithError("Failed to connect to MongoDB")
 		return fmt.Errorf("failed to connect to MongoDB: %w", err)
 	}
-	defer client.Disconnect(ctx)
+	defer func() {
+		if err := client.Disconnect(ctx); err != nil {
+			fmt.Printf("Warning: Failed to disconnect from MongoDB: %v\n", err)
+		}
+	}()
 
 	// Get the database
 	db := client.Database(databaseName)
