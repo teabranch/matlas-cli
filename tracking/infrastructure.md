@@ -73,3 +73,44 @@ This fixes the confusing release process where every main branch push created in
 
 ---
 
+## [2025-01-07] Release Workflow Critical Fix
+
+**Status**: Completed  
+**Developer**: Assistant  
+**Related Issues**: Manual tag artifact issue, checksums not created  
+
+### Summary
+Fixed critical issues with the release workflow where manual tags couldn't find CI artifacts because checksums were only created for specific branches, and simplified the overly complex dual-branch strategy.
+
+### Tasks
+- [x] Fix CI workflow so checksums are created for all builds, not just specific branches
+- [x] Simplify semantic-release to only work with main branch and normal releases
+- [x] Fix release workflow to properly find and download CI artifacts for any commit
+- [x] Ensure manual tag creation properly triggers release with artifacts
+- [x] Update documentation to reflect simplified single-branch strategy
+
+### Files Modified
+- `.github/workflows/ci.yml` - Removed branch-specific condition from create-checksums job
+- `.releaserc.json` - Simplified to single main branch strategy  
+- `.github/workflows/semantic-release.yml` - Removed release branch support
+- `.github/workflows/release.yml` - Enhanced artifact finding and extraction with fallbacks
+- `docs/release-process.md` - Updated to reflect simplified single-branch strategy
+- `CHANGELOG.md` - Documented critical fixes
+
+### Notes
+**Critical Issues Fixed:**
+1. **Checksum Creation**: CI now creates checksums for ALL builds, not just main/release branches
+2. **Artifact Download**: Release workflow can now find artifacts for any commit with successful CI
+3. **Manual Tags**: Manual tag creation now works properly with artifact attachment
+4. **Simplified Strategy**: Eliminated confusing dual-branch pre-release approach
+
+**Technical Improvements:**
+- Better error handling in release workflow with detailed logging
+- Fallback to individual platform artifacts if consolidated artifacts aren't found
+- Robust commit SHA lookup for artifact matching
+- Enhanced artifact extraction handling
+
+This resolves the issue where manual tags from main commits couldn't find their CI artifacts.
+
+---
+

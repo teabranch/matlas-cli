@@ -10,46 +10,45 @@ This document explains the automated release process for matlas-cli, including h
 
 ## Release Strategy Overview
 
-We use a dual-branch strategy for releases:
+We use a simplified single-branch strategy for releases:
 
-- **Main branch** → Creates pre-releases with `-main.X` suffix
-- **Release branch** → Creates official stable releases
+- **Main branch** → Creates official releases using semantic versioning
+- **Manual tags** → Can be created from any commit to create releases
 
 ## Release Types
 
-### Pre-Releases (Development)
+### Automatic Releases (Semantic)
 
 **Trigger:** Push to `main` branch with conventional commit messages
 
-**Release Format:** `v1.2.3-main.1`, `v1.2.3-main.2`, etc.
+**Release Format:** `v1.2.3`, `v2.0.0`, etc.
 
 **Purpose:** 
+- Automatic semantic versioning based on commit messages
 - Continuous delivery from main branch
-- Testing new features before official release
-- Development builds with all latest changes
+- Official releases for any merge to main
 
 **Process:**
 1. Developer pushes to main with conventional commits (`feat:`, `fix:`, etc.)
-2. CI workflow builds and tests the code
-3. Semantic-release creates a pre-release tag
-4. Release workflow attaches binary artifacts to the pre-release
+2. CI workflow builds and tests the code, creates artifacts
+3. Semantic-release analyzes commits and creates appropriate release
+4. Release workflow downloads CI artifacts and attaches them to the release
 
-### Official Releases (Stable)
+### Manual Releases
 
-**Trigger:** Push to `release` branch or manual release creation
+**Trigger:** Manual tag creation from any commit
 
 **Release Format:** `v1.2.3`, `v2.0.0`, etc.
 
 **Purpose:**
-- Stable releases for production use
-- Semantic versioning for breaking changes
-- Official distribution releases
+- Create releases from specific commits
+- Hotfix releases from non-main branches
+- Custom release timing
 
 **Process:**
-1. Create release branch from main: `git checkout -b release && git push origin release`
-2. CI workflow builds and tests the code
-3. Semantic-release creates an official release tag
-4. Release workflow attaches binary artifacts to the release
+1. Create tag manually: `git tag v1.2.3 <commit-sha> && git push origin v1.2.3`
+2. GitHub automatically creates a release from the tag
+3. Release workflow finds CI artifacts for that commit and attaches them
 
 ## Conventional Commits
 
@@ -85,7 +84,7 @@ Release automation is driven by conventional commit messages:
 
 ## How to Create Releases
 
-### Development Pre-Release
+### Automatic Release (Recommended)
 ```bash
 # Just push to main with conventional commits
 git checkout main
@@ -93,17 +92,20 @@ git add .
 git commit -m "feat: add new feature"
 git push origin main
 
-# This automatically creates: v1.2.3-main.1
+# This automatically creates: v1.2.3 (based on semantic analysis)
 ```
 
-### Official Release
+### Manual Release
 ```bash
-# Option 1: Create release branch
-git checkout main
-git checkout -b release
-git push origin release  # This creates official release v1.2.3
+# Option 1: Create tag from current commit
+git tag v1.2.3
+git push origin v1.2.3
 
-# Option 2: Manual release via GitHub UI
+# Option 2: Create tag from specific commit
+git tag v1.2.3 abc1234
+git push origin v1.2.3
+
+# Option 3: Manual release via GitHub UI
 # Go to GitHub → Releases → "Create a new release"
 # Choose a tag version following semantic versioning
 ```
@@ -116,26 +118,25 @@ Each release includes:
 - **Windows** (AMD64): `.zip` files
 - **Checksums**: `checksums.txt` with SHA256 hashes
 
-## Release Branch Management
+## Release Management Tips
 
-### Creating a Release Branch
+### Creating a Release from Specific Commit
 ```bash
-# From main branch (ensure it's up to date)
-git checkout main
-git pull origin main
+# Find the commit you want to release
+git log --oneline -10
 
-# Create and push release branch
-git checkout -b release
-git push origin release
+# Create a tag from that commit
+git tag v1.2.3 abc1234
+git push origin v1.2.3
 ```
 
-### Cleanup After Release
+### Listing Existing Releases
 ```bash
-# Delete local release branch
-git branch -d release
+# List all tags/releases
+git tag -l
 
-# Delete remote release branch (optional)
-git push origin --delete release
+# List tags with commit info
+git tag -l --format='%(refname:short) %(objectname:short) %(contents:subject)'
 ```
 
 ## Troubleshooting
@@ -146,14 +147,15 @@ git push origin --delete release
 - Check GitHub Actions logs for semantic-release workflow
 
 ### Missing Binary Assets
-- Verify CI workflow completed successfully
+- Verify CI workflow completed successfully for the commit
 - Check that release workflow found and downloaded CI artifacts
 - Review release workflow logs for artifact download errors
+- Ensure the commit had a successful CI run before creating the release
 
-### Pre-release vs Official Release
-- Pre-releases are created from `main` branch pushes
-- Official releases require `release` branch or manual tag creation
-- Check which branch the commit was pushed to
+### Manual Tag Releases
+- Manual tags work from any commit that had a successful CI run
+- Release workflow will find and download artifacts from the CI run for that commit
+- If CI didn't run for a commit, artifacts won't be available
 
 ## Manual Override
 
@@ -174,4 +176,4 @@ We follow [Semantic Versioning](https://semver.org/):
 - **MINOR**: New features that are backward compatible  
 - **PATCH**: Bug fixes and small improvements
 
-Pre-releases append `-main.X` to indicate development builds.
+Versions are automatically determined by semantic-release based on conventional commit messages.

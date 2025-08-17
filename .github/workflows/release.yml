@@ -35,76 +35,146 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const path = require('path');
             
-            // Find the CI workflow run for this commit
+            const commitSha = '${{ steps.get-sha.outputs.commit_sha }}';
+            console.log(`Looking for CI artifacts for commit: ${commitSha}`);
+            
+            // Find the most recent successful CI workflow run for this commit
             const { data: runs } = await github.rest.actions.listWorkflowRuns({
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'ci.yml',
-              head_sha: '${{ steps.get-sha.outputs.commit_sha }}',
-              per_page: 1
+              head_sha: commitSha,
+              status: 'completed',
+              per_page: 5
             });
             
             if (runs.workflow_runs.length === 0) {
-              console.log('⚠️ No CI workflow run found for this commit');
-              console.log('Building artifacts directly as fallback...');
-              return;
+              console.log('⚠️ No completed CI workflow run found for this commit');
+              console.log('This might happen if the release was created before CI completed');
+              throw new Error('No CI artifacts available for this commit');
             }
             
-            const run = runs.workflow_runs[0];
-            console.log(`Found CI run: ${run.html_url}`);
+            // Find the first successful run
+            const successfulRun = runs.workflow_runs.find(run => run.conclusion === 'success');
             
-            if (run.conclusion !== 'success') {
-              throw new Error(`CI workflow did not succeed. Status: ${run.status}, Conclusion: ${run.conclusion}`);
+            if (!successfulRun) {
+              console.log('❌ No successful CI workflow run found for this commit');
+              console.log('Available runs:', runs.workflow_runs.map(r => `${r.status}/${r.conclusion}`));
+              throw new Error('No successful CI run found for this commit');
             }
             
-            // Download the release-artifacts
+            console.log(`✅ Found successful CI run: ${successfulRun.html_url}`);
+            
+            // Get all artifacts from this run
             const { data: artifacts } = await github.rest.actions.listWorkflowRunArtifacts({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              run_id: run.id,
+              run_id: successfulRun.id,
             });
             
+            console.log(`📦 Found ${artifacts.artifacts.length} artifacts in CI run`);
+            console.log('Available artifacts:', artifacts.artifacts.map(a => `${a.name} (${a.size_in_bytes} bytes)`));
+            
+            // Download the release-artifacts (consolidated artifacts)
             const releaseArtifact = artifacts.artifacts.find(artifact => artifact.name === 'release-artifacts');
             
-            if (!releaseArtifact) {
-              console.log('⚠️ No release-artifacts found in CI run');
-              console.log('Available artifacts:', artifacts.artifacts.map(a => a.name));
-              return;
+            if (releaseArtifact) {
+              console.log(`📥 Downloading consolidated artifact: ${releaseArtifact.name}`);
+              
+              const download = await github.rest.actions.downloadArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: releaseArtifact.id,
+                archive_format: 'zip',
+              });
+              
+              fs.writeFileSync('release-artifacts.zip', Buffer.from(download.data));
+              console.log('✅ Downloaded consolidated CI artifacts');
+            } else {
+              // Fallback: download individual platform artifacts
+              console.log('⚠️ No consolidated release-artifacts found, downloading individual artifacts...');
+              
+              const platformArtifacts = artifacts.artifacts.filter(a => a.name.startsWith('matlas-'));
+              
+              if (platformArtifacts.length === 0) {
+                throw new Error('No usable artifacts found in CI run');
+              }
+              
+              // Download each platform artifact
+              for (const artifact of platformArtifacts) {
+                console.log(`📥 Downloading ${artifact.name}...`);
+                
+                const download = await github.rest.actions.downloadArtifact({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  artifact_id: artifact.id,
+                  archive_format: 'zip',
+                });
+                
+                fs.writeFileSync(`${artifact.name}.zip`, Buffer.from(download.data));
+              }
+              
+              console.log('✅ Downloaded individual platform artifacts');
             }
-            
-            console.log(`Downloading artifact: ${releaseArtifact.name}`);
-            
-            const download = await github.rest.actions.downloadArtifact({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              artifact_id: releaseArtifact.id,
-              archive_format: 'zip',
-            });
-            
-            fs.writeFileSync('artifacts.zip', Buffer.from(download.data));
-            console.log('✅ Downloaded CI artifacts');
 
       - name: Extract and upload artifacts
         run: |
-          if [ -f "artifacts.zip" ]; then
-            echo "📦 Extracting CI artifacts..."
-            unzip -o artifacts.zip
-            ls -la
+          # Create a dist directory for all artifacts
+          mkdir -p dist
+          
+          # Handle consolidated artifacts
+          if [ -f "release-artifacts.zip" ]; then
+            echo "📦 Extracting consolidated CI artifacts..."
+            unzip -o release-artifacts.zip -d extracted/
             
-            if [ -d "dist" ] && [ "$(ls -A dist/)" ]; then
-              echo "📋 Found artifacts:"
-              ls -la dist/
-              
-              echo "🚀 Uploading artifacts to release..."
-              gh release upload "${{ github.ref_name }}" dist/*.zip dist/*.tar.gz dist/checksums.txt --clobber
-              echo "✅ Artifacts uploaded successfully"
-            else
-              echo "⚠️ No artifacts found in dist directory"
+            # Move extracted files to dist
+            if [ -d "extracted/dist" ]; then
+              cp -r extracted/dist/* dist/
+            elif [ -d "extracted" ]; then
+              cp -r extracted/* dist/
             fi
+            
+            echo "📋 Found consolidated artifacts:"
+            ls -la dist/
+          fi
+          
+          # Handle individual platform artifacts (fallback)
+          for zip_file in matlas-*.zip; do
+            if [ -f "$zip_file" ]; then
+              echo "📦 Extracting individual artifact: $zip_file"
+              unzip -o "$zip_file" -d platform_extract/
+              cp -r platform_extract/* dist/ 2>/dev/null || true
+              rm -rf platform_extract/
+            fi
+          done
+          
+          # Check if we have any artifacts to upload
+          if [ -d "dist" ] && [ "$(ls -A dist/ 2>/dev/null)" ]; then
+            echo "📋 Final artifacts ready for upload:"
+            ls -la dist/
+            
+            echo "🚀 Uploading artifacts to release..."
+            
+            # Upload all zip and tar.gz files
+            if ls dist/*.zip 1> /dev/null 2>&1; then
+              gh release upload "${{ github.ref_name }}" dist/*.zip --clobber
+            fi
+            
+            if ls dist/*.tar.gz 1> /dev/null 2>&1; then
+              gh release upload "${{ github.ref_name }}" dist/*.tar.gz --clobber
+            fi
+            
+            # Upload checksums if available
+            if [ -f "dist/checksums.txt" ]; then
+              gh release upload "${{ github.ref_name }}" dist/checksums.txt --clobber
+            fi
+            
+            echo "✅ Artifacts uploaded successfully"
           else
-            echo "⚠️ No artifacts.zip file found, skipping upload"
+            echo "❌ No artifacts found to upload"
+            echo "This might indicate a problem with the CI workflow or artifact extraction"
+            exit 1
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
