@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/teabranch/matlas-cli/compare/v1.0.2...v1.0.3) (2025-08-17)
+
+### Bug Fixes
+
+* release workflow ([378429b](https://github.com/teabranch/matlas-cli/commit/378429bfa5cd19d5199e9134f284488dd18cfb1c))
+* release workflow ([c67325d](https://github.com/teabranch/matlas-cli/commit/c67325d252546969f25b66d8e4d93678d911264e))
+
 ## [Unreleased]
 
 ### Fixed
