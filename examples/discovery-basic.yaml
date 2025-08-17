@@ -1,0 +1,62 @@
+# Basic Discovery Example
+# This example shows a typical discovered project converted to ApplyDocument format
+# Use: matlas discover --project-id <project-id> --convert-to-apply --output-file discovery-basic.yaml
+
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: discovered-project-basic
+  labels:
+    source: discovery
+    environment: production
+  annotations:
+    description: "Basic discovered project with cluster and user"
+    discoveredAt: "2024-01-27T10:30:00Z"
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: Cluster
+    metadata:
+      name: main-cluster
+      labels:
+        environment: production
+        tier: basic
+    spec:
+      projectName: "My Project"
+      provider: AWS
+      region: US_EAST_1
+      instanceSize: M10
+      clusterType: REPLICASET
+      tierType: REPLICASET
+      mongodbVersion: "7.0"
+      backupEnabled: true
+      diskSizeGB: 10
+
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: app-user
+      labels:
+        purpose: application
+        access-level: readwrite
+    spec:
+      projectName: "My Project"
+      username: app-user
+      authDatabase: admin
+      password: "${APP_USER_PASSWORD}"  # Set via environment variable
+      roles:
+        - roleName: readWrite
+          databaseName: myapp
+        - roleName: read
+          databaseName: logs
+
+  - apiVersion: matlas.mongodb.com/v1
+    kind: NetworkAccess
+    metadata:
+      name: office-access
+      labels:
+        location: office
+        type: cidr
+    spec:
+      projectName: "My Project"
+      cidrBlock: "203.0.113.0/24"
+      comment: "Office network access"

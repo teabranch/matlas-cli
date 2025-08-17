@@ -1,0 +1,132 @@
+# Discovery with Database Resources Example
+# This example shows discovery including database-level resources
+# Use: matlas discover --project-id <project-id> --include-databases --use-temp-user --convert-to-apply --output-file discovery-with-databases.yaml
+
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: discovered-project-with-databases
+  labels:
+    source: discovery
+    includes: databases
+    environment: production
+  annotations:
+    description: "Complete project discovery including database-level resources"
+    discoveredAt: "2024-01-27T10:30:00Z"
+    tempUserUsed: "true"
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: Cluster
+    metadata:
+      name: prod-cluster
+      labels:
+        environment: production
+        region: us-east
+    spec:
+      projectName: "Production Project"
+      provider: AWS
+      region: US_EAST_1
+      instanceSize: M30
+      clusterType: REPLICASET
+      tierType: REPLICASET
+      mongodbVersion: "7.0"
+      backupEnabled: true
+      diskSizeGB: 40
+      autoscaling:
+        diskGBEnabled: true
+        computeEnabled: true
+        computeScaleDownEnabled: true
+        computeMinInstanceSize: M30
+        computeMaxInstanceSize: M50
+
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: analytics-user
+      labels:
+        purpose: analytics
+        access-level: readonly
+    spec:
+      projectName: "Production Project"
+      username: analytics-user
+      authDatabase: admin
+      password: "${ANALYTICS_USER_PASSWORD}"
+      roles:
+        - roleName: read
+          databaseName: sales
+        - roleName: read
+          databaseName: inventory
+        - roleName: read
+          databaseName: analytics
+
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: app-service
+      labels:
+        purpose: application
+        service: main-api
+    spec:
+      projectName: "Production Project"
+      username: app-service
+      authDatabase: admin
+      password: "${APP_SERVICE_PASSWORD}"
+      roles:
+        - roleName: readWrite
+          databaseName: sales
+        - roleName: readWrite
+          databaseName: inventory
+        - roleName: read
+          databaseName: analytics
+
+  - apiVersion: matlas.mongodb.com/v1
+    kind: NetworkAccess
+    metadata:
+      name: vpc-access
+      labels:
+        type: vpc
+        environment: production
+    spec:
+      projectName: "Production Project"
+      awsSecurityGroup: "sg-1234567890abcdef0"
+      comment: "Production VPC access"
+
+  - apiVersion: matlas.mongodb.com/v1
+    kind: NetworkAccess
+    metadata:
+      name: office-backup
+      labels:
+        type: ip
+        purpose: office
+    spec:
+      projectName: "Production Project"
+      ipAddress: "203.0.113.100"
+      comment: "Office backup connection"
+      deleteAfterDate: "2024-12-31T23:59:59Z"
+
+  # Database-level resources discovered via --include-databases
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseRole
+    metadata:
+      name: inventory-manager
+      labels:
+        purpose: custom-role
+        database: inventory
+    spec:
+      roleName: inventoryManager
+      databaseName: inventory
+      privileges:
+        - actions: ["find", "insert", "update", "remove"]
+          resource:
+            database: inventory
+            collection: products
+        - actions: ["find", "insert", "update"]
+          resource:
+            database: inventory
+            collection: orders
+        - actions: ["listCollections", "listIndexes"]
+          resource:
+            database: inventory
+      inheritedRoles:
+        - roleName: read
+          databaseName: inventory

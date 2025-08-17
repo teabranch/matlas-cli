@@ -1,0 +1,245 @@
+# Comprehensive Custom Roles Example
+# This example demonstrates custom role creation with granular permissions
+# Note: Apply custom roles via database commands: matlas database roles create
+
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: custom-roles-comprehensive
+  labels:
+    purpose: example
+    feature: custom-roles
+    granularity: collection-level
+  annotations:
+    description: "Comprehensive custom roles example with granular permissions"
+    implementation: "Use database commands or YAML validation/planning"
+resources:
+  # Application-specific role with granular permissions
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseRole
+    metadata:
+      name: app-service-role
+      labels:
+        purpose: application-service
+        database: ecommerce
+        granularity: collection-level
+    spec:
+      roleName: ecommerceAppRole
+      databaseName: ecommerce
+      privileges:
+        # Product catalog permissions
+        - actions: ["find", "insert", "update"]
+          resource:
+            database: ecommerce
+            collection: products
+        - actions: ["find"]
+          resource:
+            database: ecommerce
+            collection: categories
+        
+        # Order management permissions
+        - actions: ["find", "insert", "update"]
+          resource:
+            database: ecommerce
+            collection: orders
+        - actions: ["find", "insert"]
+          resource:
+            database: ecommerce
+            collection: order_history
+            
+        # User data permissions
+        - actions: ["find", "update"]
+          resource:
+            database: ecommerce
+            collection: users
+        - actions: ["find", "insert"]
+          resource:
+            database: ecommerce
+            collection: user_sessions
+            
+        # Inventory permissions
+        - actions: ["find", "update"]
+          resource:
+            database: ecommerce
+            collection: inventory
+            
+        # Database-level administrative actions
+        - actions: ["listCollections", "listIndexes", "collStats"]
+          resource:
+            database: ecommerce
+      inheritedRoles:
+        - roleName: read
+          databaseName: shared_data
+
+  # Analytics role with read-only access across multiple collections
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseRole
+    metadata:
+      name: analytics-role
+      labels:
+        purpose: analytics
+        database: ecommerce
+        access-level: readonly
+    spec:
+      roleName: ecommerceAnalyticsRole
+      databaseName: ecommerce
+      privileges:
+        # Read access to all business data
+        - actions: ["find"]
+          resource:
+            database: ecommerce
+            collection: orders
+        - actions: ["find"]
+          resource:
+            database: ecommerce
+            collection: products
+        - actions: ["find"]
+          resource:
+            database: ecommerce
+            collection: users
+        - actions: ["find"]
+          resource:
+            database: ecommerce
+            collection: inventory
+        - actions: ["find"]
+          resource:
+            database: ecommerce
+            collection: sales_metrics
+            
+        # Collection metadata access
+        - actions: ["listCollections", "collStats", "dbStats"]
+          resource:
+            database: ecommerce
+      inheritedRoles:
+        - roleName: read
+          databaseName: reference_data
+
+  # Administrative role for specific database management
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseRole
+    metadata:
+      name: database-manager-role
+      labels:
+        purpose: database-management
+        database: ecommerce
+        access-level: admin
+    spec:
+      roleName: ecommerceDatabaseManager
+      databaseName: ecommerce
+      privileges:
+        # Full collection management
+        - actions: ["createCollection", "dropCollection", "collMod"]
+          resource:
+            database: ecommerce
+            
+        # Index management
+        - actions: ["createIndex", "dropIndex", "listIndexes", "reIndex"]
+          resource:
+            database: ecommerce
+            
+        # User management within database
+        - actions: ["createUser", "dropUser", "grantRole", "revokeRole", "viewUser"]
+          resource:
+            database: ecommerce
+            
+        # Database statistics and monitoring
+        - actions: ["dbStats", "collStats", "serverStatus", "top"]
+          resource:
+            database: ecommerce
+            
+        # Full data access for management tasks
+        - actions: ["find", "insert", "update", "remove"]
+          resource:
+            database: ecommerce
+      inheritedRoles:
+        - roleName: dbAdmin
+          databaseName: ecommerce
+
+  # Backup role with specific backup-related permissions
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseRole
+    metadata:
+      name: backup-role
+      labels:
+        purpose: backup
+        database: ecommerce
+        access-level: readonly-plus
+    spec:
+      roleName: ecommerceBackupRole
+      databaseName: ecommerce
+      privileges:
+        # Read access to all data for backup
+        - actions: ["find"]
+          resource:
+            database: ecommerce
+            
+        # Metadata required for backup
+        - actions: ["listCollections", "listIndexes", "collStats", "dbStats"]
+          resource:
+            database: ecommerce
+            
+        # Lock/unlock for consistent backups
+        - actions: ["fsync", "unlock"]
+          resource:
+            cluster: true
+      inheritedRoles:
+        - roleName: backup
+          databaseName: admin
+
+  # Users that utilize the custom roles
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: ecommerce-app-user
+      labels:
+        purpose: application
+        database: ecommerce
+        role-type: custom
+    spec:
+      projectName: "My Project"
+      username: ecommerce-app-user
+      authDatabase: admin
+      password: "${ECOMMERCE_APP_PASSWORD}"
+      roles:
+        - roleName: ecommerceAppRole
+          databaseName: ecommerce
+        - roleName: read
+          databaseName: shared_data
+
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: ecommerce-analytics-user
+      labels:
+        purpose: analytics
+        database: ecommerce
+        role-type: custom
+    spec:
+      projectName: "My Project"
+      username: ecommerce-analytics-user
+      authDatabase: admin
+      password: "${ANALYTICS_PASSWORD}"
+      roles:
+        - roleName: ecommerceAnalyticsRole
+          databaseName: ecommerce
+        - roleName: read
+          databaseName: reference_data
+
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: ecommerce-manager
+      labels:
+        purpose: management
+        database: ecommerce
+        role-type: custom
+    spec:
+      projectName: "My Project"
+      username: ecommerce-manager
+      authDatabase: admin
+      password: "${DATABASE_MANAGER_PASSWORD}"
+      roles:
+        - roleName: ecommerceDatabaseManager
+          databaseName: ecommerce
+        - roleName: dbAdmin
+          databaseName: ecommerce

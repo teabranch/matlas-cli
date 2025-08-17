@@ -1,0 +1,67 @@
+# Database Operations with Authentication Methods Example
+# This example demonstrates the three authentication methods for database operations
+# All database creation requires --collection parameter
+
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: database-operations-auth-example
+  labels:
+    purpose: example
+    feature: authentication-methods
+  annotations:
+    description: "Example showing database operations with different authentication methods"
+    requiresCollection: "true"
+resources:
+  # Database user for authentication method examples
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: db-operations-user
+      labels:
+        purpose: database-operations
+        auth-method: atlas-api
+    spec:
+      projectName: "My Project"
+      username: db-operations-user
+      authDatabase: admin
+      password: "${DB_OPERATIONS_PASSWORD}"
+      roles:
+        - roleName: readWrite
+          databaseName: inventory
+        - roleName: readWrite
+          databaseName: sales
+        - roleName: dbAdmin
+          databaseName: inventory
+        - roleName: dbAdmin
+          databaseName: sales
+
+  # Custom role for granular permissions
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseRole
+    metadata:
+      name: collection-manager
+      labels:
+        purpose: collection-management
+        database: inventory
+    spec:
+      roleName: collectionManager
+      databaseName: inventory
+      privileges:
+        - actions: ["createCollection", "dropCollection", "createIndex", "dropIndex"]
+          resource:
+            database: inventory
+        - actions: ["find", "insert", "update", "remove"]
+          resource:
+            database: inventory
+            collection: products
+        - actions: ["find", "insert", "update", "remove"]
+          resource:
+            database: inventory
+            collection: categories
+        - actions: ["listCollections", "listIndexes", "collStats", "dbStats"]
+          resource:
+            database: inventory
+      inheritedRoles:
+        - roleName: read
+          databaseName: inventory

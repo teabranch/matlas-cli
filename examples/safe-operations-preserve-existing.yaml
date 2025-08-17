@@ -1,0 +1,75 @@
+# Safe Operations with Preserve Existing Example
+# This example demonstrates safe operations using --preserve-existing flag
+# Use: matlas infra apply -f safe-operations-preserve-existing.yaml --preserve-existing --auto-approve
+
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: safe-operations-example
+  labels:
+    safety: preserve-existing
+    purpose: example
+    operation-mode: safe
+  annotations:
+    description: "Safe operations that preserve existing resources not defined in this file"
+    safetyNote: "Use --preserve-existing flag to protect existing resources"
+    testCompatible: "true"
+resources:
+  # New cluster to be added safely alongside existing resources
+  - apiVersion: matlas.mongodb.com/v1
+    kind: Cluster
+    metadata:
+      name: new-safe-cluster
+      labels:
+        operation: new-addition
+        safety: preserve-existing
+        purpose: testing
+    spec:
+      projectName: "My Project"
+      provider: AWS
+      region: US_EAST_1
+      instanceSize: M10
+      clusterType: REPLICASET
+      tierType: REPLICASET
+      mongodbVersion: "7.0"
+      backupEnabled: false
+      diskSizeGB: 10
+      
+      tags:
+        - key: Purpose
+          value: SafeOperationTest
+        - key: CreatedBy
+          value: PreserveExistingExample
+
+  # New user to be added safely
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: safe-test-user
+      labels:
+        operation: new-addition
+        safety: preserve-existing
+        purpose: testing
+    spec:
+      projectName: "My Project"
+      username: safe-test-user
+      authDatabase: admin
+      password: "${SAFE_TEST_PASSWORD}"
+      roles:
+        - roleName: read
+          databaseName: admin
+
+  # New network access rule to be added safely
+  - apiVersion: matlas.mongodb.com/v1
+    kind: NetworkAccess
+    metadata:
+      name: safe-test-access
+      labels:
+        operation: new-addition
+        safety: preserve-existing
+        purpose: testing
+    spec:
+      projectName: "My Project"
+      ipAddress: "203.0.113.200"
+      comment: "Safe operation test access - temporary"
+      deleteAfterDate: "2024-12-31T23:59:59Z"

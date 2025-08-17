@@ -1,0 +1,195 @@
+# Comprehensive Cluster Configuration Example
+# This example shows advanced cluster configuration with autoscaling, backup, and security features
+
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: cluster-comprehensive
+  labels:
+    environment: production
+    tier: advanced
+    purpose: example
+  annotations:
+    description: "Comprehensive cluster configuration with advanced features"
+    cost-warning: "This configuration may incur significant costs"
+resources:
+  # Production cluster with autoscaling and advanced features
+  - apiVersion: matlas.mongodb.com/v1
+    kind: Cluster
+    metadata:
+      name: prod-cluster-advanced
+      labels:
+        environment: production
+        tier: advanced
+        backup: enabled
+        encryption: enabled
+    spec:
+      projectName: "Production Project"
+      provider: AWS
+      region: US_EAST_1
+      instanceSize: M40
+      clusterType: REPLICASET
+      tierType: REPLICASET
+      mongodbVersion: "7.0"
+      
+      # Storage configuration
+      diskSizeGB: 80
+      
+      # Backup configuration
+      backupEnabled: true
+      pitEnabled: true
+      
+      # Autoscaling configuration
+      autoscaling:
+        diskGBEnabled: true
+        computeEnabled: true
+        computeScaleDownEnabled: true
+        computeMinInstanceSize: M40
+        computeMaxInstanceSize: M80
+      
+      # Security features
+      encryptionAtRestProvider: AWS
+      
+      # BI Connector
+      biConnector:
+        enabled: true
+        readPreference: secondary
+      
+      # Tags for resource management
+      tags:
+        - key: Environment
+          value: Production
+        - key: Application
+          value: MainApp
+        - key: CostCenter
+          value: Engineering
+        - key: Owner
+          value: Platform Team
+
+  # Multi-region cluster for high availability
+  - apiVersion: matlas.mongodb.com/v1
+    kind: Cluster
+    metadata:
+      name: global-cluster
+      labels:
+        environment: production
+        type: global
+        regions: multi
+    spec:
+      projectName: "Production Project"
+      provider: AWS
+      clusterType: REPLICASET
+      mongodbVersion: "7.0"
+      backupEnabled: true
+      
+      # Multi-region replication specifications
+      replicationSpecs:
+        - numShards: 1
+          regionConfigs:
+            - electableNodes: 3
+              priority: 7
+              readOnlyNodes: 0
+              analyticsNodes: 0
+              providerName: AWS
+              regionName: US_EAST_1
+              instanceSize: M30
+            - electableNodes: 2
+              priority: 6
+              readOnlyNodes: 0
+              analyticsNodes: 0
+              providerName: AWS
+              regionName: US_WEST_2
+              instanceSize: M30
+            - electableNodes: 2
+              priority: 5
+              readOnlyNodes: 1
+              analyticsNodes: 0
+              providerName: AWS
+              regionName: EU_WEST_1
+              instanceSize: M30
+
+  # Development cluster with minimal configuration
+  - apiVersion: matlas.mongodb.com/v1
+    kind: Cluster
+    metadata:
+      name: dev-cluster
+      labels:
+        environment: development
+        tier: basic
+        cost-optimized: "true"
+    spec:
+      projectName: "Production Project"
+      provider: AWS
+      region: US_EAST_1
+      instanceSize: M10
+      clusterType: REPLICASET
+      tierType: REPLICASET
+      mongodbVersion: "7.0"
+      diskSizeGB: 10
+      backupEnabled: false
+      
+      tags:
+        - key: Environment
+          value: Development
+        - key: AutoShutdown
+          value: "true"
+
+  # Network access for clusters
+  - apiVersion: matlas.mongodb.com/v1
+    kind: NetworkAccess
+    metadata:
+      name: production-vpc
+      labels:
+        environment: production
+        type: aws-sg
+    spec:
+      projectName: "Production Project"
+      awsSecurityGroup: "sg-1234567890abcdef0"
+      comment: "Production VPC security group access"
+
+  - apiVersion: matlas.mongodb.com/v1
+    kind: NetworkAccess
+    metadata:
+      name: development-access
+      labels:
+        environment: development
+        type: cidr
+    spec:
+      projectName: "Production Project"
+      cidrBlock: "10.0.0.0/16"
+      comment: "Development environment access"
+
+  # Administrative users for cluster management
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: cluster-admin
+      labels:
+        purpose: administration
+        scope: all-clusters
+    spec:
+      projectName: "Production Project"
+      username: cluster-admin
+      authDatabase: admin
+      password: "${CLUSTER_ADMIN_PASSWORD}"
+      roles:
+        - roleName: atlasAdmin
+          databaseName: admin
+
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: backup-user
+      labels:
+        purpose: backup
+        scope: readonly
+    spec:
+      projectName: "Production Project"
+      username: backup-user
+      authDatabase: admin
+      password: "${BACKUP_USER_PASSWORD}"
+      roles:
+        - roleName: backup
+          databaseName: admin
+        - roleName: clusterMonitor
+          databaseName: admin
