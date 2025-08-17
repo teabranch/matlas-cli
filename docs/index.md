@@ -37,6 +37,13 @@ title: Home
   </div>
   
   <div class="card feature">
+    <div class="feature-icon">🔍</div>
+    <h3 class="feature-title">Discovery & Export</h3>
+    <p class="feature-description">Discover existing Atlas resources and convert to infrastructure-as-code format with database-level resource enumeration.</p>
+    <a href="{{ '/discovery/' | relative_url }}" class="btn btn-outline">Learn more</a>
+  </div>
+  
+  <div class="card feature">
     <div class="feature-icon">🏗️</div>
     <h3 class="feature-title">Infrastructure Workflows</h3>
     <p class="feature-description">Terraform-inspired infrastructure-as-code workflows: discover, plan, diff, apply, destroy.</p>

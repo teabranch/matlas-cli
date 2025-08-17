@@ -37,6 +37,8 @@ navigation:
     url: /
   - title: Authentication
     url: /auth/
+  - title: Discovery
+    url: /discovery/
   - title: Atlas Commands
     url: /atlas/
   - title: Database Commands

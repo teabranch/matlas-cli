@@ -29,21 +29,40 @@ Use `database` commands for granular database-specific operations and `atlas` co
 
 ---
 
-## Connection methods
+## Authentication Methods
 
-Matlas supports two ways to connect to MongoDB databases:
+Matlas supports three authentication methods for database operations:
 
-### Direct connection
+### Method 1: Temporary User (Recommended)
+```bash
+--cluster <cluster-name> --project-id <project-id> --use-temp-user
+```
+- **How it works**: Creates a temporary Atlas database user with required permissions
+- **Automatic cleanup**: User is automatically deleted after operation
+- **Security**: Uses Atlas API keys, no permanent credentials needed
+- **Best for**: Automation, CI/CD pipelines, one-off operations
+
+### Method 2: Manual User Credentials
+```bash
+--cluster <cluster-name> --project-id <project-id> --username <user> --password <pass>
+```
+- **How it works**: Uses existing database user credentials
+- **Requirements**: Both username and password must be provided
+- **Best for**: Using existing database users with specific permissions
+
+### Method 3: Direct Connection String
 ```bash
 --connection-string "mongodb+srv://user:pass@cluster.mongodb.net/"
 ```
+- **How it works**: Direct MongoDB connection with embedded credentials
+- **Full control**: Complete control over connection parameters
+- **Best for**: Custom connection requirements, external clusters
 
-### Via Atlas cluster
-```bash
---cluster <cluster-name> --project-id <project-id>
-```
+## Connection Requirements
 
-**Note:** When using Atlas cluster connection, you can optionally use `--use-temp-user` to create a temporary database user for the operation.
+**Database Creation**: All database creation operations require the `--collection` parameter because MongoDB databases are created lazily when the first collection is added. This ensures the database is immediately visible in Atlas UI.
+
+**Authentication**: You must use exactly one authentication method per command. Mixing methods (e.g., `--use-temp-user` with `--username`) will result in an error.
 
 ---
 
@@ -60,12 +79,28 @@ matlas database list --cluster <name> --project-id <id> [--use-temp-user] [--dat
 
 ### Create database
 ```bash
-# Direct connection
-matlas database create <database-name> --connection-string "mongodb+srv://user:pass@host/"
+# Direct connection (requires collection for immediate visibility)
+matlas database create <database-name> \
+  --connection-string "mongodb+srv://user:pass@host/" \
+  --collection <collection-name>
 
-# Via Atlas cluster
-matlas database create <database-name> --cluster <name> --project-id <id>
+# Via Atlas cluster with temporary user (recommended)
+matlas database create <database-name> \
+  --cluster <name> \
+  --project-id <id> \
+  --collection <collection-name> \
+  --use-temp-user
+
+# Via Atlas cluster with manual credentials
+matlas database create <database-name> \
+  --cluster <name> \
+  --project-id <id> \
+  --collection <collection-name> \
+  --username <db-user> \
+  --password <db-password>
 ```
+
+**Important**: Database creation requires the `--collection` parameter because MongoDB databases are created lazily when the first collection is added. This ensures the database is immediately visible in Atlas UI.
 
 ### Delete database
 ```bash

@@ -17,11 +17,13 @@ Terraform-inspired workflows for managing MongoDB Atlas infrastructure as code.
 
 Matlas provides infrastructure-as-code workflows inspired by Terraform and kubectl:
 
-1. **Discover** → Enumerate current Atlas resources
+1. **[Discover](/discovery/)** → Enumerate current Atlas resources and optionally include database-level resources
 2. **Plan/Diff** → Preview changes before applying
 3. **Apply** → Reconcile desired state
 4. **Show** → Display current state
 5. **Destroy** → Clean up resources
+
+The discovery feature supports comprehensive resource enumeration including clusters, users, network access, and database-level resources (databases, collections, indexes, custom roles).
 
 ## File formats
 
@@ -35,6 +37,8 @@ Matlas provides infrastructure-as-code workflows inspired by Terraform and kubec
 ## Discover
 
 Enumerate Atlas resources for a project and optionally convert to ApplyDocument format.
+
+**For comprehensive discovery documentation, see [Discovery](/discovery/)**
 
 ### Basic discovery
 ```bash
@@ -51,18 +55,6 @@ matlas discover \
   -o project.yaml
 ```
 
-### Selective discovery
-```bash
-# Include specific resource types
-matlas discover --project-id <project-id> --include project,clusters,users
-
-# Exclude specific resource types
-matlas discover --project-id <project-id> --exclude network,databases
-
-# Filter by resource name
-matlas discover --project-id <project-id> --resource-type clusters --resource-name "prod-*"
-```
-
 ### Convert to ApplyDocument
 ```bash
 matlas discover \
@@ -73,29 +65,16 @@ matlas discover \
   -o config.yaml
 ```
 
-### Discovery flags
+### Key features
 
-| Flag | Description |
-|:-----|:------------|
-| `--project-id` | Atlas project ID to discover |
-| `--include` | Resource types to include (project,clusters,users,network,databases) |
-| `--exclude` | Resource types to exclude |
-| `--mask-secrets` | Hide sensitive values in output |
-| `--include-databases` | Include database-level resources |
-| `--use-temp-user` | Create temporary user for database access |
-| `--resource-type` | Filter by specific resource type |
-| `--resource-name` | Filter by resource name pattern |
-| `--convert-to-apply` | Convert to ApplyDocument format |
-| `--output` | Output format (yaml, json) |
-| `--output-file, -o` | Save to file |
-| `--no-cache` | Disable discovery caching |
-| `--parallel` | Enable parallel discovery of resources |
-| `--max-concurrency` | Maximum concurrent API calls |
-| `--mongo-uri` | Override MongoDB connection for enumeration |
-| `--mongo-username` | Username for DB enumeration when needed |
-| `--mongo-password` | Password for DB enumeration when needed |
-| `--temp-user-database` | Scope temporary user to specific DB |
-| `--cache-stats` | Print discovery cache statistics |
+- **Comprehensive resource enumeration**: Clusters, users, network access, and database-level resources
+- **Resource filtering**: Include/exclude specific types, filter by name patterns
+- **Format conversion**: Convert DiscoveredProject to ApplyDocument format
+- **Performance optimization**: Caching, parallel discovery, concurrency control
+- **Database discovery**: Include databases, collections, indexes, and custom roles
+- **Authentication flexibility**: Temporary users, manual credentials, or direct connection strings
+
+See [Discovery documentation](/discovery/) for complete usage guide and examples.
 
 ---
 
