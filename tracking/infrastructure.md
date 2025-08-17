@@ -114,3 +114,38 @@ This resolves the issue where manual tags from main commits couldn't find their 
 
 ---
 
+## [2025-01-07] Release Timing Fix
+
+**Status**: Completed  
+**Developer**: Assistant  
+**Related Issues**: Releases created before CI artifacts ready  
+
+### Summary
+Fixed critical timing issue where semantic-release workflow was creating releases in parallel with CI workflow, resulting in empty releases without binary attachments.
+
+### Tasks
+- [x] Add wait-for-ci job to semantic-release workflow
+- [x] Make semantic-release depend on CI completion
+- [x] Update documentation to reflect sequential workflow
+- [x] Ensure releases are only created after artifacts are ready
+
+### Files Modified
+- `.github/workflows/semantic-release.yml` - Added wait-for-ci job with polling for CI completion
+- `docs/release-process.md` - Updated process documentation to show CI wait step
+
+### Notes
+**Problem**: When pushing to main, both CI and semantic-release workflows started simultaneously. Semantic-release would create a release immediately while CI was still building artifacts, resulting in releases without binaries.
+
+**Solution**: Added a `wait-for-ci` job that polls the GitHub API every 30 seconds to check if the CI workflow for the same commit has completed successfully. Only after CI succeeds does semantic-release proceed to create the release.
+
+**Technical Details**:
+- 40-minute timeout for CI completion
+- 30-second polling interval
+- Checks CI workflow status for the exact commit SHA
+- Fails if CI workflow fails or times out
+- Provides detailed logging of CI workflow status
+
+This ensures that releases always have their binary artifacts attached from the start.
+
+---
+

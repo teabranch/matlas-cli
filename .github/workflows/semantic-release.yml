@@ -21,10 +21,58 @@ env:
   NODE_VERSION: '20'
 
 jobs:
+  # Wait for CI to complete before creating releases
+  wait-for-ci:
+    name: ⏳ Wait for CI Completion
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Wait for CI workflow to complete
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const maxWaitTime = 40 * 60 * 1000; // 40 minutes
+            const pollInterval = 30 * 1000; // 30 seconds
+            const startTime = Date.now();
+            
+            console.log(`Waiting for CI workflow to complete for commit: ${context.sha}`);
+            
+            while (Date.now() - startTime < maxWaitTime) {
+              const { data: runs } = await github.rest.actions.listWorkflowRuns({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'ci.yml',
+                head_sha: context.sha,
+                per_page: 3
+              });
+              
+              if (runs.workflow_runs.length > 0) {
+                const run = runs.workflow_runs[0];
+                console.log(`CI workflow status: ${run.status}, conclusion: ${run.conclusion}`);
+                
+                if (run.status === 'completed') {
+                  if (run.conclusion === 'success') {
+                    console.log('✅ CI workflow completed successfully');
+                    console.log(`CI run URL: ${run.html_url}`);
+                    return;
+                  } else {
+                    throw new Error(`❌ CI workflow failed with conclusion: ${run.conclusion}`);
+                  }
+                }
+              }
+              
+              console.log('⏳ Waiting for CI workflow to complete...');
+              await new Promise(resolve => setTimeout(resolve, pollInterval));
+            }
+            
+            throw new Error('⏰ Timeout waiting for CI workflow to complete');
+
   semantic-release:
     name: 🚀 Semantic Release
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: wait-for-ci
     outputs:
       new_release_published: ${{ steps.semantic.outputs.new_release_published }}
       new_release_version: ${{ steps.semantic.outputs.new_release_version }}

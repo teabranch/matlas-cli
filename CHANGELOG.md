@@ -9,11 +9,13 @@
 
 ### Fixed
 - Fixed critical issue where CI artifacts weren't created for manual tags
+- Fixed timing issue where releases were created before CI artifacts were ready
 - Release workflow now properly finds and downloads CI artifacts for any commit
 - Eliminated confusing dual-branch pre-release strategy
 
 ### Changed
 - Simplified release strategy to use single main branch with semantic versioning
+- Semantic-release now waits for CI workflow to complete before creating releases
 - CI workflow now creates checksums for all builds, not just specific branches
 - Release workflow has better error handling and fallback for artifact download
 - Updated documentation to reflect simplified release process

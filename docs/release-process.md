@@ -31,8 +31,9 @@ We use a simplified single-branch strategy for releases:
 **Process:**
 1. Developer pushes to main with conventional commits (`feat:`, `fix:`, etc.)
 2. CI workflow builds and tests the code, creates artifacts
-3. Semantic-release analyzes commits and creates appropriate release
-4. Release workflow downloads CI artifacts and attaches them to the release
+3. Semantic-release waits for CI to complete successfully
+4. Semantic-release analyzes commits and creates appropriate release
+5. Release workflow downloads CI artifacts and attaches them to the release
 
 ### Manual Releases
 
