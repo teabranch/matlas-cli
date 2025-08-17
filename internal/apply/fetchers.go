@@ -272,7 +272,7 @@ func extractClusterRegion(cluster admin.ClusterDescription20240805) string {
 // NOTE: Custom database roles are not available through Atlas API and require direct MongoDB connection
 // This function serves as a placeholder for future implementation that would need:
 // 1. MongoDB connection string resolution
-// 2. Database authentication with appropriate privileges  
+// 2. Database authentication with appropriate privileges
 // 3. MongoDB rolesInfo command execution to fetch role details
 func (d *AtlasStateDiscovery) convertDatabaseRoleToManifest(roleName, databaseName, projectName string) types.DatabaseRoleManifest {
 	// Since we cannot fetch custom database roles through Atlas API,

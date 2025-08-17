@@ -18,13 +18,13 @@ const (
 type ResourceKind string
 
 const (
-	KindProject           ResourceKind = "Project"
-	KindCluster           ResourceKind = "Cluster"
-	KindDatabaseUser      ResourceKind = "DatabaseUser"
+	KindProject            ResourceKind = "Project"
+	KindCluster            ResourceKind = "Cluster"
+	KindDatabaseUser       ResourceKind = "DatabaseUser"
 	KindDatabaseDirectUser ResourceKind = "DatabaseDirectUser"
-	KindDatabaseRole      ResourceKind = "DatabaseRole"
-	KindNetworkAccess     ResourceKind = "NetworkAccess"
-	KindApplyDocument     ResourceKind = "ApplyDocument"
+	KindDatabaseRole       ResourceKind = "DatabaseRole"
+	KindNetworkAccess      ResourceKind = "NetworkAccess"
+	KindApplyDocument      ResourceKind = "ApplyDocument"
 )
 
 // ResourceStatus represents the current status of a resource.
@@ -132,11 +132,11 @@ type DatabaseUserSpec struct {
 
 // DatabaseDirectUserManifest represents a database direct user resource manifest
 type DatabaseDirectUserManifest struct {
-	APIVersion APIVersion          `yaml:"apiVersion" json:"apiVersion"`
-	Kind       ResourceKind        `yaml:"kind" json:"kind"`
-	Metadata   ResourceMetadata    `yaml:"metadata" json:"metadata"`
+	APIVersion APIVersion             `yaml:"apiVersion" json:"apiVersion"`
+	Kind       ResourceKind           `yaml:"kind" json:"kind"`
+	Metadata   ResourceMetadata       `yaml:"metadata" json:"metadata"`
 	Spec       DatabaseDirectUserSpec `yaml:"spec" json:"spec"`
-	Status     *ResourceStatusInfo `yaml:"status,omitempty" json:"status,omitempty"`
+	Status     *ResourceStatusInfo    `yaml:"status,omitempty" json:"status,omitempty"`
 }
 
 // DatabaseDirectUserSpec represents the specification for a database direct user resource
@@ -168,10 +168,10 @@ type DatabaseRoleManifest struct {
 
 // DatabaseRoleSpec represents the specification for a database role resource
 type DatabaseRoleSpec struct {
-	RoleName       string                             `yaml:"roleName" json:"roleName"`
-	DatabaseName   string                             `yaml:"databaseName" json:"databaseName"`
-	Privileges     []CustomRolePrivilegeConfig        `yaml:"privileges,omitempty" json:"privileges,omitempty"`
-	InheritedRoles []CustomRoleInheritedRoleConfig    `yaml:"inheritedRoles,omitempty" json:"inheritedRoles,omitempty"`
+	RoleName       string                          `yaml:"roleName" json:"roleName"`
+	DatabaseName   string                          `yaml:"databaseName" json:"databaseName"`
+	Privileges     []CustomRolePrivilegeConfig     `yaml:"privileges,omitempty" json:"privileges,omitempty"`
+	InheritedRoles []CustomRoleInheritedRoleConfig `yaml:"inheritedRoles,omitempty" json:"inheritedRoles,omitempty"`
 }
 
 // NetworkAccessManifest represents a network access resource manifest

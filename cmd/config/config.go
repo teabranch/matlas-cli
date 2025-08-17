@@ -210,10 +210,10 @@ This command can export configurations to:
 - YAML configuration files
 - Shell export statements`,
 		Example: `  # Export to environment file
-  matlas config export --format env --file config.env
+  matlas config export --format env --output config.env
 
   # Export to JSON
-  matlas config export --format json --file config.json
+  matlas config export --format json --output config.json
 
   # Export including sensitive values
   matlas config export --include-secrets --format yaml
@@ -225,7 +225,7 @@ This command can export configurations to:
 		},
 	}
 
-	cmd.Flags().StringVar(&outputFile, "file", "", "Output file path (default: stdout)")
+	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file path (default: stdout)")
 	cmd.Flags().StringVarP(&format, "format", "f", "yaml", "Export format (yaml, json, env, shell)")
 	cmd.Flags().BoolVar(&includeSecrets, "include-secrets", false, "Include sensitive values in export")
 

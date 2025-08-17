@@ -157,18 +157,18 @@ type UserScopeConfig struct {
 
 // CustomDatabaseRoleConfig represents a custom MongoDB role configuration
 type CustomDatabaseRoleConfig struct {
-	Metadata        ResourceMetadata                   `yaml:"metadata" json:"metadata" validate:"required"`
-	RoleName        string                             `yaml:"roleName" json:"roleName" validate:"required,min=1,max=64"`
-	DatabaseName    string                             `yaml:"databaseName" json:"databaseName" validate:"required,min=1,max=63"`
-	Privileges      []CustomRolePrivilegeConfig        `yaml:"privileges,omitempty" json:"privileges,omitempty" validate:"dive"`
-	InheritedRoles  []CustomRoleInheritedRoleConfig    `yaml:"inheritedRoles,omitempty" json:"inheritedRoles,omitempty" validate:"dive"`
-	DependsOn       []string                           `yaml:"dependsOn,omitempty" json:"dependsOn,omitempty" validate:"dive,min=1,max=64"`
+	Metadata       ResourceMetadata                `yaml:"metadata" json:"metadata" validate:"required"`
+	RoleName       string                          `yaml:"roleName" json:"roleName" validate:"required,min=1,max=64"`
+	DatabaseName   string                          `yaml:"databaseName" json:"databaseName" validate:"required,min=1,max=63"`
+	Privileges     []CustomRolePrivilegeConfig     `yaml:"privileges,omitempty" json:"privileges,omitempty" validate:"dive"`
+	InheritedRoles []CustomRoleInheritedRoleConfig `yaml:"inheritedRoles,omitempty" json:"inheritedRoles,omitempty" validate:"dive"`
+	DependsOn      []string                        `yaml:"dependsOn,omitempty" json:"dependsOn,omitempty" validate:"dive,min=1,max=64"`
 }
 
 // CustomRolePrivilegeConfig represents a privilege within a custom role
 type CustomRolePrivilegeConfig struct {
-	Actions  []string                       `yaml:"actions" json:"actions" validate:"required,min=1,dive,min=1"`
-	Resource CustomRoleResourceConfig       `yaml:"resource" json:"resource" validate:"required"`
+	Actions  []string                 `yaml:"actions" json:"actions" validate:"required,min=1,dive,min=1"`
+	Resource CustomRoleResourceConfig `yaml:"resource" json:"resource" validate:"required"`
 }
 
 // CustomRoleResourceConfig represents a resource that a privilege applies to

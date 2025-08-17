@@ -13,7 +13,7 @@ import (
 func TestLoad_Precedence(t *testing.T) {
 	// Clear any existing cluster name env var that could interfere
 	t.Setenv("ATLAS_CLUSTER_NAME", "")
-	
+
 	// 1. YAML file with baseline values
 	tmpDir := t.TempDir()
 	yamlPath := filepath.Join(tmpDir, "config.yaml")

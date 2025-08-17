@@ -23,13 +23,13 @@ import (
 
 // DiscoveryTestConfig holds configuration for discovery integration tests
 type DiscoveryTestConfig struct {
-	PublicKey     string
-	PrivateKey    string
-	OrgID         string
-	ProjectID     string
-	TestCluster   string
-	Timeout       time.Duration
-	TempDirPath   string
+	PublicKey   string
+	PrivateKey  string
+	OrgID       string
+	ProjectID   string
+	TestCluster string
+	Timeout     time.Duration
+	TempDirPath string
 }
 
 // DiscoveryTestEnvironment provides shared test setup and cleanup
@@ -572,10 +572,10 @@ func TestDiscovery_ErrorHandling_Integration(t *testing.T) {
 		invalidProjectID := "invalid-project-id-123"
 
 		projectState, err := env.Discovery.DiscoverProject(ctx, invalidProjectID)
-		
+
 		// Expect error for invalid project
 		assert.Error(t, err)
-		
+
 		// But we might still get partial results
 		if projectState != nil {
 			t.Logf("Got partial results despite error: %v", err)
@@ -588,11 +588,11 @@ func TestDiscovery_ErrorHandling_Integration(t *testing.T) {
 		defer cancel()
 
 		projectState, err := env.Discovery.DiscoverProject(shortCtx, env.Config.ProjectID)
-		
+
 		// Expect timeout error
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "context")
-		
+
 		// Partial results might still be available
 		if projectState != nil {
 			t.Logf("Got partial results despite timeout")
@@ -640,8 +640,3 @@ func BenchmarkDiscovery_ProjectDiscovery(b *testing.B) {
 		}
 	}
 }
-
-
-
-
-

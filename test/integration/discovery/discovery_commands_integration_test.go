@@ -21,13 +21,13 @@ import (
 
 // DiscoveryCommandTestConfig holds configuration for discovery command integration tests
 type DiscoveryCommandTestConfig struct {
-	PublicKey     string
-	PrivateKey    string
-	OrgID         string
-	ProjectID     string
-	BinaryPath    string
-	TempDirPath   string
-	Timeout       time.Duration
+	PublicKey   string
+	PrivateKey  string
+	OrgID       string
+	ProjectID   string
+	BinaryPath  string
+	TempDirPath string
+	Timeout     time.Duration
 }
 
 // DiscoveryCommandTestEnvironment provides shared test setup for command-level testing
@@ -331,7 +331,7 @@ func TestDiscoveryCommand_ResourceSpecific_Integration(t *testing.T) {
 
 		// Should have clusters but not users or network access
 		assert.Contains(t, result, "clusters")
-		
+
 		// Check that other resource types are not present or empty
 		if users, exists := result["databaseUsers"]; exists {
 			assert.Nil(t, users, "Database users should not be included")
@@ -362,7 +362,7 @@ func TestDiscoveryCommand_ResourceSpecific_Integration(t *testing.T) {
 
 		// Should have users but not clusters or network access
 		assert.Contains(t, result, "databaseUsers")
-		
+
 		// Check that other resource types are not present or empty
 		if clusters, exists := result["clusters"]; exists {
 			assert.Nil(t, clusters, "Clusters should not be included")
@@ -518,10 +518,10 @@ func TestDiscoveryCommand_ErrorHandling_Integration(t *testing.T) {
 
 		// Should fail without project ID
 		assert.Error(t, err, "Should fail without project ID")
-		
+
 		// Error should mention missing project ID
 		combined := stdout + stderr
-		assert.True(t, 
+		assert.True(t,
 			strings.Contains(combined, "project-id") || strings.Contains(combined, "required"),
 			"Error should mention project-id requirement. Output: %s", combined)
 	})
@@ -535,7 +535,7 @@ func TestDiscoveryCommand_ErrorHandling_Integration(t *testing.T) {
 
 		// Should fail with invalid output format
 		assert.Error(t, err, "Should fail with invalid output format")
-		
+
 		combined := stdout + stderr
 		assert.Contains(t, combined, "unsupported", "Error should mention unsupported format")
 	})
@@ -555,7 +555,7 @@ func TestDiscoveryCommand_Timeout_Integration(t *testing.T) {
 
 		// Should timeout
 		assert.Error(t, err, "Should timeout with very short timeout")
-		
+
 		combined := stdout + stderr
 		if !strings.Contains(combined, "timeout") && !strings.Contains(combined, "context") {
 			t.Logf("Warning: Timeout error may not be explicitly mentioned. Output: %s", combined)
@@ -580,8 +580,3 @@ func TestDiscoveryCommand_Timeout_Integration(t *testing.T) {
 		assert.Greater(t, len(content), 0)
 	})
 }
-
-
-
-
-
