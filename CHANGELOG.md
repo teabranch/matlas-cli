@@ -1,3 +1,9 @@
+## [1.0.4](https://github.com/teabranch/matlas-cli/compare/v1.0.3...v1.0.4) (2025-08-17)
+
+### Bug Fixes
+
+* database documentation ([6ff416d](https://github.com/teabranch/matlas-cli/commit/6ff416dcce14c56a96d3f98bc80efbe22dd29a7e))
+
 ## [1.0.3](https://github.com/teabranch/matlas-cli/compare/v1.0.2...v1.0.3) (2025-08-17)
 
 ### Bug Fixes
