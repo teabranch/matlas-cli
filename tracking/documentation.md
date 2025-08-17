@@ -63,3 +63,34 @@ This ensures all developers follow the established workspace rules and maintain 
 
 ---
 
+## [2025-01-27] Database User Management Documentation Correction
+
+**Status**: Completed  
+**Developer**: Assistant  
+**Related Issues**: User feedback about incorrect documentation  
+
+### Summary
+Corrected misleading documentation in `docs/database.md` that incorrectly claimed there were two different types of user management (Atlas vs Database). Fixed to reflect actual implementation where all users are created via Atlas API and propagate to MongoDB databases.
+
+### Tasks
+- [x] Correct main distinction section between Atlas and Database commands
+- [x] Remove false separation between "Atlas users" and "Database users"
+- [x] Rewrite Database Users section to clarify Atlas-managed nature
+- [x] Update examples to show correct Atlas user creation patterns
+- [x] Add clarifying comments in YAML examples
+
+### Files Modified
+- `docs/database.md` - Major revision to Database Users section and command distinction explanation
+
+### Notes
+The original documentation incorrectly suggested that `matlas database users` commands would create users directly in MongoDB using `createUser` commands. However, the actual implementation shows:
+
+1. All user management goes through Atlas API (`internal/services/atlas/users.go`)
+2. The `cmd/database/users/users.go` commands are stubs that redirect to Atlas commands
+3. Tests in `database-operations.sh` correctly use `matlas atlas users create`
+4. Users created via Atlas automatically propagate to MongoDB databases
+
+This correction eliminates confusion and aligns documentation with the actual codebase behavior. The user management model is: **Atlas API → User Creation → Propagation to MongoDB Databases**.
+
+---
+

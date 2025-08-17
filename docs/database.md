@@ -12,18 +12,18 @@ Work directly with MongoDB databases, collections, users, roles, and indexes thr
 ## Important Distinction: Database vs Atlas Management
 
 **Database Commands** (`matlas database`) operate directly on MongoDB databases via connection strings:
-- Create database-level users and custom roles directly in MongoDB
+- Create and manage custom roles with granular privileges
+- Manage databases, collections, and indexes
 - Require database connection (direct connection string or Atlas cluster with temp user)
-- Support granular, collection-level permissions
-- Use MongoDB's native `createUser`, `createRole` commands
+- Support collection-level permissions and custom role definitions
 
 **Atlas Commands** (`matlas atlas`) operate via Atlas Admin API:
-- Manage Atlas-level database users with built-in roles
-- Use Atlas API authentication (API keys)
-- Assign built-in MongoDB roles (read, readWrite, dbAdmin, etc.)
-- Project-level user management
+- **All user management** happens through Atlas API (there is no direct MongoDB user creation)
+- Users created via Atlas API automatically propagate to MongoDB databases
+- Assign built-in MongoDB roles (read, readWrite, dbAdmin, etc.) and custom roles
+- Project-level user management with centralized authentication
 
-Use `database` commands for granular database-specific operations and `atlas` commands for centralized Atlas project management.
+**User Management**: All database users must be created through `matlas atlas users` commands. Users created in Atlas automatically become available in MongoDB databases after propagation.
 
 
 
@@ -292,7 +292,7 @@ kind: ApplyDocument
 metadata:
   name: custom-roles-example
 resources:
-  # Custom database role
+  # Custom database role (created directly in MongoDB)
   - apiVersion: matlas.mongodb.com/v1
     kind: DatabaseRole
     metadata:
@@ -320,7 +320,8 @@ resources:
         - roleName: read
           databaseName: myapp
 
-  # User that uses the custom role
+  # Atlas database user that uses the custom role
+  # Note: All users must be created via Atlas API - they propagate to MongoDB databases
   - apiVersion: matlas.mongodb.com/v1
     kind: DatabaseUser
     metadata:
@@ -375,97 +376,75 @@ matlas database roles delete myCustomRole \
   --yes
 ```
 
-## Database Users
+## Database Users (Atlas-Managed)
 
-Manage MongoDB database users directly in databases. These users are created using MongoDB's `createUser` command and can be assigned both built-in roles and custom roles created with `matlas database roles`.
+**Important**: In MongoDB Atlas, all database users must be created and managed through the Atlas API. Direct MongoDB `createUser` commands are not supported.
 
-**Note**: These are different from Atlas database users managed via `matlas atlas users`. Database users exist only within specific MongoDB databases, while Atlas users are managed centrally via the Atlas API.
+All database user management is handled via `matlas atlas users` commands. Users created through Atlas automatically propagate to MongoDB databases and can access databases according to their assigned roles.
 
-### List database users
+### User Management via Atlas API
+
+For complete user management documentation, see the [Atlas Commands](/atlas/) documentation. Here are the essential commands:
+
 ```bash
-# Using connection string
-matlas database users list \
-  --connection-string "mongodb+srv://user:pass@host/" \
-  --database myapp
-
-# Using Atlas cluster with temporary user (recommended)
-matlas database users list \
-  --cluster my-cluster \
+# Create Atlas database user (propagates to MongoDB databases)
+matlas atlas users create \
   --project-id abc123 \
-  --database myapp \
-  --use-temp-user
-```
-
-### Create database user
-```bash
-# Create user with built-in roles
-matlas database users create dbuser \
-  --cluster my-cluster \
-  --project-id abc123 \
-  --database myapp \
-  --use-temp-user \
+  --username dbuser \
+  --database-name admin \
   --password "SecurePass123!" \
   --roles "readWrite@myapp,read@logs"
 
-# Create user with custom roles and display password
-matlas database users create appuser \
-  --cluster my-cluster \
-  --project-id abc123 \
-  --database myapp \
-  --use-temp-user \
-  --password "SecurePass123!" \
-  --roles "customRole@myapp" \
-  --show-password
-```
+# List all Atlas database users
+matlas atlas users list --project-id abc123
 
-### Update database user
-```bash
-# Update password
-matlas database users update dbuser \
-  --cluster my-cluster \
+# Update user roles
+matlas atlas users update \
   --project-id abc123 \
-  --database myapp \
-  --use-temp-user \
-  --password "NewPass123!"
-
-# Replace all roles
-matlas database users update dbuser \
-  --cluster my-cluster \
-  --project-id abc123 \
-  --database myapp \
-  --use-temp-user \
+  --username dbuser \
+  --database-name admin \
   --roles "read@myapp,read@logs"
 
-# Add roles incrementally
-matlas database users update dbuser \
+# Get user details
+matlas atlas users get \
+  --project-id abc123 \
+  --username dbuser \
+  --database-name admin
+
+# Delete user
+matlas atlas users delete \
+  --project-id abc123 \
+  --username dbuser \
+  --database-name admin
+```
+
+### Role Assignment with Custom Roles
+
+Users created via Atlas can be assigned both built-in MongoDB roles and custom roles created with `matlas database roles`:
+
+```bash
+# Create custom role first
+matlas database roles create appRole \
   --cluster my-cluster \
   --project-id abc123 \
   --database myapp \
   --use-temp-user \
-  --add-roles "write@logs"
-```
+  --privileges "read@myapp,insert@myapp.logs"
 
-### Get database user details
-```bash
-matlas database users get dbuser \
-  --cluster my-cluster \
+# Create user with custom role via Atlas
+matlas atlas users create \
   --project-id abc123 \
-  --database myapp \
-  --use-temp-user
+  --username appuser \
+  --database-name admin \
+  --password "SecurePass123!" \
+  --roles "appRole@myapp,read@admin"
 ```
 
-### Delete database user
-```bash
-matlas database users delete dbuser \
-  --cluster my-cluster \
-  --project-id abc123 \
-  --database myapp \
-  --use-temp-user \
-  --yes
-```
+### Propagation and Access
 
-**Important Notes:**
-- Database users are scoped to specific databases
-- When using `--use-temp-user`, the CLI creates a temporary Atlas user with `userAdmin` privileges for user management
-- Database users can be assigned custom roles created with `matlas database roles create`
-- Use `--verbose` flag to see detailed operation information
+- Users created via Atlas API automatically propagate to all clusters in the project
+- Role assignments determine which databases and collections the user can access
+- Custom roles created with `matlas database roles` can be assigned to Atlas users
+- Use `--verbose` with Atlas commands to see detailed operation information
+
+**Note**: The `matlas database users` commands are not functional in Atlas environments and will redirect you to use `matlas atlas users` instead.
