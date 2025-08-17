@@ -1,0 +1,81 @@
+---
+globs: *.go
+alwaysApply: false
+---
+## Logging Guidelines
+
+Use the centralized logging utilities in `internal/logging` for all logs. Do not use `fmt.Println`, `log.Printf`, direct `log/slog`, or `go.uber.org/zap` in application code.
+
+### Allowed APIs
+- Use `logging.New`, `logging.SetDefault`, and `logging.Default()` to obtain a `*logging.Logger`.
+- Prefer an injected logger or `logging.Default().WithContext(ctx)` within request/command flows.
+- For fields, use `logger.WithFields(map[string]any{...})` or structured key–value pairs on each call.
+
+References:
+- [internal/logging/logger.go](mdc:internal/logging/logger.go)
+
+### Levels
+- Debug: verbose diagnostics, flow tracing, API request/response details.
+- Info: high-level lifecycle, successful operations, important state changes.
+- Warn: client-side recoverable issues, retries, validation soft-failures.
+- Error: operation failures, server errors, unrecoverable step failures.
+- Critical: fatal conditions; use `logger.Critical(...)` sparingly.
+
+### Structured Fields
+- Always log with structured key–value pairs, not string concatenation.
+- Use snake_case keys (e.g., `project_id`, `cluster_name`, `operation_id`).
+- Include correlation where available: `request_id`, `operation_id`, `resource_id`.
+- Prefer immutable identifiers over free-text.
+
+### Secrets and PII
+- Never log raw credentials, tokens, passwords, connection strings, or query params.
+- Rely on built-in masking and detection in the logger; still avoid passing sensitive values when not needed.
+- Do not log entire request/response bodies; include only minimal, non-sensitive snippets.
+
+### Context
+- Bind context with `logger := logging.Default().WithContext(ctx)` and pass it along where practical.
+- Use `WithFields` to attach per-operation metadata once, then reuse the derived logger.
+
+### API Logging and Metrics
+- API logs: use `logger.LogAPIRequest(...)` and `logger.LogAPIResponse(...)` only when `EnableAPILogs` is configured. Avoid bodies or headers containing secrets.
+- Metrics: use `logger.LogMetric(name, value, unit, tags)` only when `EnableMetrics` is enabled.
+
+### Do/Don't Examples
+
+```go
+// Do: structured, secret-safe, correlated
+logger := logging.Default().WithContext(ctx).WithFields(map[string]any{
+    "operation_id": opID,
+    "project_id":   projectID,
+})
+logger.Info("creating cluster", "cluster_name", clusterName, "tier", tier)
+
+// Handle errors with context
+if err != nil {
+    logger.Error("failed to create cluster", "error", err, "cluster_name", clusterName)
+    return err
+}
+```
+
+```go
+// Don't: unstructured/unsafe
+fmt.Println("creating cluster:" + clusterName)               // avoid
+log.Printf("error: %v", err)                                // avoid
+slog.Error("failed", slog.String("token", token))           // avoid
+```
+
+### Anti-patterns
+- Building JSON strings manually; always use structured fields.
+- Logging the same error multiple times across layers.
+- Logging multi-line blobs or full payloads; prefer concise, structured facts.
+- Using dynamic format strings for logs; pass values as structured pairs instead.
+
+### Configuration Notes
+- Respect verbosity: `Verbose` implies debug-level, `Quiet` suppresses debug/info.
+- Prefer `json` format for machine consumption; `text` for local CLI output.
+- Consider `IncludeSource` only for deep troubleshooting due to noise.
+
+Related files for deeper details:
+- [internal/logging/logger.go](mdc:internal/logging/logger.go)
+- [internal/cli/enhanced_errors.go](mdc:internal/cli/enhanced_errors.go)
+

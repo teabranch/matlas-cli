@@ -7,21 +7,21 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.uber.org/zap"
 
+	"github.com/teabranch/matlas-cli/internal/logging"
 	"github.com/teabranch/matlas-cli/internal/types"
 )
 
 // DocumentService provides CRUD operations for MongoDB documents
 type DocumentService struct {
 	dbService *Service
-	logger    *zap.Logger
+	logger    *logging.Logger
 }
 
 // NewDocumentService creates a new document service
-func NewDocumentService(dbService *Service, logger *zap.Logger) *DocumentService {
+func NewDocumentService(dbService *Service, logger *logging.Logger) *DocumentService {
 	if logger == nil {
-		logger = zap.NewNop()
+		logger = logging.Default()
 	}
 
 	return &DocumentService{
@@ -66,9 +66,9 @@ func (ds *DocumentService) InsertDocument(ctx context.Context, connInfo *types.C
 	}
 
 	ds.logger.Debug("Inserted document",
-		zap.String("database", databaseName),
-		zap.String("collection", collectionName),
-		zap.String("id", objectID.Hex()))
+		"database", databaseName,
+		"collection", collectionName,
+		"id", objectID.Hex())
 
 	return &objectID, nil
 }
@@ -111,7 +111,7 @@ func (ds *DocumentService) FindDocuments(ctx context.Context, connInfo *types.Co
 	for cursor.Next(ctx) {
 		var doc Document
 		if err := cursor.Decode(&doc); err != nil {
-			ds.logger.Warn("Failed to decode document", zap.Error(err))
+			ds.logger.Warn("Failed to decode document", "error", err.Error())
 			continue
 		}
 		documents = append(documents, doc)
@@ -122,9 +122,9 @@ func (ds *DocumentService) FindDocuments(ctx context.Context, connInfo *types.Co
 	}
 
 	ds.logger.Debug("Found documents",
-		zap.String("database", databaseName),
-		zap.String("collection", collectionName),
-		zap.Int("count", len(documents)))
+		"database", databaseName,
+		"collection", collectionName,
+		"count", len(documents))
 
 	return documents, nil
 }
@@ -152,9 +152,9 @@ func (ds *DocumentService) FindDocumentByID(ctx context.Context, connInfo *types
 	}
 
 	ds.logger.Debug("Found document by ID",
-		zap.String("database", databaseName),
-		zap.String("collection", collectionName),
-		zap.String("id", id.Hex()))
+		"database", databaseName,
+		"collection", collectionName,
+		"id", id.Hex())
 
 	return &doc, nil
 }
@@ -191,10 +191,10 @@ func (ds *DocumentService) UpdateDocument(ctx context.Context, connInfo *types.C
 	}
 
 	ds.logger.Debug("Updated document",
-		zap.String("database", databaseName),
-		zap.String("collection", collectionName),
-		zap.String("id", id.Hex()),
-		zap.Int64("modified_count", result.ModifiedCount))
+		"database", databaseName,
+		"collection", collectionName,
+		"id", id.Hex(),
+		"modified_count", result.ModifiedCount)
 
 	return nil
 }
@@ -225,9 +225,9 @@ func (ds *DocumentService) DeleteDocument(ctx context.Context, connInfo *types.C
 	}
 
 	ds.logger.Debug("Deleted document",
-		zap.String("database", databaseName),
-		zap.String("collection", collectionName),
-		zap.String("id", id.Hex()))
+		"database", databaseName,
+		"collection", collectionName,
+		"id", id.Hex())
 
 	return nil
 }
@@ -260,9 +260,9 @@ func (ds *DocumentService) CountDocuments(ctx context.Context, connInfo *types.C
 	}
 
 	ds.logger.Debug("Counted documents",
-		zap.String("database", databaseName),
-		zap.String("collection", collectionName),
-		zap.Int64("count", count))
+		"database", databaseName,
+		"collection", collectionName,
+		"count", count)
 
 	return count, nil
 }

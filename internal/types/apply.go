@@ -18,11 +18,13 @@ const (
 type ResourceKind string
 
 const (
-	KindProject       ResourceKind = "Project"
-	KindCluster       ResourceKind = "Cluster"
-	KindDatabaseUser  ResourceKind = "DatabaseUser"
-	KindNetworkAccess ResourceKind = "NetworkAccess"
-	KindApplyDocument ResourceKind = "ApplyDocument"
+	KindProject           ResourceKind = "Project"
+	KindCluster           ResourceKind = "Cluster"
+	KindDatabaseUser      ResourceKind = "DatabaseUser"
+	KindDatabaseDirectUser ResourceKind = "DatabaseDirectUser"
+	KindDatabaseRole      ResourceKind = "DatabaseRole"
+	KindNetworkAccess     ResourceKind = "NetworkAccess"
+	KindApplyDocument     ResourceKind = "ApplyDocument"
 )
 
 // ResourceStatus represents the current status of a resource.
@@ -126,6 +128,50 @@ type DatabaseUserSpec struct {
 	Roles        []DatabaseRoleConfig `yaml:"roles" json:"roles"`
 	AuthDatabase string               `yaml:"authDatabase,omitempty" json:"authDatabase,omitempty"`
 	Scopes       []UserScopeConfig    `yaml:"scopes,omitempty" json:"scopes,omitempty"`
+}
+
+// DatabaseDirectUserManifest represents a database direct user resource manifest
+type DatabaseDirectUserManifest struct {
+	APIVersion APIVersion          `yaml:"apiVersion" json:"apiVersion"`
+	Kind       ResourceKind        `yaml:"kind" json:"kind"`
+	Metadata   ResourceMetadata    `yaml:"metadata" json:"metadata"`
+	Spec       DatabaseDirectUserSpec `yaml:"spec" json:"spec"`
+	Status     *ResourceStatusInfo `yaml:"status,omitempty" json:"status,omitempty"`
+}
+
+// DatabaseDirectUserSpec represents the specification for a database direct user resource
+type DatabaseDirectUserSpec struct {
+	ConnectionConfig ConnectionConfigSpec `yaml:"connectionConfig" json:"connectionConfig"`
+	Username         string               `yaml:"username" json:"username"`
+	Password         string               `yaml:"password" json:"password"`
+	Database         string               `yaml:"database" json:"database"`
+	Roles            []DatabaseRoleConfig `yaml:"roles" json:"roles"`
+}
+
+// ConnectionConfigSpec represents connection configuration for database operations
+type ConnectionConfigSpec struct {
+	ConnectionString string `yaml:"connectionString,omitempty" json:"connectionString,omitempty"`
+	Cluster          string `yaml:"cluster,omitempty" json:"cluster,omitempty"`
+	ProjectID        string `yaml:"projectId,omitempty" json:"projectId,omitempty"`
+	UseTempUser      bool   `yaml:"useTempUser,omitempty" json:"useTempUser,omitempty"`
+	TempUserRole     string `yaml:"tempUserRole,omitempty" json:"tempUserRole,omitempty"`
+}
+
+// DatabaseRoleManifest represents a database role resource manifest
+type DatabaseRoleManifest struct {
+	APIVersion APIVersion          `yaml:"apiVersion" json:"apiVersion"`
+	Kind       ResourceKind        `yaml:"kind" json:"kind"`
+	Metadata   ResourceMetadata    `yaml:"metadata" json:"metadata"`
+	Spec       DatabaseRoleSpec    `yaml:"spec" json:"spec"`
+	Status     *ResourceStatusInfo `yaml:"status,omitempty" json:"status,omitempty"`
+}
+
+// DatabaseRoleSpec represents the specification for a database role resource
+type DatabaseRoleSpec struct {
+	RoleName       string                             `yaml:"roleName" json:"roleName"`
+	DatabaseName   string                             `yaml:"databaseName" json:"databaseName"`
+	Privileges     []CustomRolePrivilegeConfig        `yaml:"privileges,omitempty" json:"privileges,omitempty"`
+	InheritedRoles []CustomRoleInheritedRoleConfig    `yaml:"inheritedRoles,omitempty" json:"inheritedRoles,omitempty"`
 }
 
 // NetworkAccessManifest represents a network access resource manifest
@@ -263,7 +309,7 @@ func ValidateAPIVersion(version APIVersion) error {
 // ValidateResourceKind validates the resource kind
 func ValidateResourceKind(kind ResourceKind) error {
 	switch kind {
-	case KindProject, KindCluster, KindDatabaseUser, KindNetworkAccess, KindApplyDocument:
+	case KindProject, KindCluster, KindDatabaseUser, KindDatabaseDirectUser, KindDatabaseRole, KindNetworkAccess, KindApplyDocument:
 		return nil
 	default:
 		return fmt.Errorf("unsupported resource kind: %s", kind)

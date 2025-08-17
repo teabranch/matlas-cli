@@ -1,0 +1,30 @@
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: cluster-security-and-tags
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: Cluster
+    metadata:
+      name: secured-cluster
+      labels:
+        environment: production
+    spec:
+      projectName: "My Project"
+      provider: AWS
+      region: us-west-2
+      instanceSize: M50
+      tags:
+        owner: platform
+        cost-center: cc-123
+      encryption:
+        encryptionAtRestProvider: AWS
+        awsKms:
+          enabled: true
+          region: us-west-2
+          roleId: 5f1d7f3a9d1e8b1234567890
+      biConnector:
+        enabled: true
+        readPreference: secondaryPreferred
+
+

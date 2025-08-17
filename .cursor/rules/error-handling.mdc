@@ -1,0 +1,65 @@
+---
+description: Standardized error handling for concise vs verbose output, real-cause preservation, and consistent formatting across all commands and services
+alwaysApply: false
+---
+### Error Handling Policy
+
+Follow a single, consistent pattern for all errors across the project:
+
+- Use `internal/cli` formatters for all user-facing errors
+  - Short/non-verbose: `ErrorFormatter.Format(err)` from [`internal/cli/errors.go`](mdc:internal/cli/errors.go)
+  - Verbose: `EnhancedErrorFormatter.FormatWithAnalysis(err)` from [`internal/cli/enhanced_errors.go`](mdc:internal/cli/enhanced_errors.go)
+  - Root command wires these already in [`cmd/root.go`](mdc:cmd/root.go). Subcommands must return errors; do not print or handle them locally.
+
+- Always show the real issue
+  - Preserve and propagate the original cause using Go error wrapping with `%w` and helpers in [`internal/cli/enhanced_errors.go`](mdc:internal/cli/enhanced_errors.go) (`WrapWithOperation`, `WrapWithContext`, `WrapWithStack`).
+  - Prefer specific sentinel or HTTP-based classification over generic networking guesses. Use Atlas sentinels from [`internal/clients/atlas/errors.go`](mdc:internal/clients/atlas/errors.go) via `errors.Is` or `atlas.IsNotFound`/`atlas.IsUnauthorized`/etc.
+  - Do not replace the real error with a generic message (e.g., “network error”) when a more specific validation/auth/resource error exists.
+
+- Output contract (must be consistent everywhere)
+  - Non-verbose (`--verbose` not set): show a single, clear message focused on the actionable cause.
+    - Shape: `Error: <concise message>` (the enhanced formatter prefixes when needed and extracts the most specific part).
+  - Verbose (`--verbose` set): include full description with category, root cause, and suggestions when available.
+    - Shape includes sections such as `Error:`, `Suggestions:`, and `Root Cause:` produced by the enhanced formatter.
+  - Never display Cobra usage/help text when returning an error. Use `cli.ConfigureCommandErrorHandling(cmd)` and return the error from `RunE`.
+
+- How to return errors in commands and services
+  - Return, don’t print: return `error` from `RunE`; let root formatting handle output.
+  - Wrap with context and operation to preserve meaning:
+    - `return cli.WrapWithOperation(err, "<operation>", <resourceID>)`
+    - For validation: `return cli.FormatValidationError(field, value, reason)`
+    - For additional guidance: `return cli.WrapWithSuggestion(err, "<next step>")`
+  - When calling Atlas SDK, map errors to sentinels in the client and use `errors.Is`/`atlas.Is*` to branch logic instead of string matching.
+
+- Classification precedence (to avoid misleading “network” diagnoses)
+  - Prefer: Validation/Configuration/AuthZ/AuthN > Resource (exists/not found/conflict) > HTTP status mapping > Network/Timeout fallbacks.
+  - In verbose mode, always include the original `err.Error()` content so the true cause is visible during debugging.
+
+- Logging and secrecy
+  - Use the structured logger from [`internal/logging/logger.go`](mdc:internal/logging/logger.go) for debug/diagnostic context. Do not `fmt.Println` raw errors.
+  - Ensure secrets are masked by relying on the logging package; do not embed credentials in error messages.
+
+### Examples
+
+```go
+// Good: preserve cause and context
+if err := svc.CreateCluster(ctx, req); err != nil {
+    return cli.WrapWithOperation(err, "create_cluster", req.Name)
+}
+
+// Good: specific validation error
+if req.Name == "" {
+    return cli.FormatValidationError("cluster name", req.Name, "must not be empty")
+}
+
+// Good: suggestion to help user fix
+return cli.WrapWithSuggestion(err, "Use --timeout 5m or check IP access list")
+```
+
+### Acceptance criteria for new/changed code
+
+- Non-verbose execution prints a single concise line without suggestions or stack details.
+- Verbose execution prints full enhanced output including `Suggestions:` and/or `Root Cause:` when available.
+- Real cause is preserved in verbose output; no generic “network error” replaces a more precise error.
+- All commands rely on central formatting; no command prints errors directly.
+

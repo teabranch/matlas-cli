@@ -1,0 +1,27 @@
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: overlay-network-and-user
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: overlay-user
+    spec:
+      projectName: "My Project"
+      username: overlay-user
+      authDatabase: admin
+      password: "${OVERLAY_USER_PASSWORD}"
+      roles:
+        - roleName: read
+          databaseName: admin
+  - apiVersion: matlas.mongodb.com/v1
+    kind: NetworkAccess
+    metadata:
+      name: office-ip
+    spec:
+      projectName: "My Project"
+      ipAddress: 203.0.113.10
+      comment: "office access"
+
+

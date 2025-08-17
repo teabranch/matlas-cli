@@ -36,6 +36,7 @@ type ProjectState struct {
 	Project       *types.ProjectManifest        `json:"project"`
 	Clusters      []types.ClusterManifest       `json:"clusters"`
 	DatabaseUsers []types.DatabaseUserManifest  `json:"databaseUsers"`
+	DatabaseRoles []types.DatabaseRoleManifest  `json:"databaseRoles"`
 	NetworkAccess []types.NetworkAccessManifest `json:"networkAccess"`
 	Fingerprint   string                        `json:"fingerprint"`
 	DiscoveredAt  time.Time                     `json:"discoveredAt"`

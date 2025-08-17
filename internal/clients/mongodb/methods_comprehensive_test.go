@@ -5,13 +5,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
+	"github.com/teabranch/matlas-cli/internal/logging"
 	"github.com/teabranch/matlas-cli/internal/types"
 )
 
 func TestClient_ListDatabases_ErrorPath(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.Default()
 	client := NewMockClient(logger)
 
 	// Configure mock to return error
@@ -27,7 +27,7 @@ func TestClient_ListDatabases_ErrorPath(t *testing.T) {
 }
 
 func TestClient_ListCollections_ErrorPath(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.Default()
 	client := NewMockClient(logger)
 
 	// Configure mock to return error
@@ -43,7 +43,7 @@ func TestClient_ListCollections_ErrorPath(t *testing.T) {
 }
 
 func TestClient_CreateCollection_ErrorPath(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.Default()
 	client := NewMockClient(logger)
 
 	// Configure mock to return error
@@ -58,7 +58,7 @@ func TestClient_CreateCollection_ErrorPath(t *testing.T) {
 }
 
 func TestClient_DropCollection_ErrorPath(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.Default()
 	client := NewMockClient(logger)
 
 	// Configure mock to return error
@@ -73,7 +73,7 @@ func TestClient_DropCollection_ErrorPath(t *testing.T) {
 }
 
 func TestClient_GetCollectionStats_ErrorPath(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.Default()
 	client := NewMockClient(logger)
 
 	// Configure mock to return error
@@ -89,7 +89,7 @@ func TestClient_GetCollectionStats_ErrorPath(t *testing.T) {
 }
 
 func TestClient_Ping_ErrorPath(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.Default()
 	client := NewMockClient(logger)
 
 	// Configure mock to return error
@@ -104,7 +104,7 @@ func TestClient_Ping_ErrorPath(t *testing.T) {
 }
 
 func TestMockClient_SuccessPath(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.Default()
 	client := NewMockClient(logger)
 
 	// Test successful operations with proper types
@@ -163,7 +163,7 @@ func TestMockClient_SuccessPath(t *testing.T) {
 }
 
 func TestMockClient_EmptyCollections(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.Default()
 	client := NewMockClient(logger)
 
 	ctx := context.Background()
@@ -175,7 +175,7 @@ func TestMockClient_EmptyCollections(t *testing.T) {
 }
 
 func TestMockClient_DefaultStats(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.Default()
 	client := NewMockClient(logger)
 
 	ctx := context.Background()
@@ -191,7 +191,7 @@ func TestMockClient_DefaultStats(t *testing.T) {
 }
 
 func TestMockClient_GetUnderlyingClient(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.Default()
 	client := NewMockClient(logger)
 
 	// Test that mock client returns nil for underlying client
@@ -200,7 +200,7 @@ func TestMockClient_GetUnderlyingClient(t *testing.T) {
 }
 
 func TestMockClient_Close(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.Default()
 	client := NewMockClient(logger)
 
 	ctx := context.Background()
@@ -224,5 +224,5 @@ func TestNewMockClient_WithNilLogger(t *testing.T) {
 	client := NewMockClient(nil)
 
 	assert.NotNil(t, client)
-	assert.NotNil(t, client.logger) // Should be set to zap.NewNop()
+	assert.NotNil(t, client.logger) // Should be set to logging.Default()
 }

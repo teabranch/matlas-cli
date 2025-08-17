@@ -6,20 +6,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"github.com/teabranch/matlas-cli/internal/clients/mongodb"
+	"github.com/teabranch/matlas-cli/internal/logging"
 	"github.com/teabranch/matlas-cli/internal/types"
 )
 
 func TestNewService(t *testing.T) {
 	tests := []struct {
 		name   string
-		logger *zap.Logger
+		logger *logging.Logger
 	}{
 		{
 			name:   "with logger",
-			logger: zap.NewNop(),
+			logger: logging.New(logging.DefaultConfig()),
 		},
 		{
 			name:   "nil logger",
@@ -40,7 +40,7 @@ func TestNewService(t *testing.T) {
 }
 
 func TestService_GetOrCreateClient_Validation(t *testing.T) {
-	service := NewService(zap.NewNop())
+	service := NewService(logging.New(logging.DefaultConfig()))
 	ctx := context.Background()
 
 	tests := []struct {
@@ -82,7 +82,7 @@ func TestService_GetOrCreateClient_Validation(t *testing.T) {
 }
 
 func TestService_GetOrCreateClient_OptionsStructure(t *testing.T) {
-	service := NewService(zap.NewNop())
+	service := NewService(logging.New(logging.DefaultConfig()))
 
 	connInfo := &types.ConnectionInfo{
 		ConnectionString: "mongodb://localhost:27017",
@@ -103,7 +103,7 @@ func TestService_GetOrCreateClient_OptionsStructure(t *testing.T) {
 }
 
 func TestService_ListDatabases_Validation(t *testing.T) {
-	service := NewService(zap.NewNop())
+	service := NewService(logging.New(logging.DefaultConfig()))
 	ctx := context.Background()
 
 	tests := []struct {
@@ -145,7 +145,7 @@ func TestService_ListDatabases_Validation(t *testing.T) {
 }
 
 func TestService_ListCollections_Validation(t *testing.T) {
-	service := NewService(zap.NewNop())
+	service := NewService(logging.New(logging.DefaultConfig()))
 	ctx := context.Background()
 
 	tests := []struct {
@@ -199,7 +199,7 @@ func TestService_ListCollections_Validation(t *testing.T) {
 }
 
 func TestService_CreateCollection_Validation(t *testing.T) {
-	service := NewService(zap.NewNop())
+	service := NewService(logging.New(logging.DefaultConfig()))
 	ctx := context.Background()
 
 	tests := []struct {
@@ -255,7 +255,7 @@ func TestService_CreateCollection_Validation(t *testing.T) {
 }
 
 func TestService_DropCollection_Validation(t *testing.T) {
-	service := NewService(zap.NewNop())
+	service := NewService(logging.New(logging.DefaultConfig()))
 	ctx := context.Background()
 
 	tests := []struct {
@@ -311,7 +311,7 @@ func TestService_DropCollection_Validation(t *testing.T) {
 }
 
 func TestService_GetCollectionStats_Validation(t *testing.T) {
-	service := NewService(zap.NewNop())
+	service := NewService(logging.New(logging.DefaultConfig()))
 	ctx := context.Background()
 
 	tests := []struct {
@@ -369,7 +369,7 @@ func TestService_GetCollectionStats_Validation(t *testing.T) {
 }
 
 func TestService_CreateDatabase_Validation(t *testing.T) {
-	service := NewService(zap.NewNop())
+	service := NewService(logging.New(logging.DefaultConfig()))
 	ctx := context.Background()
 
 	tests := []struct {
@@ -412,7 +412,7 @@ func TestService_CreateDatabase_Validation(t *testing.T) {
 }
 
 func TestService_DropDatabase_Validation(t *testing.T) {
-	service := NewService(zap.NewNop())
+	service := NewService(logging.New(logging.DefaultConfig()))
 	ctx := context.Background()
 
 	tests := []struct {
@@ -455,7 +455,7 @@ func TestService_DropDatabase_Validation(t *testing.T) {
 }
 
 func TestService_Close(t *testing.T) {
-	service := NewService(zap.NewNop())
+	service := NewService(logging.New(logging.DefaultConfig()))
 
 	// Test closing an empty service
 	err := service.Close(context.Background())
@@ -463,10 +463,10 @@ func TestService_Close(t *testing.T) {
 }
 
 func TestService_WithMockClient(t *testing.T) {
-	service := NewService(zap.NewNop())
+	service := NewService(logging.New(logging.DefaultConfig()))
 
 	// Create a mock client and manually add it to test Close() functionality
-	_ = mongodb.NewMockClient(zap.NewNop()) // Create but don't use to avoid unused variable error
+	_ = mongodb.NewMockClient(logging.New(logging.DefaultConfig())) // Create but don't use to avoid unused variable error
 
 	// Test that we start with no clients cached
 	assert.Equal(t, 0, len(service.clients))
@@ -480,7 +480,7 @@ func TestService_WithMockClient(t *testing.T) {
 }
 
 func TestService_ClientCaching(t *testing.T) {
-	service := NewService(zap.NewNop())
+	service := NewService(logging.New(logging.DefaultConfig()))
 
 	// Test that clients map is properly initialized
 	assert.NotNil(t, service.clients)

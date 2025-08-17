@@ -135,7 +135,7 @@ EOF
     
     # Test dry-run
     print_info "Testing infra dry-run..."
-    if "$PROJECT_ROOT/matlas" infra -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --dry-run; then
+    if "$PROJECT_ROOT/matlas" infra apply -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --dry-run; then
         print_success "Dry-run successful"
     else
         print_error "Dry-run failed"
@@ -153,7 +153,7 @@ EOF
     
     # Test actual apply with preserve-existing
     print_info "Testing actual apply with --preserve-existing..."
-    if "$PROJECT_ROOT/matlas" infra -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --preserve-existing --auto-approve; then
+    if "$PROJECT_ROOT/matlas" infra apply -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --preserve-existing --auto-approve; then
         print_success "Apply with --preserve-existing successful"
         
         # Test show operation on applied resources
@@ -182,7 +182,7 @@ EOF
         
         # Test destroy operation
         print_info "Testing destroy operation..."
-        if "$PROJECT_ROOT/matlas" infra destroy -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --auto-approve; then
+        if "$PROJECT_ROOT/matlas" infra destroy -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --target users --auto-approve; then
             print_success "Destroy operation successful"
             
             # Verify cleanup

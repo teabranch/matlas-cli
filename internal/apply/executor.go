@@ -3,6 +3,7 @@ package apply
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -12,6 +13,9 @@ import (
 	"github.com/teabranch/matlas-cli/internal/services/database"
 	"github.com/teabranch/matlas-cli/internal/types"
 	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Executor defines the interface for executing planned operations
@@ -364,6 +368,8 @@ func (e *AtlasExecutor) executeCreate(ctx context.Context, operation *PlannedOpe
 		return e.createCluster(ctx, operation, result)
 	case types.KindDatabaseUser:
 		return e.createDatabaseUser(ctx, operation, result)
+	case types.KindDatabaseRole:
+		return e.createDatabaseRole(ctx, operation, result)
 	case types.KindNetworkAccess:
 		return e.createNetworkAccess(ctx, operation, result)
 	default:
@@ -430,6 +436,8 @@ func (e *AtlasExecutor) executeUpdate(ctx context.Context, operation *PlannedOpe
 		return e.updateCluster(ctx, operation, result)
 	case types.KindDatabaseUser:
 		return e.updateDatabaseUser(ctx, operation, result)
+	case types.KindDatabaseRole:
+		return e.updateDatabaseRole(ctx, operation, result)
 	case types.KindNetworkAccess:
 		return e.updateNetworkAccess(ctx, operation, result)
 	default:
@@ -444,6 +452,8 @@ func (e *AtlasExecutor) executeDelete(ctx context.Context, operation *PlannedOpe
 		return e.deleteCluster(ctx, operation, result)
 	case types.KindDatabaseUser:
 		return e.deleteDatabaseUser(ctx, operation, result)
+	case types.KindDatabaseRole:
+		return e.deleteDatabaseRole(ctx, operation, result)
 	case types.KindNetworkAccess:
 		return e.deleteNetworkAccess(ctx, operation, result)
 	case types.KindProject:
@@ -1433,6 +1443,213 @@ func convertDatabaseUserConfigToAtlas(userSpec types.DatabaseUserConfig) (*admin
 	}
 
 	return atlasUser, nil
+}
+
+func (e *AtlasExecutor) createDatabaseRole(ctx context.Context, operation *PlannedOperation, result *OperationResult) error {
+	result.Metadata["operation"] = "createDatabaseRole"
+	result.Metadata["resourceName"] = operation.ResourceName
+
+	// Convert from apply types to our internal types
+	var roleSpec types.DatabaseRoleSpec
+	switch desired := operation.Desired.(type) {
+	case *types.DatabaseRoleManifest:
+		roleSpec = desired.Spec
+	case *types.CustomDatabaseRoleConfig:
+		// Convert CustomDatabaseRoleConfig to DatabaseRoleSpec
+		roleSpec = types.DatabaseRoleSpec{
+			RoleName:       desired.RoleName,
+			DatabaseName:   desired.DatabaseName,
+			Privileges:     desired.Privileges,
+			InheritedRoles: desired.InheritedRoles,
+		}
+	default:
+		return fmt.Errorf("invalid resource type for database role operation: expected DatabaseRoleManifest or CustomDatabaseRoleConfig, got %T", operation.Desired)
+	}
+
+	result.Metadata["roleName"] = roleSpec.RoleName
+	result.Metadata["databaseName"] = roleSpec.DatabaseName
+
+	connString, err := e.resolveRoleConnectionString(operation)
+	if err != nil {
+		return err
+	}
+
+	clientOpts := options.Client().ApplyURI(connString)
+	mClient, err := mongo.Connect(ctx, clientOpts)
+	if err != nil {
+		return fmt.Errorf("failed to connect to MongoDB for role creation: %w", err)
+	}
+	defer func() { _ = mClient.Disconnect(ctx) }()
+
+	db := mClient.Database(roleSpec.DatabaseName)
+
+	// Build privileges array from spec
+	var privileges []bson.M
+	for _, p := range roleSpec.Privileges {
+		res := bson.M{"db": p.Resource.Database}
+		if strings.TrimSpace(p.Resource.Collection) != "" {
+			res["collection"] = p.Resource.Collection
+		}
+		privileges = append(privileges, bson.M{
+			"resource": res,
+			"actions":  p.Actions,
+		})
+	}
+
+	// Build inherited roles
+	var inherited []bson.M
+	for _, r := range roleSpec.InheritedRoles {
+		inherited = append(inherited, bson.M{"role": r.RoleName, "db": r.DatabaseName})
+	}
+
+	cmd := bson.D{{Key: "createRole", Value: roleSpec.RoleName}, {Key: "privileges", Value: privileges}, {Key: "roles", Value: inherited}}
+	if err := db.RunCommand(ctx, cmd).Err(); err != nil {
+		return fmt.Errorf("failed to create database role '%s' in '%s': %w", roleSpec.RoleName, roleSpec.DatabaseName, err)
+	}
+
+	result.Metadata["atlasResourceId"] = roleSpec.RoleName
+	return nil
+}
+
+func (e *AtlasExecutor) updateDatabaseRole(ctx context.Context, operation *PlannedOperation, result *OperationResult) error {
+	result.Metadata["operation"] = "updateDatabaseRole"
+	result.Metadata["resourceName"] = operation.ResourceName
+
+	// Convert from apply types to our internal types
+	var roleSpec types.DatabaseRoleSpec
+	switch desired := operation.Desired.(type) {
+	case *types.DatabaseRoleManifest:
+		roleSpec = desired.Spec
+	case *types.CustomDatabaseRoleConfig:
+		// Convert CustomDatabaseRoleConfig to DatabaseRoleSpec
+		roleSpec = types.DatabaseRoleSpec{
+			RoleName:       desired.RoleName,
+			DatabaseName:   desired.DatabaseName,
+			Privileges:     desired.Privileges,
+			InheritedRoles: desired.InheritedRoles,
+		}
+	default:
+		return fmt.Errorf("invalid resource type for database role operation: expected DatabaseRoleManifest or CustomDatabaseRoleConfig, got %T", operation.Desired)
+	}
+
+	result.Metadata["roleName"] = roleSpec.RoleName
+	result.Metadata["databaseName"] = roleSpec.DatabaseName
+
+	connString, err := e.resolveRoleConnectionString(operation)
+	if err != nil {
+		return err
+	}
+
+	clientOpts := options.Client().ApplyURI(connString)
+	mClient, err := mongo.Connect(ctx, clientOpts)
+	if err != nil {
+		return fmt.Errorf("failed to connect to MongoDB for role update: %w", err)
+	}
+	defer func() { _ = mClient.Disconnect(ctx) }()
+
+	db := mClient.Database(roleSpec.DatabaseName)
+
+	// Build privileges and inherited roles documents
+	var privileges []bson.M
+	for _, p := range roleSpec.Privileges {
+		res := bson.M{"db": p.Resource.Database}
+		if strings.TrimSpace(p.Resource.Collection) != "" {
+			res["collection"] = p.Resource.Collection
+		}
+		privileges = append(privileges, bson.M{"	resource": res, "actions": p.Actions})
+	}
+	var inherited []bson.M
+	for _, r := range roleSpec.InheritedRoles {
+		inherited = append(inherited, bson.M{"role": r.RoleName, "db": r.DatabaseName})
+	}
+
+	cmd := bson.D{{Key: "updateRole", Value: roleSpec.RoleName}, {Key: "privileges", Value: privileges}, {Key: "roles", Value: inherited}}
+	if err := db.RunCommand(ctx, cmd).Err(); err != nil {
+		return fmt.Errorf("failed to update database role '%s' in '%s': %w", roleSpec.RoleName, roleSpec.DatabaseName, err)
+	}
+
+	result.Metadata["atlasResourceId"] = roleSpec.RoleName
+	return nil
+}
+
+func (e *AtlasExecutor) deleteDatabaseRole(ctx context.Context, operation *PlannedOperation, result *OperationResult) error {
+	result.Metadata["operation"] = "deleteDatabaseRole"
+	result.Metadata["resourceName"] = operation.ResourceName
+
+	// For delete operations, we might have the resource name from the operation
+	// Extract role name and database name from the operation metadata
+	roleName := operation.ResourceName
+	databaseName := ""
+
+	// Try to extract more information from the desired state if available
+	switch desired := operation.Desired.(type) {
+	case *types.DatabaseRoleManifest:
+		roleName = desired.Spec.RoleName
+		databaseName = desired.Spec.DatabaseName
+	case *types.CustomDatabaseRoleConfig:
+		roleName = desired.RoleName
+		databaseName = desired.DatabaseName
+	}
+
+	result.Metadata["roleName"] = roleName
+	if databaseName != "" {
+		result.Metadata["databaseName"] = databaseName
+	}
+
+	connString, err := e.resolveRoleConnectionString(operation)
+	if err != nil {
+		return err
+	}
+
+	if databaseName == "" {
+		return fmt.Errorf("database name is required for role deletion")
+	}
+
+	clientOpts := options.Client().ApplyURI(connString)
+	mClient, err := mongo.Connect(ctx, clientOpts)
+	if err != nil {
+		return fmt.Errorf("failed to connect to MongoDB for role deletion: %w", err)
+	}
+	defer func() { _ = mClient.Disconnect(ctx) }()
+
+	db := mClient.Database(databaseName)
+	cmd := bson.D{{Key: "dropRole", Value: roleName}}
+	if err := db.RunCommand(ctx, cmd).Err(); err != nil {
+		return fmt.Errorf("failed to delete database role '%s' in '%s': %w", roleName, databaseName, err)
+	}
+
+	result.Metadata["atlasResourceId"] = roleName
+	return nil
+}
+
+// resolveRoleConnectionString resolves a MongoDB connection string for role operations.
+// Precedence:
+// 1) Resource metadata annotation "matlas.mongodb.com/connection-string"
+// 2) Environment var MATLAS_ROLE_CONN_STRING
+// If neither is present, returns an error.
+func (e *AtlasExecutor) resolveRoleConnectionString(operation *PlannedOperation) (string, error) {
+	// Try to read from manifest metadata annotations
+	var annotations map[string]string
+	switch desired := operation.Desired.(type) {
+	case *types.DatabaseRoleManifest:
+		annotations = desired.Metadata.Annotations
+	case *types.CustomDatabaseRoleConfig:
+		if desired.Metadata.Annotations != nil {
+			annotations = desired.Metadata.Annotations
+		}
+	}
+
+	if annotations != nil {
+		if cs, ok := annotations["matlas.mongodb.com/connection-string"]; ok && strings.TrimSpace(cs) != "" {
+			return cs, nil
+		}
+	}
+
+	if cs := os.Getenv("MATLAS_ROLE_CONN_STRING"); strings.TrimSpace(cs) != "" {
+		return cs, nil
+	}
+
+	return "", fmt.Errorf("connection string not provided for DatabaseRole operation. Set metadata.annotations['matlas.mongodb.com/connection-string'] or MATLAS_ROLE_CONN_STRING env var")
 }
 
 // convertNetworkAccessManifestToEntry converts a NetworkAccessManifest to Atlas NetworkPermissionEntry.

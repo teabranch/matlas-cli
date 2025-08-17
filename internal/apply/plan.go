@@ -284,6 +284,9 @@ func (pb *PlanBuilder) calculatePriority(op Operation) int {
 		priority += 50
 	case types.KindCluster:
 		priority += 40
+	case types.KindDatabaseRole:
+		// Plan custom roles before users that may reference them
+		priority += 35
 	case types.KindNetworkAccess:
 		priority += 30
 	case types.KindDatabaseUser:
@@ -301,6 +304,10 @@ func (pb *PlanBuilder) detectAutomaticDependencies(op Operation, previousOps []O
 	if op.ResourceType == types.KindDatabaseUser {
 		for i, prevOp := range previousOps {
 			if prevOp.ResourceType == types.KindCluster {
+				deps = append(deps, fmt.Sprintf("op-%d", i))
+			}
+			// Users also may depend on roles being available
+			if prevOp.ResourceType == types.KindDatabaseRole {
 				deps = append(deps, fmt.Sprintf("op-%d", i))
 			}
 		}

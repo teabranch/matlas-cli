@@ -1,0 +1,37 @@
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: network-variants
+resources:
+  # CIDR entry
+  - apiVersion: matlas.mongodb.com/v1
+    kind: NetworkAccess
+    metadata:
+      name: office-cidr
+    spec:
+      projectName: "My Project"
+      cidr: 203.0.113.0/24
+      comment: "office cidr"
+
+  # Single IP with deleteAfterDate
+  - apiVersion: matlas.mongodb.com/v1
+    kind: NetworkAccess
+    metadata:
+      name: temp-ip
+    spec:
+      projectName: "My Project"
+      ipAddress: 198.51.100.77
+      comment: "temporary access"
+      deleteAfterDate: 2030-01-01T00:00:00Z
+
+  # AWS Security Group entry
+  - apiVersion: matlas.mongodb.com/v1
+    kind: NetworkAccess
+    metadata:
+      name: aws-sg
+    spec:
+      projectName: "My Project"
+      awsSecurityGroup: sg-0abc123def45
+      comment: "aws sg access"
+
+

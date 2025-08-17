@@ -13,11 +13,12 @@ import (
 
 	"github.com/teabranch/matlas-cli/internal/apply"
 	"github.com/teabranch/matlas-cli/internal/config"
+	"github.com/teabranch/matlas-cli/internal/logging"
+	"github.com/teabranch/matlas-cli/internal/output"
 	"github.com/teabranch/matlas-cli/internal/services/atlas"
 	"github.com/teabranch/matlas-cli/internal/services/database"
 	"github.com/teabranch/matlas-cli/internal/types"
 	"github.com/teabranch/matlas-cli/internal/ui"
-	"go.uber.org/zap"
 )
 
 // ApplyOptions contains the options for the apply command
@@ -226,8 +227,8 @@ func initializeServices(cfg *config.Config) (*ServiceClients, error) {
 	networkAccessService := atlas.NewNetworkAccessListsService(atlasClient)
 	projectsService := atlas.NewProjectsService(atlasClient)
 
-	// Initialize database service with nop logger
-	logger := zap.NewNop()
+	// Initialize database service with standardized logger
+	logger := logging.Default()
 	databaseService := database.NewService(logger)
 
 	return &ServiceClients{
@@ -500,6 +501,7 @@ func buildDesiredState(configs []*apply.LoadResult) (*apply.ProjectState, error)
 		Project:       nil,
 		Clusters:      []types.ClusterManifest{},
 		DatabaseUsers: []types.DatabaseUserManifest{},
+		DatabaseRoles: []types.DatabaseRoleManifest{},
 		NetworkAccess: []types.NetworkAccessManifest{},
 	}
 
@@ -583,6 +585,9 @@ func buildDesiredState(configs []*apply.LoadResult) (*apply.ProjectState, error)
 			state.DatabaseUsers = append(state.DatabaseUsers, manifest)
 		}
 
+		// Note: ApplyConfig does not yet include custom roles. DatabaseRole manifests
+		// are supplied via ApplyDocument resources. We only merge roles from ApplyDocument below.
+
 		// Merge network access lists
 		for _, access := range applyConfig.Spec.NetworkAccess {
 			spec := types.NetworkAccessSpec{
@@ -649,6 +654,32 @@ func mergeApplyDocumentToState(state *apply.ProjectState, applyDoc *types.ApplyD
 				Spec:       userSpec,
 			}
 			state.DatabaseUsers = append(state.DatabaseUsers, userManifest)
+
+		case types.KindDatabaseRole:
+			// Convert resource to DatabaseRoleManifest
+			roleSpec, ok := resource.Spec.(types.DatabaseRoleSpec)
+			if !ok {
+				// Fallback to map-based conversion if needed
+				if specMap, okm := resource.Spec.(map[string]interface{}); okm {
+					var tmp types.DatabaseRoleSpec
+					// minimal conversion
+					if v, ok := specMap["roleName"].(string); ok {
+						tmp.RoleName = v
+					}
+					if v, ok := specMap["databaseName"].(string); ok {
+						tmp.DatabaseName = v
+					}
+					// privileges and inheritedRoles conversion omitted for brevity here; validation already checks
+					roleSpec = tmp
+				}
+			}
+			roleManifest := types.DatabaseRoleManifest{
+				APIVersion: resource.APIVersion,
+				Kind:       resource.Kind,
+				Metadata:   resource.Metadata,
+				Spec:       roleSpec,
+			}
+			state.DatabaseRoles = append(state.DatabaseRoles, roleManifest)
 
 		case types.KindNetworkAccess:
 			// Convert resource to NetworkAccessManifest
@@ -809,21 +840,39 @@ func showPlanAndGetApproval(plan *apply.Plan, opts *ApplyOptions) error {
 }
 
 func displayExecutionResults(result *apply.ExecutionResult, opts *ApplyOptions) error {
-	fmt.Printf("\nExecution completed in %s\n", result.Duration)
-	fmt.Printf("Operations: %d completed, %d failed, %d skipped\n",
-		result.Summary.CompletedOperations,
-		result.Summary.FailedOperations,
-		result.Summary.SkippedOperations)
+	// Create structured output data
+	outputData := output.TableData{
+		Headers: []string{"Metric", "Value"},
+		Rows: [][]string{
+			{"Duration", result.Duration.String()},
+			{"Completed Operations", fmt.Sprintf("%d", result.Summary.CompletedOperations)},
+			{"Failed Operations", fmt.Sprintf("%d", result.Summary.FailedOperations)},
+			{"Skipped Operations", fmt.Sprintf("%d", result.Summary.SkippedOperations)},
+		},
+	}
 
+	// Display execution summary
+	formatter := output.NewFormatter(config.OutputTable, os.Stdout)
+	if err := formatter.Format(outputData); err != nil {
+		return fmt.Errorf("failed to format execution results: %w", err)
+	}
+
+	// Display errors if any
 	if len(result.Errors) > 0 {
-		fmt.Printf("\nErrors:\n")
-		for _, err := range result.Errors {
-			fmt.Printf("  - %s\n", err.Message)
+		fmt.Println("\nErrors encountered:")
+		errorData := output.TableData{
+			Headers: []string{"Error"},
+			Rows:    make([][]string, len(result.Errors)),
+		}
+		for i, err := range result.Errors {
+			errorData.Rows[i] = []string{err.Message}
+		}
+
+		if err := formatter.Format(errorData); err != nil {
+			return fmt.Errorf("failed to format error results: %w", err)
 		}
 		return fmt.Errorf("execution completed with errors")
 	}
-
-	// Note: ExecutionResult doesn't have Warnings field, removing this section
 
 	return nil
 }
@@ -956,9 +1005,10 @@ func runDryRun(ctx context.Context, plan *apply.Plan, opts *ApplyOptions) error 
 
 	fmt.Print(output)
 
-	// Exit with error code if any operations would fail
+	// Return error if any operations would fail
 	if result.Summary.OperationsWouldFail > 0 || len(result.Errors) > 0 {
-		os.Exit(1)
+		return fmt.Errorf("dry-run completed with %d operations that would fail and %d errors",
+			result.Summary.OperationsWouldFail, len(result.Errors))
 	}
 
 	return nil

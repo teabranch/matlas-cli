@@ -42,7 +42,7 @@ Bash:
   # Linux:
   $ matlas completion bash > /etc/bash_completion.d/matlas
   # macOS:
-  $ matlas completion bash > $(brew --prefix)/etc/bash_completion.d/matlas
+  $ matlas completion bash > /usr/local/etc/bash_completion.d/matlas  # adjust path as needed
 
 Zsh:
   # If shell completion is not already enabled in your environment,
@@ -349,8 +349,8 @@ source <(matlas completion bash)
 # For all sessions (Linux):
 matlas completion bash | sudo tee /etc/bash_completion.d/matlas > /dev/null
 
-# For all sessions (macOS with Homebrew):
-matlas completion bash > $(brew --prefix)/etc/bash_completion.d/matlas
+# For all sessions (macOS):
+matlas completion bash > /usr/local/etc/bash_completion.d/matlas  # adjust path as needed
 
 # Add aliases to ~/.bashrc:
 echo '` + si.GenerateShellAliases("bash") + `' >> ~/.bashrc`

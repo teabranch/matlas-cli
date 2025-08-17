@@ -7,8 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
+	"github.com/teabranch/matlas-cli/internal/logging"
 	"github.com/teabranch/matlas-cli/internal/types"
 )
 
@@ -31,7 +31,7 @@ func TestDefaultClientConfig(t *testing.T) {
 func TestNewClient_ConfigValidation(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second) // Short timeout
 	defer cancel()
-	logger := zap.NewNop()
+	logger := logging.New(logging.DefaultConfig())
 
 	tests := []struct {
 		name   string
@@ -285,7 +285,7 @@ func TestClient_GetUnderlyingClient(t *testing.T) {
 	// Test with mock client structure
 	client := &Client{
 		client: nil, // In real tests, this would be a real mongo.Client
-		logger: zap.NewNop(),
+		logger: logging.New(logging.DefaultConfig()),
 		config: DefaultClientConfig(),
 	}
 
@@ -294,7 +294,7 @@ func TestClient_GetUnderlyingClient(t *testing.T) {
 }
 
 func TestMockClient_BasicFunctionality(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.New(logging.DefaultConfig())
 	mockClient := NewMockClient(logger)
 
 	// Test mock client initialization
@@ -321,7 +321,7 @@ func TestMockClient_BasicFunctionality(t *testing.T) {
 }
 
 func TestMockClient_ErrorSimulation(t *testing.T) {
-	mockClient := NewMockClient(zap.NewNop())
+	mockClient := NewMockClient(logging.New(logging.DefaultConfig()))
 
 	// Test error simulation setup using the correct SetError method
 	mockClient.SetError("connect", true)

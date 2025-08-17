@@ -1,0 +1,47 @@
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: custom-roles-and-users
+  labels:
+    purpose: roles-lifecycle
+resources:
+  # Custom database role
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseRole
+    metadata:
+      name: app-role
+      labels:
+        purpose: testing
+    spec:
+      roleName: appRole
+      databaseName: myapp
+      privileges:
+        - actions: ["find", "insert", "update"]
+          resource:
+            database: myapp
+            collection: users
+        - actions: ["find"]
+          resource:
+            database: myapp
+            collection: logs
+      inheritedRoles:
+        - roleName: read
+          databaseName: myapp
+
+  # User that uses the custom role
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: role-user
+    spec:
+      projectName: "My Project"
+      username: role-user
+      authDatabase: admin
+      password: "${ROLE_USER_PASSWORD}"
+      roles:
+        - roleName: appRole
+          databaseName: myapp
+        - roleName: read
+          databaseName: admin
+
+

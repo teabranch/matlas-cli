@@ -1,0 +1,49 @@
+---
+alwaysApply: true
+description: Enforce documentation standards (location under docs/ and GitHub Pages theme usage)
+---
+
+# Documentation Standards
+
+These rules ensure documentation is consistently authored and published.
+
+- All documentation must reside under the `docs/` directory in the repository root.
+- Documentation must use the GitHub Pages Jekyll setup and theme configured in [docs/_config.yml](mdc:docs/_config.yml) (theme `minima`, site served from `baseurl: /matlas-cli`).
+
+## Authoring requirements
+
+- New pages must include Jekyll frontmatter (at least `layout`, `title`, and where applicable `permalink`). Example:
+
+```markdown
+---
+layout: page
+title: My Page
+permalink: /my-page/
+---
+
+# My Page
+
+Content...
+```
+
+- Keep navigation consistent with the site menu. Update the `navigation` list in [docs/_config.yml](mdc:docs/_config.yml) when adding or renaming top-level pages.
+- Styles should flow through the existing pipeline: add SCSS to [docs/_sass/main.scss](mdc:docs/_sass/main.scss) (or additional partials) and import via [docs/assets/css/style.scss](mdc:docs/assets/css/style.scss). Do not add standalone CSS outside `docs/assets/`.
+- Use fenced code blocks with language tags for examples. Syntax highlighting is provided by the site layout and Highlight.js in [docs/_layouts/default.html](mdc:docs/_layouts/default.html).
+
+## Local preview and validation
+
+- Use the documented workflow in [docs/README.md](mdc:docs/README.md):
+
+```bash
+cd docs
+bundle install
+bundle exec jekyll serve
+```
+
+- Ensure the site builds without errors locally and remains compatible with GitHub Pages (respect the theme and plugins defined in [docs/_config.yml](mdc:docs/_config.yml)).
+
+## Do not
+
+- Do not place documentation outside `docs/`.
+- Do not change the configured Jekyll theme or `baseurl` without updating site structure, navigation, and deployment expectations.
+

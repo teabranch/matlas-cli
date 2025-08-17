@@ -1,0 +1,53 @@
+---
+alwaysApply: true
+description: Guidance for maintaining CHANGELOG.md and integrating with semantic-release during feature/bugfix development
+---
+
+# Changelog maintenance
+
+This project uses Keep a Changelog style and Semantic Versioning. The changelog lives at [CHANGELOG.md](mdc:CHANGELOG.md) and release automation is handled by semantic-release via [semantic-release workflow](mdc:.github/workflows/semantic-release.yml) and [release config](mdc:.releaserc.json).
+
+## What to edit during development
+
+- Only update the `## [Unreleased]` section of [CHANGELOG.md](mdc:CHANGELOG.md)
+- Group entries under standard headings (include only those that apply):
+  - Added
+  - Changed
+  - Fixed
+  - Deprecated
+  - Removed
+  - Security
+- Use concise, imperative bullet points. Prefer user-facing language over internal implementation details.
+- Link related issues/PRs where helpful using `[#123]` with markdown links.
+- Do not add version numbers, dates, or modify past release sections.
+
+## When to add entries
+
+- When a change is user-visible (CLI flags/behavior, YAML kinds/fields, output format, docs that change user flows), add a bullet under `Unreleased`.
+- If a change is purely internal (refactor, tests, tooling) and has no user impact, skip the changelog.
+
+## Release automation contract
+
+- Do not manually bump versions or author release sections. semantic-release will cut releases and update the changelog based on Conventional Commits.
+- Keep `Unreleased` accurate for in-flight work; automation will reconcile at release time. Avoid duplicating the same change across multiple headings.
+
+## Style examples
+
+```markdown
+## [Unreleased]
+
+### Added
+- New `infra plan --json` output format for CI consumption
+
+### Changed
+- Enhanced `version` command to print build metadata (commit, time)
+
+### Fixed
+- Corrected `database list` pagination when `--limit` is provided
+```
+
+## Cross-feature hygiene
+
+- Align with the feature tracking policy: add a short summary file under `features/` (see [features/TEMPLATE.md](mdc:features/TEMPLATE.md)).
+- If the change adds a new user-facing capability, ensure documentation is updated under `docs/` and an example YAML is added under `examples/`, per repository standards.
+

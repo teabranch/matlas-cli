@@ -241,15 +241,17 @@ func validateBasicStructure(config *types.ApplyConfig, result *ValidationResult,
 	// Validate metadata
 	validateMetadata(&config.Metadata, "metadata", result, opts)
 
-	// Validate required fields
-	if config.Spec.Name == "" {
-		addError(result, "spec.name", "name", "",
-			"project name is required", "REQUIRED_FIELD_MISSING")
-	}
+	// Validate required fields only for Project kind
+	if types.ResourceKind(config.Kind) == types.KindProject {
+		if config.Spec.Name == "" {
+			addError(result, "spec.name", "name", "",
+				"project name is required", "REQUIRED_FIELD_MISSING")
+		}
 
-	if config.Spec.OrganizationID == "" {
-		addError(result, "spec.organizationId", "organizationId", "",
-			"organization ID is required", "REQUIRED_FIELD_MISSING")
+		if config.Spec.OrganizationID == "" {
+			addError(result, "spec.organizationId", "organizationId", "",
+				"organization ID is required", "REQUIRED_FIELD_MISSING")
+		}
 	}
 }
 
@@ -474,6 +476,8 @@ func validateResourceContent(manifest *types.ResourceManifest, basePath string, 
 	switch manifest.Kind {
 	case types.KindDatabaseUser:
 		validateDatabaseUserManifest(manifest, basePath, result, opts)
+	case types.KindDatabaseRole:
+		validateDatabaseRoleManifest(manifest, basePath, result, opts)
 	case types.KindCluster:
 		validateClusterManifest(manifest, basePath, result, opts)
 	case types.KindNetworkAccess:
@@ -521,6 +525,41 @@ func validateDatabaseUserManifest(manifest *types.ResourceManifest, basePath str
 
 	// Use the existing validation function
 	validateDatabaseUserConfig(&userConfig, basePath+".spec", result, opts)
+}
+
+// validateDatabaseRoleManifest validates a DatabaseRole resource manifest
+func validateDatabaseRoleManifest(manifest *types.ResourceManifest, basePath string, result *ValidationResult, opts *ValidatorOptions) {
+	// Try to convert the spec to DatabaseRoleSpec
+	var roleSpec types.DatabaseRoleSpec
+
+	// Handle both map[string]interface{} (from YAML) and DatabaseRoleSpec (from typed structs)
+	switch spec := manifest.Spec.(type) {
+	case types.DatabaseRoleSpec:
+		roleSpec = spec
+	case map[string]interface{}:
+		// Convert from map to struct using JSON marshaling
+		if err := convertMapToStruct(spec, &roleSpec); err != nil {
+			addError(result, basePath+".spec", "spec", "",
+				fmt.Sprintf("invalid DatabaseRole spec format: %v", err), "INVALID_SPEC_FORMAT")
+			return
+		}
+	default:
+		addError(result, basePath+".spec", "spec", "",
+			"DatabaseRole spec must be a valid structure", "INVALID_SPEC_TYPE")
+		return
+	}
+
+	// Convert DatabaseRoleSpec to CustomDatabaseRoleConfig for validation
+	roleConfig := types.CustomDatabaseRoleConfig{
+		Metadata:       manifest.Metadata,
+		RoleName:       roleSpec.RoleName,
+		DatabaseName:   roleSpec.DatabaseName,
+		Privileges:     roleSpec.Privileges,
+		InheritedRoles: roleSpec.InheritedRoles,
+	}
+
+	// Use the existing validation function
+	validateCustomDatabaseRoleConfig(&roleConfig, basePath+".spec", result, opts)
 }
 
 // validateClusterManifest validates a Cluster resource manifest
@@ -824,6 +863,89 @@ func validateDatabaseRole(role *types.DatabaseRoleConfig, basePath string, resul
 	// Validate collection name if provided
 	if role.CollectionName != "" {
 		validateCollectionName(role.CollectionName, basePath+".collectionName", result)
+	}
+}
+
+func validateCustomDatabaseRoleConfig(role *types.CustomDatabaseRoleConfig, basePath string, result *ValidationResult, opts *ValidatorOptions) {
+	// Validate role name
+	if role.RoleName == "" {
+		addError(result, basePath+".roleName", "roleName", "",
+			"role name is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	// Validate database name
+	if role.DatabaseName == "" {
+		addError(result, basePath+".databaseName", "databaseName", "",
+			"database name is required", "REQUIRED_FIELD_MISSING")
+	} else {
+		validateDatabaseName(role.DatabaseName, basePath+".databaseName", result)
+	}
+
+	// Validate privileges
+	for i, privilege := range role.Privileges {
+		path := fmt.Sprintf("%s.privileges[%d]", basePath, i)
+		validateCustomRolePrivilege(&privilege, path, result)
+	}
+
+	// Validate inherited roles
+	for i, inheritedRole := range role.InheritedRoles {
+		path := fmt.Sprintf("%s.inheritedRoles[%d]", basePath, i)
+		validateCustomRoleInheritedRole(&inheritedRole, path, result)
+	}
+
+	// At least one privilege or inherited role should be specified
+	if len(role.Privileges) == 0 && len(role.InheritedRoles) == 0 {
+		addWarning(result, basePath, "privileges", "",
+			"custom role should have at least one privilege or inherited role", "EMPTY_ROLE_DEFINITION")
+	}
+}
+
+func validateCustomRolePrivilege(privilege *types.CustomRolePrivilegeConfig, basePath string, result *ValidationResult) {
+	// Validate actions
+	if len(privilege.Actions) == 0 {
+		addError(result, basePath+".actions", "actions", "",
+			"at least one action is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	for i, action := range privilege.Actions {
+		if action == "" {
+			addError(result, basePath+".actions", "actions", fmt.Sprintf("index %d", i),
+				"action cannot be empty", "INVALID_ACTION")
+		}
+	}
+
+	// Validate resource
+	validateCustomRoleResource(&privilege.Resource, basePath+".resource", result)
+}
+
+func validateCustomRoleResource(resource *types.CustomRoleResourceConfig, basePath string, result *ValidationResult) {
+	// Validate database name
+	if resource.Database == "" {
+		addError(result, basePath+".database", "database", "",
+			"database name is required", "REQUIRED_FIELD_MISSING")
+	} else {
+		validateDatabaseName(resource.Database, basePath+".database", result)
+	}
+
+	// Validate collection name if provided
+	if resource.Collection != "" {
+		validateCollectionName(resource.Collection, basePath+".collection", result)
+	}
+}
+
+func validateCustomRoleInheritedRole(inheritedRole *types.CustomRoleInheritedRoleConfig, basePath string, result *ValidationResult) {
+	// Validate role name
+	if inheritedRole.RoleName == "" {
+		addError(result, basePath+".roleName", "roleName", "",
+			"inherited role name is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	// Validate database name
+	if inheritedRole.DatabaseName == "" {
+		addError(result, basePath+".databaseName", "databaseName", "",
+			"inherited role database name is required", "REQUIRED_FIELD_MISSING")
+	} else {
+		validateDatabaseName(inheritedRole.DatabaseName, basePath+".databaseName", result)
 	}
 }
 

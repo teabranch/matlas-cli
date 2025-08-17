@@ -11,15 +11,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"go.uber.org/zap"
 
+	"github.com/teabranch/matlas-cli/internal/logging"
 	"github.com/teabranch/matlas-cli/internal/types"
 )
 
 // Client wraps the MongoDB driver with Atlas-specific functionality
 type Client struct {
 	client *mongo.Client
-	logger *zap.Logger
+	logger *logging.Logger
 	config *ClientConfig
 }
 
@@ -54,13 +54,13 @@ func DefaultClientConfig() *ClientConfig {
 }
 
 // NewClient creates a new MongoDB client with Atlas-optimized settings
-func NewClient(ctx context.Context, config *ClientConfig, logger *zap.Logger) (*Client, error) {
+func NewClient(ctx context.Context, config *ClientConfig, logger *logging.Logger) (*Client, error) {
 	if config == nil {
 		config = DefaultClientConfig()
 	}
 
 	if logger == nil {
-		logger = zap.NewNop()
+		logger = logging.Default()
 	}
 
 	clientOptions := options.Client().
@@ -106,7 +106,7 @@ func NewClient(ctx context.Context, config *ClientConfig, logger *zap.Logger) (*
 	}
 
 	logger.Info("Successfully connected to MongoDB",
-		zap.String("connection_string", maskConnectionString(config.ConnectionString)))
+		"connection_string", maskConnectionString(config.ConnectionString))
 
 	return &Client{
 		client: client,
@@ -119,7 +119,7 @@ func NewClient(ctx context.Context, config *ClientConfig, logger *zap.Logger) (*
 func (c *Client) Close(ctx context.Context) error {
 	if c.client != nil {
 		if err := c.client.Disconnect(ctx); err != nil {
-			c.logger.Error("Failed to disconnect MongoDB client", zap.Error(err))
+			c.logger.Error("Failed to disconnect MongoDB client", "error", err.Error())
 			return fmt.Errorf("failed to disconnect: %w", err)
 		}
 		c.logger.Info("Disconnected from MongoDB")
@@ -144,7 +144,7 @@ func (c *Client) ListDatabases(ctx context.Context) ([]types.DatabaseInfo, error
 		databases = append(databases, dbInfo)
 	}
 
-	c.logger.Debug("Listed databases", zap.Int("count", len(databases)))
+	c.logger.Debug("Listed databases", "count", len(databases))
 	return databases, nil
 }
 
@@ -162,7 +162,7 @@ func (c *Client) ListCollections(ctx context.Context, dbName string) ([]types.Co
 	for cursor.Next(ctx) {
 		var collInfo bson.M
 		if err := cursor.Decode(&collInfo); err != nil {
-			c.logger.Warn("Failed to decode collection info", zap.Error(err))
+			c.logger.Warn("Failed to decode collection info", "error", err.Error())
 			continue
 		}
 
@@ -189,8 +189,8 @@ func (c *Client) ListCollections(ctx context.Context, dbName string) ([]types.Co
 	}
 
 	c.logger.Debug("Listed collections",
-		zap.String("database", dbName),
-		zap.Int("count", len(collections)))
+		"database", dbName,
+		"count", len(collections))
 
 	return collections, nil
 }
@@ -204,8 +204,8 @@ func (c *Client) CreateCollection(ctx context.Context, dbName, collectionName st
 	}
 
 	c.logger.Info("Created collection",
-		zap.String("database", dbName),
-		zap.String("collection", collectionName))
+		"database", dbName,
+		"collection", collectionName)
 
 	return nil
 }
@@ -220,8 +220,8 @@ func (c *Client) DropCollection(ctx context.Context, dbName, collectionName stri
 	}
 
 	c.logger.Info("Dropped collection",
-		zap.String("database", dbName),
-		zap.String("collection", collectionName))
+		"database", dbName,
+		"collection", collectionName)
 
 	return nil
 }
@@ -285,7 +285,7 @@ func (c *Client) DropDatabase(ctx context.Context, dbName string) error {
 		return fmt.Errorf("failed to drop database %q: %w", dbName, err)
 	}
 
-	c.logger.Info("Dropped database", zap.String("database", dbName))
+	c.logger.Info("Dropped database", "database", dbName)
 	return nil
 }
 
@@ -331,9 +331,9 @@ func (c *Client) CreateIndex(ctx context.Context, dbName, collectionName string,
 	}
 
 	c.logger.Info("Created index",
-		zap.String("database", dbName),
-		zap.String("collection", collectionName),
-		zap.String("index", indexName))
+		"database", dbName,
+		"collection", collectionName,
+		"index", indexName)
 
 	return indexName, nil
 }
@@ -348,9 +348,9 @@ func (c *Client) DropIndex(ctx context.Context, dbName, collectionName, indexNam
 	}
 
 	c.logger.Info("Dropped index",
-		zap.String("database", dbName),
-		zap.String("collection", collectionName),
-		zap.String("index", indexName))
+		"database", dbName,
+		"collection", collectionName,
+		"index", indexName)
 
 	return nil
 }
@@ -370,7 +370,7 @@ func (c *Client) ListIndexes(ctx context.Context, dbName, collectionName string)
 	for cursor.Next(ctx) {
 		var indexBson bson.M
 		if err := cursor.Decode(&indexBson); err != nil {
-			c.logger.Warn("Failed to decode index info", zap.Error(err))
+			c.logger.Warn("Failed to decode index info", "error", err.Error())
 			continue
 		}
 
@@ -420,9 +420,9 @@ func (c *Client) ListIndexes(ctx context.Context, dbName, collectionName string)
 	}
 
 	c.logger.Debug("Listed indexes",
-		zap.String("database", dbName),
-		zap.String("collection", collectionName),
-		zap.Int("count", len(indexes)))
+		"database", dbName,
+		"collection", collectionName,
+		"count", len(indexes))
 
 	return indexes, nil
 }

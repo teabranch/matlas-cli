@@ -60,13 +60,74 @@ func (e *ErrorFormatter) Format(err error) string {
 		return fmt.Sprintf("Invalid input: %s", err.Error())
 	}
 
+	// Handle MongoDB-specific authentication errors
+	if strings.Contains(errStr, "authentication failed") || strings.Contains(errStr, "auth") {
+		if e.verbose {
+			return fmt.Sprintf("MongoDB authentication failed: %s\n"+
+				"Debug: This could indicate:\n"+
+				"1. User credentials are incorrect\n"+
+				"2. User hasn't propagated across Atlas cluster nodes yet (try waiting 30-60 seconds)\n"+
+				"3. User doesn't have required permissions for this operation\n"+
+				"4. Database authentication source is incorrect", err.Error())
+		}
+		return "MongoDB authentication failed. This could be due to:\n" +
+			"• User propagation delay (Atlas users take time to sync across cluster nodes)\n" +
+			"• Incorrect credentials or insufficient permissions\n" +
+			"• Try using --use-temp-user flag for automatic user creation\n" +
+			"• Use --verbose for detailed error information"
+	}
+
+	// Handle MongoDB connection errors
+	if strings.Contains(errStr, "server selection error") || strings.Contains(errStr, "no reachable servers") {
+		if e.verbose {
+			return fmt.Sprintf("MongoDB server selection failed: %s\n"+
+				"Debug: This usually indicates:\n"+
+				"1. Network connectivity issues to MongoDB Atlas\n"+
+				"2. Incorrect cluster endpoint or connection string\n"+
+				"3. Firewall or security group blocking connection\n"+
+				"4. Atlas cluster is paused or in maintenance\n"+
+				"5. IP whitelist restrictions (temp users may use different IPs)\n"+
+				"6. User propagation issues across Atlas nodes", err.Error())
+		}
+		return "Unable to connect to MongoDB cluster. This could be due to:\n" +
+			"• Network connectivity issues or firewall restrictions\n" +
+			"• IP whitelist settings blocking your current IP address\n" +
+			"• Atlas cluster is paused or under maintenance\n" +
+			"• User propagation delay (temp users may need more time)\n" +
+			"• Try: Add 0.0.0.0/0 to Atlas IP whitelist temporarily for testing\n" +
+			"• Use --verbose for detailed connection diagnostics"
+	}
+
 	// For network/timeout errors
 	if strings.Contains(errStr, "timeout") || strings.Contains(errStr, "context deadline exceeded") {
-		return "Operation timed out. Try increasing the timeout with --timeout flag or check your network connection."
+		if e.verbose {
+			return fmt.Sprintf("Operation timed out: %s\n"+
+				"Debug: Consider these solutions:\n"+
+				"1. Increase timeout with --timeout flag (e.g., --timeout 5m)\n"+
+				"2. Check network connectivity to Atlas\n"+
+				"3. Verify cluster is not under heavy load\n"+
+				"4. For user operations, ensure sufficient propagation time", err.Error())
+		}
+		return "Operation timed out. Try:\n" +
+			"• Increase timeout with --timeout flag (e.g., --timeout 5m)\n" +
+			"• Check your network connection to MongoDB Atlas\n" +
+			"• For user authentication, wait longer for user propagation"
 	}
 
 	if strings.Contains(errStr, "connection") || strings.Contains(errStr, "network") {
-		return "Network connection failed. Please check your internet connection and try again."
+		if e.verbose {
+			return fmt.Sprintf("Network error: %s\n"+
+				"Debug: Network troubleshooting steps:\n"+
+				"1. Test internet connectivity: ping 8.8.8.8\n"+
+				"2. Check if Atlas cluster endpoint is reachable\n"+
+				"3. Verify no corporate firewall is blocking MongoDB ports\n"+
+				"4. Ensure Atlas IP whitelist includes your current IP", err.Error())
+		}
+		return "Network connection failed. Check:\n" +
+			"• Internet connectivity and DNS resolution\n" +
+			"• Atlas IP whitelist settings (add 0.0.0.0/0 for testing)\n" +
+			"• Corporate firewall or proxy settings\n" +
+			"• Use --verbose for detailed network diagnostics"
 	}
 
 	// Default formatting

@@ -8,11 +8,14 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
+	"go.mongodb.org/atlas-sdk/v20250312005/admin"
 
 	"github.com/teabranch/matlas-cli/cmd/database/collections"
+	"github.com/teabranch/matlas-cli/cmd/database/roles"
+	"github.com/teabranch/matlas-cli/cmd/database/users"
 	"github.com/teabranch/matlas-cli/internal/cli"
 	"github.com/teabranch/matlas-cli/internal/config"
+	"github.com/teabranch/matlas-cli/internal/logging"
 	atlasservice "github.com/teabranch/matlas-cli/internal/services/atlas"
 	"github.com/teabranch/matlas-cli/internal/services/database"
 	"github.com/teabranch/matlas-cli/internal/types"
@@ -37,6 +40,8 @@ and collections, supporting both Atlas clusters and direct connection strings.`,
 	cmd.AddCommand(newCreateDatabaseCmd())
 	cmd.AddCommand(newDeleteDatabaseCmd())
 	cmd.AddCommand(collections.NewCollectionsCmd())
+	cmd.AddCommand(roles.NewRolesCmd())
+	cmd.AddCommand(users.NewUsersCmd())
 
 	return cmd
 }
@@ -82,7 +87,12 @@ available databases, including their size, whether they're empty, and collection
 	cmd.Flags().StringVar(&clusterName, "cluster", "", "Atlas cluster name (requires --project-id)")
 	cmd.Flags().StringVar(&projectID, "project-id", "", "Atlas project ID (used with --cluster)")
 	cmd.Flags().BoolVar(&useTempUser, "use-temp-user", false, "Create temporary database user for access (recommended for Atlas clusters)")
-	cmd.Flags().StringVar(&databaseName, "database", "", "Database name for temporary user access (default: read access to all databases)")
+	cmd.Flags().StringVar(&databaseName, "database", "", "Database name for temporary user access (default: readWriteAnyDatabase access to admin)")
+	cmd.Flags().String("role", "", "Role for temporary user (format: 'role@database' or just 'role' for admin). Use with --use-temp-user. Default: readWriteAnyDatabase@admin")
+
+	// Hidden flag for advanced users to specify custom roles for temporary users
+	cmd.Flags().String("temp-user-roles", "", "Advanced: Multiple custom roles for temporary user (format: 'role1@db1,role2@db2'). Default: readWriteAnyDatabase@admin")
+	cmd.Flags().MarkHidden("temp-user-roles")
 
 	// At least one connection method is required
 	cmd.MarkFlagsOneRequired("connection-string", "cluster")
@@ -107,33 +117,74 @@ func newCreateDatabaseCmd() *cobra.Command {
 	var connectionString string
 	var clusterName string
 	var projectID string
+	var role string
+	var useTempUser bool
+	var collectionName string
+	var dbUsername string
+	var dbPassword string
 
 	cmd := &cobra.Command{
 		Use:   "create <database-name>",
-		Short: "Create a database",
-		Long: `Create a new MongoDB database.
+		Short: "Create a database with a collection",
+		Long: `Create a new MongoDB database with an initial collection.
 
-Note: MongoDB creates databases lazily when the first collection is created.
-This command creates a temporary collection and then removes it to ensure the database exists.`,
+MongoDB creates databases lazily when the first collection is created.
+This command creates the specified collection to ensure the database exists and is visible in Atlas UI.
+
+Authentication options:
+  1. Use existing database user: --username and --password
+  2. Create temporary user: --use-temp-user (requires Atlas API keys)
+  3. Direct connection string: --connection-string with embedded credentials`,
 		Args: cobra.ExactArgs(1),
-		Example: `  # Create database using connection string
-  matlas database create mydb --connection-string "mongodb+srv://user:pass@cluster.mongodb.net/"
+		Example: `  # Create database with collection using connection string with embedded credentials
+  matlas database create mydb --collection mycoll --connection-string "mongodb+srv://user:pass@cluster.mongodb.net/"
 
-  # Create database using Atlas cluster reference
-  matlas database create mydb --cluster MyCluster --project-id 507f1f77bcf86cd799439011`,
+  # Create database with collection using existing database user
+  matlas database create mydb --collection mycoll --cluster MyCluster --project-id 507f1f77bcf86cd799439011 --username myuser --password mypass
+
+  # Create database with collection using temporary user (requires Atlas API keys in .env)
+  matlas database create mydb --collection mycoll --cluster MyCluster --project-id 507f1f77bcf86cd799439011 --use-temp-user`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			databaseName := args[0]
-			return runCreateDatabase(cmd, connectionString, clusterName, projectID, databaseName)
+			return runCreateDatabase(cmd, connectionString, clusterName, projectID, databaseName, collectionName, useTempUser, role, dbUsername, dbPassword)
 		},
 	}
 
 	cmd.Flags().StringVar(&connectionString, "connection-string", "", "MongoDB connection string")
 	cmd.Flags().StringVar(&clusterName, "cluster", "", "Atlas cluster name (requires --project-id)")
 	cmd.Flags().StringVar(&projectID, "project-id", "", "Atlas project ID (used with --cluster)")
+	cmd.Flags().StringVar(&collectionName, "collection", "", "Collection name to create in the database (required)")
+	cmd.Flags().StringVar(&dbUsername, "username", "", "Database username for authentication")
+	cmd.Flags().StringVar(&dbPassword, "password", "", "Database password for authentication")
+	cmd.Flags().BoolVar(&useTempUser, "use-temp-user", false, "Create temporary database user for access (requires Atlas API keys)")
+	cmd.Flags().StringVar(&role, "role", "", "Role for temporary user (format: 'role@database' or just 'role' for admin). Use with --use-temp-user. Default: readWrite@<database>")
+
+	// Collection is required
+	mustMarkFlagRequired(cmd, "collection")
+
+	// Hidden flag for advanced users to specify custom roles for temporary users
+	cmd.Flags().String("temp-user-roles", "", "Advanced: Multiple custom roles for temporary user (format: 'role1@db1,role2@db2'). Default: readWrite@<database>")
+	cmd.Flags().MarkHidden("temp-user-roles")
 
 	// At least one connection method is required
 	cmd.MarkFlagsOneRequired("connection-string", "cluster")
 	cmd.MarkFlagsRequiredTogether("cluster", "project-id")
+
+	// Authentication validation
+	cmd.MarkFlagsMutuallyExclusive("use-temp-user", "username")
+	cmd.MarkFlagsMutuallyExclusive("use-temp-user", "password")
+	cmd.MarkFlagsRequiredTogether("username", "password")
+
+	// Only require --cluster when --use-temp-user is specified
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		// If --use-temp-user is set, ensure --cluster is also provided.
+		if cmd.Flags().Changed("use-temp-user") {
+			if clusterName == "" {
+				return fmt.Errorf("--use-temp-user requires --cluster to be specified")
+			}
+		}
+		return nil
+	}
 
 	return cmd
 }
@@ -142,6 +193,7 @@ func newDeleteDatabaseCmd() *cobra.Command {
 	var connectionString string
 	var clusterName string
 	var projectID string
+	var useTempUser bool
 	var yes bool
 
 	cmd := &cobra.Command{
@@ -157,28 +209,60 @@ Use with caution in production environments.`,
   matlas database delete mydb --connection-string "mongodb+srv://user:pass@cluster.mongodb.net/"
 
   # Delete database using Atlas cluster reference (skip confirmation)
-  matlas database delete mydb --cluster MyCluster --project-id 507f1f77bcf86cd799439011 --yes`,
+  matlas database delete mydb --cluster MyCluster --project-id 507f1f77bcf86cd799439011 --yes
+
+  # Delete database with temporary user (recommended for Atlas clusters)
+  matlas database delete mydb --cluster MyCluster --project-id 507f1f77bcf86cd799439011 --use-temp-user --yes`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			databaseName := args[0]
-			return runDeleteDatabase(cmd, connectionString, clusterName, projectID, databaseName, yes)
+			return runDeleteDatabase(cmd, connectionString, clusterName, projectID, databaseName, useTempUser, yes)
 		},
 	}
 
 	cmd.Flags().StringVar(&connectionString, "connection-string", "", "MongoDB connection string")
 	cmd.Flags().StringVar(&clusterName, "cluster", "", "Atlas cluster name (requires --project-id)")
 	cmd.Flags().StringVar(&projectID, "project-id", "", "Atlas project ID (used with --cluster)")
+	cmd.Flags().BoolVar(&useTempUser, "use-temp-user", false, "Create temporary database user for access (recommended for Atlas clusters)")
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "Skip confirmation prompt")
+	cmd.Flags().String("role", "", "Role for temporary user (format: 'role@database' or just 'role' for admin). Use with --use-temp-user. Default: readWriteAnyDatabase@admin")
+
+	// Hidden flag for advanced users to specify custom roles for temporary users
+	cmd.Flags().String("temp-user-roles", "", "Advanced: Multiple custom roles for temporary user (format: 'role1@db1,role2@db2'). Default: readWriteAnyDatabase@admin")
+	cmd.Flags().MarkHidden("temp-user-roles")
 
 	// At least one connection method is required
 	cmd.MarkFlagsOneRequired("connection-string", "cluster")
 	cmd.MarkFlagsRequiredTogether("cluster", "project-id")
 
+	// Only require --cluster when --use-temp-user is specified
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		// If --use-temp-user is set, ensure --cluster is also provided.
+		if cmd.Flags().Changed("use-temp-user") {
+			if clusterName == "" {
+				return fmt.Errorf("--use-temp-user requires --cluster to be specified")
+			}
+		}
+		return nil
+	}
+
 	return cmd
 }
 
-func runCreateDatabase(cmd *cobra.Command, connectionString, clusterName, projectID, databaseName string) error {
+func runCreateDatabase(cmd *cobra.Command, connectionString, clusterName, projectID, databaseName, collectionName string, useTempUser bool, role, dbUsername, dbPassword string) error {
 	if databaseName == "" {
 		return fmt.Errorf("database name is required")
+	}
+
+	if collectionName == "" {
+		return fmt.Errorf("collection name is required")
+	}
+
+	// Validate authentication method
+	if connectionString == "" {
+		// For cluster-based connections, need either temp user or username/password
+		if !useTempUser && (dbUsername == "" || dbPassword == "") {
+			return fmt.Errorf("when using --cluster, you must specify either --use-temp-user OR both --username and --password")
+		}
 	}
 
 	// Get configuration
@@ -195,7 +279,7 @@ func runCreateDatabase(cmd *cobra.Command, connectionString, clusterName, projec
 	progress := ui.NewProgressIndicator(cmd.Flag("verbose").Changed, false)
 
 	// Resolve connection info
-	connInfo, err := resolveConnectionInfo(ctx, cfg, connectionString, clusterName, projectID, false, "", progress)
+	connInfo, err := resolveConnectionInfoWithCmd(ctx, cmd, cfg, connectionString, clusterName, projectID, useTempUser, "", progress)
 	if err != nil {
 		return err
 	}
@@ -204,7 +288,11 @@ func runCreateDatabase(cmd *cobra.Command, connectionString, clusterName, projec
 	if connInfo.TempUser != nil && connInfo.TempUser.CleanupFunc != nil {
 		defer func() {
 			progress.StartSpinner("Cleaning up temporary user...")
-			if cleanupErr := connInfo.TempUser.CleanupFunc(ctx); cleanupErr != nil {
+			// Create a fresh context for cleanup to avoid using an expired context
+			cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cleanupCancel()
+
+			if cleanupErr := connInfo.TempUser.CleanupFunc(cleanupCtx); cleanupErr != nil {
 				progress.StopSpinnerWithError("Failed to cleanup temporary user")
 				fmt.Printf("Warning: Failed to cleanup temporary user: %v\n", cleanupErr)
 			} else {
@@ -213,30 +301,59 @@ func runCreateDatabase(cmd *cobra.Command, connectionString, clusterName, projec
 		}()
 	}
 
-	progress.StartSpinner(fmt.Sprintf("Creating database '%s'...", databaseName))
+	// If user provided credentials and we have a cluster connection, inject them
+	if dbUsername != "" && dbPassword != "" && !useTempUser && connectionString == "" {
+		// We need to inject user credentials into the connection string
+		encodedUsername := url.QueryEscape(dbUsername)
+		encodedPassword := url.QueryEscape(dbPassword)
+
+		connInfo.ConnectionString = strings.Replace(connInfo.ConnectionString, "mongodb+srv://",
+			fmt.Sprintf("mongodb+srv://%s:%s@", encodedUsername, encodedPassword), 1)
+
+		// Ensure there's a database path before adding query parameters
+		if !hasDatabasePath(connInfo.ConnectionString) {
+			// Look for query parameters and add database path before them
+			if idx := strings.Index(connInfo.ConnectionString, "?"); idx != -1 {
+				// There are query parameters, insert the database path before them
+				connInfo.ConnectionString = connInfo.ConnectionString[:idx] + "/admin" + connInfo.ConnectionString[idx:]
+			} else {
+				// No query parameters, just add the database path
+				connInfo.ConnectionString += "/admin"
+			}
+		}
+
+		// Add authentication source
+		if strings.Contains(connInfo.ConnectionString, "?") {
+			connInfo.ConnectionString += "&authSource=admin"
+		} else {
+			connInfo.ConnectionString += "?authSource=admin"
+		}
+	}
+
+	progress.StartSpinner(fmt.Sprintf("Creating database '%s' with collection '%s'...", databaseName, collectionName))
 
 	// Create database service
-	zapLogger, _ := zap.NewDevelopment()
-	dbService := database.NewService(zapLogger)
+	logger := logging.Default()
+	dbService := database.NewService(logger)
 	defer func() {
 		if err := dbService.Close(ctx); err != nil {
 			fmt.Printf("Warning: Failed to close database service: %v\n", err)
 		}
 	}()
 
-	// Create database
-	err = dbService.CreateDatabase(ctx, connInfo, databaseName)
+	// Create database with collection
+	err = dbService.CreateDatabaseWithCollection(ctx, connInfo, databaseName, collectionName)
 	if err != nil {
 		progress.StopSpinnerWithError("Failed to create database")
 		errorFormatter := cli.NewErrorFormatter(cmd.Flag("verbose").Changed)
 		return fmt.Errorf("%s", errorFormatter.Format(err))
 	}
 
-	progress.StopSpinner(fmt.Sprintf("Database '%s' created successfully", databaseName))
+	progress.StopSpinner(fmt.Sprintf("Database '%s' with collection '%s' created successfully", databaseName, collectionName))
 	return nil
 }
 
-func runDeleteDatabase(cmd *cobra.Command, connectionString, clusterName, projectID, databaseName string, yes bool) error {
+func runDeleteDatabase(cmd *cobra.Command, connectionString, clusterName, projectID, databaseName string, useTempUser bool, yes bool) error {
 	if databaseName == "" {
 		return fmt.Errorf("database name is required")
 	}
@@ -268,7 +385,7 @@ func runDeleteDatabase(cmd *cobra.Command, connectionString, clusterName, projec
 	progress := ui.NewProgressIndicator(cmd.Flag("verbose").Changed, false)
 
 	// Resolve connection info
-	connInfo, err := resolveConnectionInfo(ctx, cfg, connectionString, clusterName, projectID, false, "", progress)
+	connInfo, err := resolveConnectionInfoWithCmd(ctx, cmd, cfg, connectionString, clusterName, projectID, useTempUser, "", progress)
 	if err != nil {
 		return err
 	}
@@ -277,7 +394,11 @@ func runDeleteDatabase(cmd *cobra.Command, connectionString, clusterName, projec
 	if connInfo.TempUser != nil && connInfo.TempUser.CleanupFunc != nil {
 		defer func() {
 			progress.StartSpinner("Cleaning up temporary user...")
-			if cleanupErr := connInfo.TempUser.CleanupFunc(ctx); cleanupErr != nil {
+			// Create a fresh context for cleanup to avoid using an expired context
+			cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cleanupCancel()
+
+			if cleanupErr := connInfo.TempUser.CleanupFunc(cleanupCtx); cleanupErr != nil {
 				progress.StopSpinnerWithError("Failed to cleanup temporary user")
 				fmt.Printf("Warning: Failed to cleanup temporary user: %v\n", cleanupErr)
 			} else {
@@ -289,8 +410,8 @@ func runDeleteDatabase(cmd *cobra.Command, connectionString, clusterName, projec
 	progress.StartSpinner(fmt.Sprintf("Deleting database '%s'...", databaseName))
 
 	// Create database service
-	zapLogger, _ := zap.NewDevelopment()
-	dbService := database.NewService(zapLogger)
+	logger := logging.Default()
+	dbService := database.NewService(logger)
 	defer func() {
 		if err := dbService.Close(ctx); err != nil {
 			fmt.Printf("Warning: Failed to close database service: %v\n", err)
@@ -310,7 +431,7 @@ func runDeleteDatabase(cmd *cobra.Command, connectionString, clusterName, projec
 }
 
 // resolveConnectionInfo resolves connection information from either direct connection string or Atlas cluster
-func resolveConnectionInfo(ctx context.Context, cfg *config.Config, connectionString, clusterName, projectID string, useTempUser bool, databaseName string, progress *ui.ProgressIndicator) (*types.ConnectionInfo, error) {
+func resolveConnectionInfo(ctx context.Context, cfg *config.Config, connectionString, clusterName, projectID string, useTempUser bool, databaseName string, customRoles []admin.DatabaseUserRole, verbose bool, progress *ui.ProgressIndicator) (*types.ConnectionInfo, error) {
 	if connectionString != "" {
 		// Direct connection string provided
 		return &types.ConnectionInfo{
@@ -367,8 +488,13 @@ func resolveConnectionInfo(ctx context.Context, cfg *config.Config, connectionSt
 		usersService := atlasservice.NewDatabaseUsersService(client)
 		tempUserManager := database.NewTempUserManager(usersService, projectID)
 
-		// Create temporary user for discovery
-		tempUser, err := tempUserManager.CreateTempUserForDiscovery(ctx, []string{clusterName}, databaseName)
+		// Create temporary user for discovery with custom roles if provided
+		var tempUser *database.TempUserResult
+		if len(customRoles) > 0 {
+			tempUser, err = tempUserManager.CreateTempUserForDiscoveryWithRoles(ctx, []string{clusterName}, databaseName, customRoles)
+		} else {
+			tempUser, err = tempUserManager.CreateTempUserForDiscovery(ctx, []string{clusterName}, databaseName)
+		}
 		if err != nil {
 			progress.StopSpinnerWithError("Failed to create temporary user")
 			return nil, fmt.Errorf("failed to create temporary user: %w", err)
@@ -378,19 +504,62 @@ func resolveConnectionInfo(ctx context.Context, cfg *config.Config, connectionSt
 			tempUser.Username, tempUser.ExpiresAt.Format("15:04:05")))
 
 		// Give Atlas more time to propagate the user across all nodes
-		// Atlas needs additional time to sync temporary users for reliable authentication
-		time.Sleep(6 * time.Second)
+		// Atlas needs time for both API propagation AND MongoDB cluster synchronization
+		// Based on user testing: 2+ minutes needed for reliable authentication
+
+		// Calculate available time for propagation (leave some buffer for the actual operation)
+		deadline, hasDeadline := ctx.Deadline()
+		var propagationTime time.Duration
+
+		if hasDeadline {
+			remaining := time.Until(deadline)
+			// Use 75% of remaining time for propagation, leaving 25% for the actual database operation
+			propagationTime = time.Duration(float64(remaining) * 0.75)
+
+			// Cap at reasonable limits
+			if propagationTime > 120*time.Second {
+				propagationTime = 120 * time.Second // Max 2 minutes
+			} else if propagationTime < 15*time.Second {
+				propagationTime = 15 * time.Second // Min 15 seconds
+			}
+		} else {
+			// No context deadline, use a reasonable default
+			propagationTime = 60 * time.Second // 1 minute default
+		}
+
+		progress.StartSpinner(fmt.Sprintf("Waiting for user propagation and MongoDB cluster sync (%ds)...", int(propagationTime.Seconds())))
+
+		select {
+		case <-ctx.Done():
+			progress.StopSpinnerWithError("User propagation cancelled due to timeout")
+			return nil, fmt.Errorf("operation cancelled while waiting for user propagation: %w", ctx.Err())
+		case <-time.After(propagationTime):
+			progress.StopSpinner(fmt.Sprintf("User propagation and MongoDB cluster sync completed (%ds)", int(propagationTime.Seconds())))
+		}
 
 		// Insert credentials into connection string with proper URL encoding
 		encodedUsername := url.QueryEscape(tempUser.Username)
 		encodedPassword := url.QueryEscape(tempUser.Password)
+
+		// Debug: Show credential encoding
+		if verbose {
+			fmt.Printf("Debug: Temp user credentials - Username: %s, Encoded: %s\n", tempUser.Username, encodedUsername)
+			fmt.Printf("Debug: Password length: %d, Encoded length: %d\n", len(tempUser.Password), len(encodedPassword))
+			fmt.Printf("Debug: Original connection string: %s\n", connectionString)
+		}
+
 		connectionString = strings.Replace(connectionString, "mongodb+srv://",
 			fmt.Sprintf("mongodb+srv://%s:%s@", encodedUsername, encodedPassword), 1)
 
-		// Ensure the connection string has a database path before query parameters
+		// Debug: Show connection string after credential insertion
+		if verbose {
+			fmt.Printf("Debug: Connection string after credentials: %s\n", maskConnectionString(connectionString))
+		}
+
+		// Add database path if not present
 		// Atlas connection strings typically don't include a database path, so we need to add one
-		if !strings.Contains(connectionString, ".net/") && !strings.Contains(connectionString, ".com/") {
-			// Look for the end of the host and add a default database path
+		if !hasDatabasePath(connectionString) {
+			// Look for query parameters and add database path before them
 			if idx := strings.Index(connectionString, "?"); idx != -1 {
 				// There are query parameters, insert the database path before them
 				connectionString = connectionString[:idx] + "/admin" + connectionString[idx:]
@@ -407,9 +576,12 @@ func resolveConnectionInfo(ctx context.Context, cfg *config.Config, connectionSt
 			connectionString += "?authSource=admin"
 		}
 
-		// Debug: Show the connection string being used (mask password for security)
-		maskedConnectionString := strings.Replace(connectionString, encodedPassword, "***", 1)
-		fmt.Printf("DEBUG: Using connection string: %s\n", maskedConnectionString)
+		// Additional debugging and validation
+		if verbose {
+			fmt.Printf("Debug: Final connection string: %s\n", maskConnectionString(connectionString))
+			fmt.Printf("Debug: Connection string contains '@': %v\n", strings.Contains(connectionString, "@"))
+			fmt.Printf("Debug: Connection string contains 'authSource=admin': %v\n", strings.Contains(connectionString, "authSource=admin"))
+		}
 
 		return &types.ConnectionInfo{
 			ConnectionString: connectionString,
@@ -424,4 +596,190 @@ func resolveConnectionInfo(ctx context.Context, cfg *config.Config, connectionSt
 	return &types.ConnectionInfo{
 		ConnectionString: connectionString,
 	}, nil
+}
+
+// resolveConnectionInfoWithCmd is a helper that handles custom roles parsing from cmd flags
+func resolveConnectionInfoWithCmd(ctx context.Context, cmd *cobra.Command, cfg *config.Config, connectionString, clusterName, projectID string, useTempUser bool, databaseName string, progress *ui.ProgressIndicator) (*types.ConnectionInfo, error) {
+	var customRoles []admin.DatabaseUserRole
+	var err error
+
+	// Check for the simple --role flag first (takes precedence)
+	roleStr, _ := cmd.Flags().GetString("role")
+	if roleStr != "" {
+		customRoles, err = parseSimpleRole(roleStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid role format: %w", err)
+		}
+	} else {
+		// Fall back to the advanced --temp-user-roles flag
+		customRolesStr, _ := cmd.Flags().GetString("temp-user-roles")
+		customRoles, err = parseCustomRoles(customRolesStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid temp-user-roles format: %w", err)
+		}
+	}
+
+	// If simple role was provided without database, scope it to the target database
+	if len(customRoles) == 1 && databaseName != "" {
+		roleStr, _ := cmd.Flags().GetString("role")
+		if roleStr != "" && !strings.Contains(roleStr, "@") {
+			// Simple role without database specified, scope to target database
+			customRoles[0].DatabaseName = databaseName
+		}
+	}
+
+	verbose := cmd.Flag("verbose").Changed
+	return resolveConnectionInfo(ctx, cfg, connectionString, clusterName, projectID, useTempUser, databaseName, customRoles, verbose, progress)
+}
+
+// parseCustomRoles parses a custom roles string into DatabaseUserRole slice
+func parseCustomRoles(rolesStr string) ([]admin.DatabaseUserRole, error) {
+	if rolesStr == "" {
+		return nil, nil
+	}
+
+	var roles []admin.DatabaseUserRole
+	rolePairs := strings.Split(rolesStr, ",")
+
+	for _, pair := range rolePairs {
+		pair = strings.TrimSpace(pair)
+		if pair == "" {
+			continue
+		}
+
+		parts := strings.Split(pair, "@")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid role format '%s': expected 'role@database'", pair)
+		}
+
+		roleName := strings.TrimSpace(parts[0])
+		dbName := strings.TrimSpace(parts[1])
+
+		if roleName == "" || dbName == "" {
+			return nil, fmt.Errorf("invalid role format '%s': role and database cannot be empty", pair)
+		}
+
+		roles = append(roles, admin.DatabaseUserRole{
+			RoleName:     roleName,
+			DatabaseName: dbName,
+		})
+	}
+
+	return roles, nil
+}
+
+// parseSimpleRole parses a simple role string in format "role@database" or just "role" (defaults to admin)
+func parseSimpleRole(roleStr string) ([]admin.DatabaseUserRole, error) {
+	if roleStr == "" {
+		return nil, nil
+	}
+
+	roleStr = strings.TrimSpace(roleStr)
+	if roleStr == "" {
+		return nil, nil
+	}
+
+	var roleName, dbName string
+
+	// Check if role contains @ symbol for database specification
+	if strings.Contains(roleStr, "@") {
+		parts := strings.Split(roleStr, "@")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid role format '%s': expected 'role@database' or just 'role'", roleStr)
+		}
+		roleName = strings.TrimSpace(parts[0])
+		dbName = strings.TrimSpace(parts[1])
+	} else {
+		// No database specified, will be scoped to target database by caller
+		roleName = roleStr
+		dbName = "admin" // Temporary default, will be overridden if needed
+	}
+
+	if roleName == "" {
+		return nil, fmt.Errorf("role name cannot be empty")
+	}
+	if dbName == "" {
+		return nil, fmt.Errorf("database name cannot be empty")
+	}
+
+	return []admin.DatabaseUserRole{
+		{
+			RoleName:     roleName,
+			DatabaseName: dbName,
+		},
+	}, nil
+}
+
+// hasDatabasePath checks if a MongoDB connection string already has a database path
+func hasDatabasePath(connectionString string) bool {
+	// Remove the protocol
+	withoutProtocol := strings.TrimPrefix(connectionString, "mongodb+srv://")
+	withoutProtocol = strings.TrimPrefix(withoutProtocol, "mongodb://")
+
+	// Remove credentials if present
+	if idx := strings.Index(withoutProtocol, "@"); idx != -1 {
+		withoutProtocol = withoutProtocol[idx+1:]
+	}
+
+	// Check if there's a path after the host
+	if idx := strings.Index(withoutProtocol, "/"); idx != -1 {
+		path := withoutProtocol[idx+1:]
+		// Remove query parameters
+		if qIdx := strings.Index(path, "?"); qIdx != -1 {
+			path = path[:qIdx]
+		}
+		return path != ""
+	}
+
+	return false
+}
+
+// maskConnectionString masks sensitive information in connection strings for logging
+func maskConnectionString(connectionString string) string {
+	if connectionString == "" {
+		return ""
+	}
+
+	// Find credentials in the connection string
+	if strings.Contains(connectionString, "@") {
+		parts := strings.Split(connectionString, "@")
+		if len(parts) >= 2 {
+			// Replace everything before @ with masked version
+			credPart := parts[0]
+			if strings.Contains(credPart, "://") {
+				schemeParts := strings.Split(credPart, "://")
+				if len(schemeParts) == 2 {
+					return schemeParts[0] + "://***:***@" + strings.Join(parts[1:], "@")
+				}
+			}
+		}
+	}
+
+	// If no credentials detected, just show first 20 characters
+	if len(connectionString) > 20 {
+		return connectionString[:20] + "..."
+	}
+	return connectionString
+}
+
+// testConnection attempts a quick connection test to verify user authentication
+func testConnection(ctx context.Context, connectionString string) bool {
+	// For now, return false to disable connection testing and rely on the delay
+	// TODO: Implement proper MongoDB connection testing using the MongoDB driver
+	// This would require importing go.mongodb.org/mongo-driver and doing a proper ping test
+	//
+	// A proper implementation would:
+	// 1. Create a MongoDB client with the connection string
+	// 2. Attempt to ping the database with a short timeout
+	// 3. Return true if authentication succeeds, false otherwise
+	//
+	// For now, we'll rely on the exponential backoff delay instead of connection testing
+	return false
+}
+
+// mustMarkFlagRequired marks a flag as required and panics if it cannot be marked
+func mustMarkFlagRequired(cmd *cobra.Command, name string) {
+	if err := cmd.MarkFlagRequired(name); err != nil {
+		panic(fmt.Errorf("failed to mark flag %q required: %w", name, err))
+	}
 }

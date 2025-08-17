@@ -131,6 +131,10 @@ func (d *DiffEngine) ComputeProjectDiff(desired *ProjectState, current *ProjectS
 		return nil, fmt.Errorf("failed to compute network access diff: %w", err)
 	}
 
+	if err := d.computeDatabaseRolesDiff(desired, current, diff); err != nil {
+		return nil, fmt.Errorf("failed to compute database roles diff: %w", err)
+	}
+
 	// Compute summary
 	diff.Summary = d.computeSummary(diff.Operations)
 
@@ -243,6 +247,58 @@ func (d *DiffEngine) computeDatabaseUsersDiff(desired *ProjectState, current *Pr
 	return nil
 }
 
+// computeDatabaseRolesDiff computes diffs for database roles
+func (d *DiffEngine) computeDatabaseRolesDiff(desired *ProjectState, current *ProjectState, diff *Diff) error {
+	desiredRoles := make(map[string]*types.DatabaseRoleManifest)
+	currentRoles := make(map[string]*types.DatabaseRoleManifest)
+
+	if desired != nil {
+		for i := range desired.DatabaseRoles {
+			role := &desired.DatabaseRoles[i]
+			// Use a composite key: databaseName/roleName
+			key := fmt.Sprintf("%s/%s", role.Spec.DatabaseName, role.Spec.RoleName)
+			desiredRoles[key] = role
+		}
+	}
+
+	if current != nil {
+		for i := range current.DatabaseRoles {
+			role := &current.DatabaseRoles[i]
+			key := fmt.Sprintf("%s/%s", role.Spec.DatabaseName, role.Spec.RoleName)
+			currentRoles[key] = role
+		}
+	}
+
+	// Find all unique role keys
+	allKeys := make(map[string]bool)
+	for key := range desiredRoles {
+		allKeys[key] = true
+	}
+	for key := range currentRoles {
+		allKeys[key] = true
+	}
+
+	// Compute diff for each role
+	for key := range allKeys {
+		desired := desiredRoles[key]
+		current := currentRoles[key]
+
+		var resourceName string
+		if desired != nil {
+			resourceName = desired.Metadata.Name
+		} else if current != nil {
+			resourceName = current.Metadata.Name
+		}
+
+		op := d.computeResourceDiff(types.KindDatabaseRole, resourceName, desired, current)
+		if op != nil {
+			diff.Operations = append(diff.Operations, *op)
+		}
+	}
+
+	return nil
+}
+
 // computeNetworkAccessDiff computes diffs for network access entries
 func (d *DiffEngine) computeNetworkAccessDiff(desired *ProjectState, current *ProjectState, diff *Diff) error {
 	desiredMap := make(map[string]interface{})
@@ -310,6 +366,10 @@ func (d *DiffEngine) computeResourceDiff(resourceType types.ResourceKind, resour
 			if v == nil {
 				desired = nil
 			}
+		case *types.DatabaseRoleManifest:
+			if v == nil {
+				desired = nil
+			}
 		}
 	}
 
@@ -328,6 +388,10 @@ func (d *DiffEngine) computeResourceDiff(resourceType types.ResourceKind, resour
 				current = nil
 			}
 		case *types.ProjectManifest:
+			if v == nil {
+				current = nil
+			}
+		case *types.DatabaseRoleManifest:
 			if v == nil {
 				current = nil
 			}
@@ -437,6 +501,13 @@ func (d *DiffEngine) normalizeForComparison(resource interface{}) interface{} {
 		normalized.Status = nil
 		return normalized
 	case *types.ProjectManifest:
+		if v == nil {
+			return nil
+		}
+		normalized := *v
+		normalized.Status = nil
+		return normalized
+	case *types.DatabaseRoleManifest:
 		if v == nil {
 			return nil
 		}

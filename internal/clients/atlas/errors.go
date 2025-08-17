@@ -29,7 +29,7 @@ func convertError(err error) error {
 		return fmt.Errorf("%w: %v", ErrConflict, err)
 	case admin.IsErrorCode(err, "UNAUTHORIZED") || admin.IsErrorCode(err, "FORBIDDEN"):
 		return fmt.Errorf("%w: %v", ErrUnauthorized, err)
-	case admin.IsErrorCode(err, "TOO_MANY_REQUESTS") || admin.IsErrorCode(err, "INTERNAL"):
+	case admin.IsErrorCode(err, "TOO_MANY_REQUESTS") || admin.IsErrorCode(err, "INTERNAL") || admin.IsErrorCode(err, "UNEXPECTED_ERROR"):
 		// These are usually safe to retry.
 		return fmt.Errorf("%w: %v", ErrTransient, err)
 	default:

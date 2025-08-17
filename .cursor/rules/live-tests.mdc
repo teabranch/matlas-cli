@@ -1,0 +1,38 @@
+---
+alwaysApply: false
+---
+## Live Tests Policy (CLI + YAML)
+
+This repository requires comprehensive, live tests for both CLI and YAML paths. Follow these rules when creating or updating tests:
+
+- **Location**: Place all live tests under `scripts/` (prefer `scripts/test/`), one focused script per surface. Entry point and orchestration live in [`scripts/test.sh`](mdc:scripts/test.sh).
+
+- **Coverage requirements**: Each test script must exercise the maximum breadth of its domain:
+  - Happy-path for every relevant command and subcommand of the surface
+  - Flag coverage: required, optional, combinations, mutually exclusive flags, and defaults
+  - Output variants: at least text and JSON, plus YAML where relevant
+  - Negative cases: missing/invalid arguments, invalid types, unsupported combinations, permission/auth failures
+  - Idempotency: repeated runs don’t drift; add dry-run checks where available
+
+- **Dual-path requirement**: For any supported capability, test both interfaces:
+  - CLI subcommands and flags under `cmd/*`
+  - YAML ApplyDocument flows handled by `cmd/infra/*` via `validate`, `plan`, `diff`, `show`, `apply`, and `destroy`
+
+- **Runner integration**: All new live tests must be invocable from the main runner:
+  - Add a dedicated mode/subcommand in [`scripts/test.sh`](mdc:scripts/test.sh)
+  - Ensure discoverability in help/usage and include the test in appropriate aggregates (e.g., `all`, `comprehensive`)
+  - Update documentation in [`scripts/README.md`](mdc:scripts/README.md)
+
+- **Script conventions**:
+  - Use `#!/usr/bin/env bash` and `set -euo pipefail`
+  - Validate environment (.env support OK) and print clear diagnostics
+  - Provide `--dry-run`, `--verbose`, and `--timeout` flags when applicable
+  - Track created resources and guarantee cleanup on EXIT/INT/TERM
+  - Emit non-zero exit codes on failures; write artifacts to `test-reports/`
+
+- **Naming**:
+  - Script file: `scripts/test/<domain>.sh`
+  - Test modes within script: granular selectors for subsets (e.g., `validation`, `errors`, `workflow`)
+
+By policy, tests that do not meet these criteria should be extended to include missing command paths, flag combos, and negative validations before merge.
+

@@ -4,14 +4,14 @@ import (
 	"context"
 
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.uber.org/zap"
 
+	"github.com/teabranch/matlas-cli/internal/logging"
 	"github.com/teabranch/matlas-cli/internal/types"
 )
 
 // MockClient is a mock implementation of the MongoDB client for testing
 type MockClient struct {
-	logger *zap.Logger
+	logger *logging.Logger
 
 	// Mock data
 	databases   []types.DatabaseInfo
@@ -28,9 +28,9 @@ type MockClient struct {
 }
 
 // NewMockClient creates a new mock MongoDB client
-func NewMockClient(logger *zap.Logger) *MockClient {
+func NewMockClient(logger *logging.Logger) *MockClient {
 	if logger == nil {
-		logger = zap.NewNop()
+		logger = logging.Default()
 	}
 
 	return &MockClient{
@@ -87,7 +87,7 @@ func (mc *MockClient) ListDatabases(ctx context.Context) ([]types.DatabaseInfo, 
 		return nil, &MockError{Operation: "listDatabases", Message: "mock error"}
 	}
 
-	mc.logger.Debug("Mock listed databases", zap.Int("count", len(mc.databases)))
+	mc.logger.Debug("Mock listed databases", "count", len(mc.databases))
 	return mc.databases, nil
 }
 
@@ -103,8 +103,8 @@ func (mc *MockClient) ListCollections(ctx context.Context, dbName string) ([]typ
 	}
 
 	mc.logger.Debug("Mock listed collections",
-		zap.String("database", dbName),
-		zap.Int("count", len(collections)))
+		"database", dbName,
+		"count", len(collections))
 
 	return collections, nil
 }
@@ -128,8 +128,8 @@ func (mc *MockClient) CreateCollection(ctx context.Context, dbName, collectionNa
 	mc.collections[dbName] = append(mc.collections[dbName], newCollection)
 
 	mc.logger.Info("Mock created collection",
-		zap.String("database", dbName),
-		zap.String("collection", collectionName))
+		"database", dbName,
+		"collection", collectionName)
 
 	return nil
 }
@@ -155,8 +155,8 @@ func (mc *MockClient) DropCollection(ctx context.Context, dbName, collectionName
 	delete(mc.stats, key)
 
 	mc.logger.Info("Mock dropped collection",
-		zap.String("database", dbName),
-		zap.String("collection", collectionName))
+		"database", dbName,
+		"collection", collectionName)
 
 	return nil
 }
@@ -205,7 +205,7 @@ func (e *MockError) Error() string {
 }
 
 // NewMockClientWithData creates a mock client pre-populated with test data
-func NewMockClientWithData(logger *zap.Logger) *MockClient {
+func NewMockClientWithData(logger *logging.Logger) *MockClient {
 	client := NewMockClient(logger)
 
 	// Add some sample databases

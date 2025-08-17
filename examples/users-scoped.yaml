@@ -1,0 +1,42 @@
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: users-scoped
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: app-user-scoped
+      labels:
+        team: app
+    spec:
+      projectName: "My Project"
+      username: app-user-scoped
+      authDatabase: admin
+      password: "${APP_USER_SCOPED_PASSWORD}"
+      roles:
+        - roleName: readWrite
+          databaseName: appdb
+      scopes:
+        - name: "production-cluster"
+          type: CLUSTER
+
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: analytics-user-scoped
+      labels:
+        team: data
+    spec:
+      projectName: "My Project"
+      username: analytics-user-scoped
+      authDatabase: admin
+      password: "${ANALYTICS_SCOPED_PASSWORD}"
+      roles:
+        - roleName: read
+          databaseName: analytics
+      scopes:
+        - name: "analytics-cluster"
+          type: CLUSTER
+
+

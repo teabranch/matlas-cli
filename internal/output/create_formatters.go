@@ -28,13 +28,18 @@ func NewCreateResultFormatter(format config.OutputFormat, writer io.Writer) *Cre
 
 // FormatCreateResult formats the result of a create operation with prettier output
 func (f *CreateResultFormatter) FormatCreateResult(result interface{}, resourceType string) error {
+	return f.FormatCreateResultWithPassword(result, resourceType, "")
+}
+
+// FormatCreateResultWithPassword formats the result of a create operation with optional password display
+func (f *CreateResultFormatter) FormatCreateResultWithPassword(result interface{}, resourceType, password string) error {
 	switch f.format {
 	case config.OutputJSON:
 		return f.formatJSON(result)
 	case config.OutputYAML:
 		return f.formatYAML(result)
 	case config.OutputTable, config.OutputText, "":
-		return f.formatCreateResultText(result, resourceType)
+		return f.formatCreateResultTextWithPassword(result, resourceType, password)
 	default:
 		return fmt.Errorf("unsupported output format: %s", f.format)
 	}
@@ -42,6 +47,11 @@ func (f *CreateResultFormatter) FormatCreateResult(result interface{}, resourceT
 
 // formatCreateResultText formats create results as pretty text output
 func (f *CreateResultFormatter) formatCreateResultText(result interface{}, resourceType string) error {
+	return f.formatCreateResultTextWithPassword(result, resourceType, "")
+}
+
+// formatCreateResultTextWithPassword formats create results as pretty text output with optional password display
+func (f *CreateResultFormatter) formatCreateResultTextWithPassword(result interface{}, resourceType, password string) error {
 	if result == nil {
 		return nil
 	}
@@ -58,7 +68,7 @@ func (f *CreateResultFormatter) formatCreateResultText(result interface{}, resou
 	case "cluster":
 		return f.formatClusterCreateResult(result)
 	case "database user", "user":
-		return f.formatUserCreateResult(result)
+		return f.formatUserCreateResultWithPassword(result, password)
 	case "network access entry", "network":
 		return f.formatNetworkCreateResult(result)
 	case "network container":
@@ -181,6 +191,11 @@ func (f *CreateResultFormatter) formatClusterCreateResult(result interface{}) er
 
 // formatUserCreateResult formats database user creation results
 func (f *CreateResultFormatter) formatUserCreateResult(result interface{}) error {
+	return f.formatUserCreateResultWithPassword(result, "")
+}
+
+// formatUserCreateResultWithPassword formats database user creation results with optional password display
+func (f *CreateResultFormatter) formatUserCreateResultWithPassword(result interface{}, password string) error {
 	w := tabwriter.NewWriter(f.writer, 0, 0, 2, ' ', 0)
 	defer func() { _ = w.Flush() }()
 
@@ -197,6 +212,13 @@ func (f *CreateResultFormatter) formatUserCreateResult(result interface{}) error
 	}
 	if dbName := getStringField(v, "DatabaseName"); dbName != "" {
 		if _, err := fmt.Fprintf(w, "Database:\t%s\n", dbName); err != nil {
+			return err
+		}
+	}
+
+	// Show password if provided
+	if password != "" {
+		if _, err := fmt.Fprintf(w, "Password:\t%s\n", password); err != nil {
 			return err
 		}
 	}
@@ -222,8 +244,15 @@ func (f *CreateResultFormatter) formatUserCreateResult(result interface{}) error
 		}
 	}
 
-	if _, err := fmt.Fprintf(w, "\n💡 Tip:\tUser password is not shown for security reasons\n"); err != nil {
-		return err
+	// Show appropriate tip based on password display
+	if password != "" {
+		if _, err := fmt.Fprintf(w, "\n⚠️  Warning:\tPassword displayed above for convenience. Store it securely!\n"); err != nil {
+			return err
+		}
+	} else {
+		if _, err := fmt.Fprintf(w, "\n💡 Tip:\tUser password is not shown for security reasons\n"); err != nil {
+			return err
+		}
 	}
 
 	return nil

@@ -1,0 +1,141 @@
+name: Semantic Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run semantic-release in dry-run mode'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  semantic-release:
+    name: 🚀 Semantic Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+      new_release_version: ${{ steps.semantic.outputs.new_release_version }}
+      new_release_major_version: ${{ steps.semantic.outputs.new_release_major_version }}
+      new_release_minor_version: ${{ steps.semantic.outputs.new_release_minor_version }}
+      new_release_patch_version: ${{ steps.semantic.outputs.new_release_patch_version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Use a Personal Access Token to trigger the release workflow
+          # This is necessary because the default GITHUB_TOKEN won't trigger other workflows
+          token: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
+        run: npm audit signatures
+
+      - name: Run semantic-release (dry-run)
+        if: github.event.inputs.dry_run == 'true'
+        run: npx semantic-release --dry-run
+        env:
+          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Run semantic-release
+        id: semantic
+        if: github.event.inputs.dry_run != 'true'
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Create summary
+        if: always()
+        run: |
+          echo "# 🚀 Semantic Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.semantic.outputs.new_release_published }}" = "true" ]; then
+            echo "## ✅ New Release Published" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **Version:** ${{ steps.semantic.outputs.new_release_version }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Major:** ${{ steps.semantic.outputs.new_release_major_version }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Minor:** ${{ steps.semantic.outputs.new_release_minor_version }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Patch:** ${{ steps.semantic.outputs.new_release_patch_version }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🎉 The release workflow will now be triggered automatically!" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            echo "## 🧪 Dry Run Complete" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "This was a dry run. No release was published." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ℹ️ No Release Needed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "No new release was necessary based on the commit messages since the last release." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### To trigger a release, use conventional commit messages:" >> $GITHUB_STEP_SUMMARY
+            echo "- \`feat:\` for new features (minor version bump)" >> $GITHUB_STEP_SUMMARY
+            echo "- \`fix:\` for bug fixes (patch version bump)" >> $GITHUB_STEP_SUMMARY
+            echo "- \`feat!:\` or \`BREAKING CHANGE:\` for breaking changes (major version bump)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # This job helps with debugging and monitoring
+  post-release-check:
+    name: 📋 Post-Release Check
+    runs-on: ubuntu-latest
+    needs: semantic-release
+    if: always() && needs.semantic-release.outputs.new_release_published == 'true'
+    steps:
+      - name: Wait for release workflow
+        run: |
+          echo "⏳ Waiting for the release workflow to be triggered..."
+          sleep 30
+
+      - name: Check release workflow status
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: workflows } = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'release.yml',
+              per_page: 5
+            });
+            
+            const releaseRun = workflows.workflow_runs.find(run => 
+              run.head_sha === context.sha && 
+              run.event === 'release'
+            );
+            
+            if (releaseRun) {
+              console.log(`✅ Release workflow triggered: ${releaseRun.html_url}`);
+              console.log(`Status: ${releaseRun.status}`);
+              console.log(`Conclusion: ${releaseRun.conclusion || 'in_progress'}`);
+              
+              core.summary.addHeading('🔗 Release Workflow Status');
+              core.summary.addRaw(`
+              - **Status:** ${releaseRun.status}
+              - **Conclusion:** ${releaseRun.conclusion || 'in_progress'}
+              - **URL:** [View Workflow](${releaseRun.html_url})
+              `);
+              await core.summary.write();
+            } else {
+              console.log('⚠️ Release workflow not found yet. It may take a moment to appear.');
+            }

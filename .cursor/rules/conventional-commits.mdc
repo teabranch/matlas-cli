@@ -1,0 +1,56 @@
+---
+alwaysApply: true
+description: Conventional Commits guidance to power semantic-release and structured CHANGELOG updates
+---
+
+# Conventional Commits
+
+Follow Conventional Commits to enable automated versioning and changelog generation. See config at [release config](mdc:.releaserc.json) and workflow at [semantic-release workflow](mdc:.github/workflows/semantic-release.yml).
+
+## Format
+
+```
+<type>(<optional scope>)<!>: <short summary>
+
+<optional body>
+
+<optional footer(s)>
+```
+
+## Allowed types (common)
+
+- feat: user-facing feature (triggers minor version)
+- fix: bug fix (triggers patch version)
+- perf: performance improvement (patch)
+- refactor: code refactor without behavior change
+- docs: documentation only
+- test: tests only
+- build: build system or deps
+- ci: CI configuration
+- chore: maintenance tasks
+- revert: revert a previous commit
+
+## Breaking changes
+
+- Append `!` after type or scope, or include a `BREAKING CHANGE:` footer.
+- Example: `feat(api)!: drop deprecated v1 endpoints`
+- Footer example:
+  - `BREAKING CHANGE: removed --legacy flag from infra apply`
+
+## Scopes
+
+- Use repository areas for clarity: `infra`, `atlas`, `database`, `cli`, `docs`, `types`, `services`, `apply`, etc.
+- Examples: `feat(infra): add --json to plan`, `fix(database): correct list pagination`
+
+## Body and footers
+
+- Body: explain what and why, not how. Wrap at ~72 chars.
+- Reference issues/PRs in footers:
+  - `Refs: #123`
+  - `Closes: #456`
+
+## Changelog interplay
+
+- Conventional Commits drive release notes. Still update `## [Unreleased]` in [CHANGELOG.md](mdc:CHANGELOG.md) for visibility during development.
+- Keep summaries aligned between commit subjects and changelog bullets.
+

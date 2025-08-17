@@ -5,22 +5,22 @@ import (
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.uber.org/zap"
 
 	"github.com/teabranch/matlas-cli/internal/clients/mongodb"
+	"github.com/teabranch/matlas-cli/internal/logging"
 	"github.com/teabranch/matlas-cli/internal/types"
 )
 
 // Service provides database operations
 type Service struct {
 	clients map[string]*mongodb.Client // keyed by connection string
-	logger  *zap.Logger
+	logger  *logging.Logger
 }
 
 // NewService creates a new database service
-func NewService(logger *zap.Logger) *Service {
+func NewService(logger *logging.Logger) *Service {
 	if logger == nil {
-		logger = zap.NewNop()
+		logger = logging.Default()
 	}
 
 	return &Service{
@@ -71,7 +71,7 @@ func (s *Service) GetOrCreateClient(ctx context.Context, connInfo *types.Connect
 	s.clients[connInfo.ConnectionString] = client
 
 	s.logger.Info("Created new MongoDB client",
-		zap.String("connection_string", connInfo.ConnectionString[:20]+"..."))
+		"connection_string", connInfo.ConnectionString[:20]+"...")
 
 	return client, nil
 }
@@ -89,8 +89,8 @@ func (s *Service) ListDatabases(ctx context.Context, connInfo *types.ConnectionI
 	}
 
 	s.logger.Debug("Listed databases",
-		zap.Int("count", len(databases)),
-		zap.String("connection", connInfo.ConnectionString[:20]+"..."))
+		"count", len(databases),
+		"connection", connInfo.ConnectionString[:20]+"...")
 
 	return databases, nil
 }
@@ -116,17 +116,17 @@ func (s *Service) ListCollections(ctx context.Context, connInfo *types.Connectio
 		stats, err := client.GetCollectionStats(ctx, databaseName, collections[i].Name)
 		if err != nil {
 			s.logger.Warn("Failed to get collection stats",
-				zap.String("database", databaseName),
-				zap.String("collection", collections[i].Name),
-				zap.Error(err))
+				"database", databaseName,
+				"collection", collections[i].Name,
+				"error", err.Error())
 			continue
 		}
 		collections[i].Info = *stats
 	}
 
 	s.logger.Debug("Listed collections",
-		zap.String("database", databaseName),
-		zap.Int("count", len(collections)))
+		"database", databaseName,
+		"count", len(collections))
 
 	return collections, nil
 }
@@ -169,8 +169,8 @@ func (s *Service) CreateCollection(ctx context.Context, connInfo *types.Connecti
 	}
 
 	s.logger.Info("Created collection",
-		zap.String("database", databaseName),
-		zap.String("collection", collectionName))
+		"database", databaseName,
+		"collection", collectionName)
 
 	return nil
 }
@@ -194,8 +194,8 @@ func (s *Service) DropCollection(ctx context.Context, connInfo *types.Connection
 	}
 
 	s.logger.Info("Dropped collection",
-		zap.String("database", databaseName),
-		zap.String("collection", collectionName))
+		"database", databaseName,
+		"collection", collectionName)
 
 	return nil
 }
@@ -224,6 +224,7 @@ func (s *Service) GetCollectionStats(ctx context.Context, connInfo *types.Connec
 
 // CreateDatabase creates a new database by creating a collection in it
 // Note: MongoDB creates databases lazily when first collection is created
+// DEPRECATED: Use CreateDatabaseWithCollection instead
 func (s *Service) CreateDatabase(ctx context.Context, connInfo *types.ConnectionInfo, databaseName string) error {
 	if databaseName == "" {
 		return fmt.Errorf("database name is required")
@@ -245,13 +246,41 @@ func (s *Service) CreateDatabase(ctx context.Context, connInfo *types.Connection
 	// Drop the temporary collection
 	if err := client.DropCollection(ctx, databaseName, tempCollectionName); err != nil {
 		s.logger.Warn("Failed to drop temporary collection",
-			zap.String("database", databaseName),
-			zap.String("collection", tempCollectionName),
-			zap.Error(err))
+			"database", databaseName,
+			"collection", tempCollectionName,
+			"error", err.Error())
 	}
 
 	s.logger.Info("Created database",
-		zap.String("database", databaseName))
+		"database", databaseName)
+
+	return nil
+}
+
+// CreateDatabaseWithCollection creates a new database with a specific collection
+// This ensures the database is visible in Atlas UI and has a persistent collection
+func (s *Service) CreateDatabaseWithCollection(ctx context.Context, connInfo *types.ConnectionInfo, databaseName, collectionName string) error {
+	if databaseName == "" {
+		return fmt.Errorf("database name is required")
+	}
+	if collectionName == "" {
+		return fmt.Errorf("collection name is required")
+	}
+
+	client, err := s.GetOrCreateClient(ctx, connInfo)
+	if err != nil {
+		return err
+	}
+
+	// MongoDB creates databases implicitly when first collection is created
+	// Create the specified collection to ensure the database exists and is visible
+	if err := client.CreateCollection(ctx, databaseName, collectionName, nil); err != nil {
+		return fmt.Errorf("failed to create database with collection: %w", err)
+	}
+
+	s.logger.Info("Created database with collection",
+		"database", databaseName,
+		"collection", collectionName)
 
 	return nil
 }
@@ -272,7 +301,7 @@ func (s *Service) DropDatabase(ctx context.Context, connInfo *types.ConnectionIn
 	}
 
 	s.logger.Info("Dropped database",
-		zap.String("database", databaseName))
+		"database", databaseName)
 
 	return nil
 }
@@ -300,9 +329,9 @@ func (s *Service) CreateIndex(ctx context.Context, connInfo *types.ConnectionInf
 	}
 
 	s.logger.Info("Created index",
-		zap.String("database", databaseName),
-		zap.String("collection", collectionName),
-		zap.String("index", indexName))
+		"database", databaseName,
+		"collection", collectionName,
+		"index", indexName)
 
 	return indexName, nil
 }
@@ -329,9 +358,9 @@ func (s *Service) DropIndex(ctx context.Context, connInfo *types.ConnectionInfo,
 	}
 
 	s.logger.Info("Dropped index",
-		zap.String("database", databaseName),
-		zap.String("collection", collectionName),
-		zap.String("index", indexName))
+		"database", databaseName,
+		"collection", collectionName,
+		"index", indexName)
 
 	return nil
 }
@@ -356,9 +385,9 @@ func (s *Service) ListIndexes(ctx context.Context, connInfo *types.ConnectionInf
 	}
 
 	s.logger.Debug("Listed indexes",
-		zap.String("database", databaseName),
-		zap.String("collection", collectionName),
-		zap.Int("count", len(indexes)))
+		"database", databaseName,
+		"collection", collectionName,
+		"count", len(indexes))
 
 	return indexes, nil
 }

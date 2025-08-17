@@ -1,0 +1,42 @@
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: users-standalone-multiple
+  labels:
+    example: standalone-users
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: app-writer
+      labels:
+        team: app
+    spec:
+      projectName: "My Project"
+      username: app-writer
+      authDatabase: admin
+      password: "${APP_WRITER_PASSWORD}"
+      roles:
+        - roleName: readWrite
+          databaseName: appdb
+        - roleName: read
+          databaseName: logs
+
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: analytics-reader
+      labels:
+        team: data
+    spec:
+      projectName: "My Project"
+      username: analytics-reader
+      authDatabase: admin
+      password: "${ANALYTICS_PASSWORD}"
+      roles:
+        - roleName: read
+          databaseName: analytics
+        - roleName: read
+          databaseName: reports
+
+

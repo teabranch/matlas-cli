@@ -66,7 +66,7 @@ func TestNewCreateDatabaseCmd(t *testing.T) {
 
 	require.NotNil(t, cmd)
 	assert.Equal(t, "create <database-name>", cmd.Use)
-	assert.Equal(t, "Create a database", cmd.Short)
+	assert.Equal(t, "Create a database with a collection", cmd.Short)
 	assert.Contains(t, cmd.Long, "Create a new MongoDB database")
 	assert.Contains(t, cmd.Example, "matlas database create")
 

@@ -1,0 +1,15 @@
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: network-access-example
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: NetworkAccess
+    metadata:
+      name: office-ip
+    spec:
+      projectName: "My Project"
+      ipAddress: 198.51.100.42
+      comment: "office"
+
+

@@ -43,6 +43,10 @@ navigation:
     url: /database/
   - title: Infrastructure
     url: /infra/
+  - title: Configuration
+    url: /config/
+  - title: Development Guide
+    url: /development/
 
 # Social links
 github_username: teabranch

@@ -21,9 +21,14 @@ import (
 
 func NewUsersCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "users",
-		Short:   "Manage Atlas database users",
-		Long:    "List, create, and manage MongoDB Atlas database users",
+		Use:   "users",
+		Short: "Manage Atlas database users",
+		Long: `List, create, and manage MongoDB Atlas database users.
+
+These are Atlas-managed database users created via the Atlas Admin API. They are
+assigned built-in MongoDB roles and managed centrally at the project level.
+
+For database-specific users with custom roles, use 'matlas database users' commands.`,
 		Aliases: []string{"user"},
 	}
 
@@ -103,6 +108,7 @@ func newCreateCmd() *cobra.Command {
 	var username string
 	var password string
 	var roles []string
+	var showPassword bool
 
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -114,10 +120,10 @@ func newCreateCmd() *cobra.Command {
   # Create user with multiple roles
   matlas atlas users create --project-id 507f1f77bcf86cd799439011 --username myuser --database-name admin --roles read@mydb,readWrite@anotherdb
 
-  # Create user with password prompt
-  matlas atlas users create --project-id 507f1f77bcf86cd799439011 --username myuser --database-name admin --roles readWriteAnyDatabase@admin`,
+  # Create user with password prompt and show the password
+  matlas atlas users create --project-id 507f1f77bcf86cd799439011 --username myuser --database-name admin --roles readWriteAnyDatabase@admin --show-password`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runCreateUser(cmd, projectID, databaseName, username, password, roles)
+			return runCreateUser(cmd, projectID, databaseName, username, password, roles, showPassword)
 		},
 	}
 
@@ -126,6 +132,7 @@ func newCreateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&username, "username", "", "Database username (required)")
 	cmd.Flags().StringVar(&password, "password", "", "Database password (will prompt if not provided)")
 	cmd.Flags().StringSliceVar(&roles, "roles", []string{}, "Database roles in format roleName@databaseName (required)")
+	cmd.Flags().BoolVar(&showPassword, "show-password", false, "Print the user password after creation")
 
 	mustMarkFlagRequired(cmd, "username")
 	mustMarkFlagRequired(cmd, "roles")
@@ -329,7 +336,7 @@ func runGetUser(cmd *cobra.Command, projectID, databaseName, username string) er
 	return formatter.Format(user)
 }
 
-func runCreateUser(cmd *cobra.Command, projectID, databaseName, username, password string, roles []string) error {
+func runCreateUser(cmd *cobra.Command, projectID, databaseName, username, password string, roles []string, showPassword bool) error {
 	// Get configuration first to resolve project ID if not provided
 	cfg, err := config.Load(cmd, "")
 	if err != nil {
@@ -410,6 +417,9 @@ func runCreateUser(cmd *cobra.Command, projectID, databaseName, username, passwo
 
 	// Display created user details with prettier formatting
 	formatter := output.NewCreateResultFormatter(cfg.Output, os.Stdout)
+	if showPassword {
+		return formatter.FormatCreateResultWithPassword(createdUser, "database user", password)
+	}
 	return formatter.FormatCreateResult(createdUser, "database user")
 }
 

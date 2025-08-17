@@ -81,25 +81,25 @@ func TestErrorFormatter_Format(t *testing.T) {
 			name:     "timeout error",
 			err:      errors.New("operation timeout exceeded"),
 			verbose:  false,
-			expected: "Operation timed out. Try increasing the timeout with --timeout flag or check your network connection.",
+			expected: "Operation timed out. Try:\n• Increase timeout with --timeout flag (e.g., --timeout 5m)\n• Check your network connection to MongoDB Atlas\n• For user authentication, wait longer for user propagation",
 		},
 		{
 			name:     "context deadline exceeded",
 			err:      errors.New("context deadline exceeded"),
 			verbose:  false,
-			expected: "Operation timed out. Try increasing the timeout with --timeout flag or check your network connection.",
+			expected: "Operation timed out. Try:\n• Increase timeout with --timeout flag (e.g., --timeout 5m)\n• Check your network connection to MongoDB Atlas\n• For user authentication, wait longer for user propagation",
 		},
 		{
 			name:     "connection error",
 			err:      errors.New("connection refused"),
 			verbose:  false,
-			expected: "Network connection failed. Please check your internet connection and try again.",
+			expected: "Network connection failed. Check:\n• Internet connectivity and DNS resolution\n• Atlas IP whitelist settings (add 0.0.0.0/0 for testing)\n• Corporate firewall or proxy settings\n• Use --verbose for detailed network diagnostics",
 		},
 		{
 			name:     "network error",
 			err:      errors.New("network unreachable"),
 			verbose:  false,
-			expected: "Network connection failed. Please check your internet connection and try again.",
+			expected: "Network connection failed. Check:\n• Internet connectivity and DNS resolution\n• Atlas IP whitelist settings (add 0.0.0.0/0 for testing)\n• Corporate firewall or proxy settings\n• Use --verbose for detailed network diagnostics",
 		},
 		{
 			name:     "generic error verbose",
@@ -117,7 +117,7 @@ func TestErrorFormatter_Format(t *testing.T) {
 			name:     "complex error with colons non-verbose",
 			err:      errors.New("service: database: connection failed"),
 			verbose:  false,
-			expected: "Network connection failed. Please check your internet connection and try again.",
+			expected: "Network connection failed. Check:\n• Internet connectivity and DNS resolution\n• Atlas IP whitelist settings (add 0.0.0.0/0 for testing)\n• Corporate firewall or proxy settings\n• Use --verbose for detailed network diagnostics",
 		},
 		{
 			name:     "HTTP status code in error",

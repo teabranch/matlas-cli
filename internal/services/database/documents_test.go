@@ -7,23 +7,23 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.uber.org/zap"
 
+	"github.com/teabranch/matlas-cli/internal/logging"
 	"github.com/teabranch/matlas-cli/internal/types"
 )
 
 func TestNewDocumentService(t *testing.T) {
-	dbService := NewService(zap.NewNop())
+	dbService := NewService(logging.New(logging.DefaultConfig()))
 
 	tests := []struct {
 		name      string
 		dbService *Service
-		logger    *zap.Logger
+		logger    *logging.Logger
 	}{
 		{
 			name:      "with logger",
 			dbService: dbService,
-			logger:    zap.NewNop(),
+			logger:    logging.New(logging.DefaultConfig()),
 		},
 		{
 			name:      "nil logger",
@@ -44,8 +44,8 @@ func TestNewDocumentService(t *testing.T) {
 }
 
 func TestDocumentService_InsertDocument_Validation(t *testing.T) {
-	dbService := NewService(zap.NewNop())
-	docService := NewDocumentService(dbService, zap.NewNop())
+	dbService := NewService(logging.New(logging.DefaultConfig()))
+	docService := NewDocumentService(dbService, logging.New(logging.DefaultConfig()))
 	ctx := context.Background()
 
 	connInfo := &types.ConnectionInfo{
@@ -104,8 +104,8 @@ func TestDocumentService_InsertDocument_Validation(t *testing.T) {
 }
 
 func TestDocumentService_FindDocuments_Validation(t *testing.T) {
-	dbService := NewService(zap.NewNop())
-	docService := NewDocumentService(dbService, zap.NewNop())
+	dbService := NewService(logging.New(logging.DefaultConfig()))
+	docService := NewDocumentService(dbService, logging.New(logging.DefaultConfig()))
 	ctx := context.Background()
 
 	connInfo := &types.ConnectionInfo{
@@ -156,8 +156,8 @@ func TestDocumentService_FindDocuments_Validation(t *testing.T) {
 }
 
 func TestDocumentService_FindDocumentByID_Validation(t *testing.T) {
-	dbService := NewService(zap.NewNop())
-	docService := NewDocumentService(dbService, zap.NewNop())
+	dbService := NewService(logging.New(logging.DefaultConfig()))
+	docService := NewDocumentService(dbService, logging.New(logging.DefaultConfig()))
 	ctx := context.Background()
 
 	connInfo := &types.ConnectionInfo{
@@ -210,8 +210,8 @@ func TestDocumentService_FindDocumentByID_Validation(t *testing.T) {
 }
 
 func TestDocumentService_UpdateDocument_Validation(t *testing.T) {
-	dbService := NewService(zap.NewNop())
-	docService := NewDocumentService(dbService, zap.NewNop())
+	dbService := NewService(logging.New(logging.DefaultConfig()))
+	docService := NewDocumentService(dbService, logging.New(logging.DefaultConfig()))
 	ctx := context.Background()
 
 	connInfo := &types.ConnectionInfo{
@@ -273,8 +273,8 @@ func TestDocumentService_UpdateDocument_Validation(t *testing.T) {
 }
 
 func TestDocumentService_DeleteDocument_Validation(t *testing.T) {
-	dbService := NewService(zap.NewNop())
-	docService := NewDocumentService(dbService, zap.NewNop())
+	dbService := NewService(logging.New(logging.DefaultConfig()))
+	docService := NewDocumentService(dbService, logging.New(logging.DefaultConfig()))
 	ctx := context.Background()
 
 	connInfo := &types.ConnectionInfo{
@@ -324,8 +324,8 @@ func TestDocumentService_DeleteDocument_Validation(t *testing.T) {
 }
 
 func TestDocumentService_CountDocuments_Validation(t *testing.T) {
-	dbService := NewService(zap.NewNop())
-	docService := NewDocumentService(dbService, zap.NewNop())
+	dbService := NewService(logging.New(logging.DefaultConfig()))
+	docService := NewDocumentService(dbService, logging.New(logging.DefaultConfig()))
 	ctx := context.Background()
 
 	connInfo := &types.ConnectionInfo{

@@ -177,8 +177,10 @@ test_cli_cluster_lifecycle() {
     
     local cluster_name
     local user_name
-    cluster_name="cli-test-cluster-$(date +%s)"
-    user_name="cli-test-user-$(date +%s)"
+    # Use shorter names to avoid Atlas 23-character limit 
+    local timestamp=$(date +%s | tail -c 6)  # Last 5 digits of timestamp
+    cluster_name="cli-t-${timestamp}-${RANDOM:0:3}"
+    user_name="cli-u-${timestamp}-${RANDOM:0:3}"
     
     print_info "Testing CLI cluster lifecycle with cluster: $cluster_name"
     
@@ -294,17 +296,20 @@ test_cli_cluster_lifecycle() {
     return 0
 }
 
-# YAML-based cluster lifecycle test
+# YAML-based cluster lifecycle test (SAFE MODE)
 test_yaml_cluster_lifecycle() {
-    print_header "YAML-Based Cluster Lifecycle Test"
+    print_header "YAML-Based Cluster Lifecycle Test (SAFE MODE)"
     
     local cluster_name
     local user_name
-    cluster_name="yaml-test-cluster-$(date +%s)"
-    user_name="yaml-test-user-$(date +%s)"
+    # Use shorter names to avoid Atlas 23-character limit
+    local timestamp=$(date +%s | tail -c 6)  # Last 5 digits of timestamp  
+    cluster_name="yaml-t-${timestamp}-${RANDOM:0:3}"
+    user_name="yaml-u-${timestamp}-${RANDOM:0:3}"
     local config_file="$TEST_REPORTS_DIR/yaml-cluster-config.yaml"
     
     print_info "Testing YAML cluster lifecycle with cluster: $cluster_name"
+    print_success "✓ SAFE MODE: Using --preserve-existing to protect existing clusters"
     
     # Get project name for proper YAML configuration
     local project_name
@@ -406,9 +411,11 @@ EOF
     print_subheader "Step 4: Applying infrastructure via YAML"
     
     print_warning "Creating real cluster - this may take 10-20 minutes and incur costs"
+    print_info "Using --preserve-existing to protect any existing clusters"
     
-    if "$PROJECT_ROOT/matlas" infra -f "$config_file" \
+    if "$PROJECT_ROOT/matlas" infra apply -f "$config_file" \
         --project-id "$ATLAS_PROJECT_ID" \
+        --preserve-existing \
         --auto-approve; then
         
         print_success "Infrastructure apply initiated"
@@ -463,9 +470,11 @@ EOF
     sleep 3
     
     print_info "Destroying cluster and users..."
+    print_info "Using --preserve-existing to protect any existing clusters"
     
     if "$PROJECT_ROOT/matlas" infra destroy -f "$config_file" \
         --project-id "$ATLAS_PROJECT_ID" \
+        --preserve-existing \
         --auto-approve; then
         
         print_success "Infrastructure destroy initiated"
@@ -498,8 +507,10 @@ test_yaml_existing_clusters() {
     
     local cluster_name
     local user_name
-    cluster_name="yaml-existing-test-$(date +%s)"
-    user_name="yaml-existing-user-$(date +%s)"
+    # Use shorter names to avoid Atlas 23-character limit
+    local timestamp=$(date +%s | tail -c 6)  # Last 5 digits of timestamp
+    cluster_name="yex-t-${timestamp}-${RANDOM:0:3}"
+    user_name="yex-u-${timestamp}-${RANDOM:0:3}"
     local config_file="$TEST_REPORTS_DIR/yaml-existing-config.yaml"
     
     print_info "Testing YAML individual resource management with cluster: $cluster_name"
@@ -589,7 +600,7 @@ EOF
     # Step 3: Apply the configuration
     print_subheader "Step 3: Applying YAML configuration (individual resources)"
     
-    if "$PROJECT_ROOT/matlas" infra -f "$config_file" \
+    if "$PROJECT_ROOT/matlas" infra apply -f "$config_file" \
         --project-id "$ATLAS_PROJECT_ID" \
         --auto-approve; then
         
@@ -686,10 +697,12 @@ test_yaml_multi_clusters() {
     local cluster2_name
     local user1_name
     local user2_name
-    cluster1_name="yaml-multi-1-$(date +%s)"
-    cluster2_name="yaml-multi-2-$(date +%s)"
-    user1_name="yaml-multi-user1-$(date +%s)"
-    user2_name="yaml-multi-user2-$(date +%s)"
+    # Use shorter names to avoid Atlas 23-character limit
+    local timestamp=$(date +%s | tail -c 6)  # Last 5 digits of timestamp
+    cluster1_name="ym1-t-${timestamp}-${RANDOM:0:3}"
+    cluster2_name="ym2-t-${timestamp}-${RANDOM:0:3}"
+    user1_name="ym1-u-${timestamp}-${RANDOM:0:3}"
+    user2_name="ym2-u-${timestamp}-${RANDOM:0:3}"
     local config_file="$TEST_REPORTS_DIR/yaml-multi-config.yaml"
     
     print_info "Testing YAML multi-cluster management"
@@ -808,7 +821,7 @@ EOF
     # Step 2: Apply the configuration
     print_subheader "Step 2: Applying multi-cluster YAML configuration"
     
-    if "$PROJECT_ROOT/matlas" infra -f "$config_file" \
+    if "$PROJECT_ROOT/matlas" infra apply -f "$config_file" \
         --project-id "$ATLAS_PROJECT_ID" \
         --auto-approve; then
         
@@ -893,8 +906,10 @@ test_yaml_partial_removal() {
     
     local cluster1_name
     local cluster2_name
-    cluster1_name="yaml-partial-1-$(date +%s)"
-    cluster2_name="yaml-partial-2-$(date +%s)"
+    # Use shorter names to avoid Atlas 23-character limit
+    local timestamp=$(date +%s | tail -c 6)  # Last 5 digits of timestamp
+    cluster1_name="yp1-t-${timestamp}-${RANDOM:0:3}"
+    cluster2_name="yp2-t-${timestamp}-${RANDOM:0:3}"
     local config_file_full="$TEST_REPORTS_DIR/yaml-partial-full.yaml"
     local config_file_partial="$TEST_REPORTS_DIR/yaml-partial-remaining.yaml"
     
@@ -971,7 +986,7 @@ EOF
     # Step 2: Apply full configuration
     print_subheader "Step 2: Applying full configuration (2 clusters)"
     
-    if "$PROJECT_ROOT/matlas" infra -f "$config_file_full" \
+    if "$PROJECT_ROOT/matlas" infra apply -f "$config_file_full" \
         --project-id "$ATLAS_PROJECT_ID" \
         --auto-approve; then
         
@@ -1028,7 +1043,7 @@ EOF
     
     print_warning "This tests whether YAML properly removes resources not in the new configuration"
     
-    if "$PROJECT_ROOT/matlas" infra -f "$config_file_partial" \
+    if "$PROJECT_ROOT/matlas" infra apply -f "$config_file_partial" \
         --project-id "$ATLAS_PROJECT_ID" \
         --auto-approve; then
         
@@ -1116,10 +1131,10 @@ cleanup_resources() {
     
     # Also check for clusters that might exist but weren't tracked properly
     local potential_clusters
-    if potential_clusters=$("$PROJECT_ROOT/matlas" atlas clusters list --project-id "$ATLAS_PROJECT_ID" --output json 2>/dev/null); then
+    if [[ -n "${ATLAS_PROJECT_ID:-}" ]] && potential_clusters=$("$PROJECT_ROOT/matlas" atlas clusters list --project-id "$ATLAS_PROJECT_ID" --output json 2>/dev/null); then
         local cli_clusters yaml_clusters
-        cli_clusters=$(echo "$potential_clusters" | jq -r '.[] | select(.name | test("^cli-test-cluster-[0-9]+$")) | .name' 2>/dev/null || true)
-        yaml_clusters=$(echo "$potential_clusters" | jq -r '.[] | select(.name | test("^yaml-test-cluster-[0-9]+$")) | .name' 2>/dev/null || true)
+        cli_clusters=$(echo "$potential_clusters" | jq -r '.[] | select(.name | test("^cli-t-[0-9]+-[0-9]+$")) | .name' 2>/dev/null || true)
+        yaml_clusters=$(echo "$potential_clusters" | jq -r '.[] | select(.name | test("^(yaml-t|yex-t|ym[12]-t|yp[12]-t)-[0-9]+-[0-9]+$")) | .name' 2>/dev/null || true)
         
         # Add any found test clusters to cleanup list if they're not already tracked
         for cluster in $cli_clusters $yaml_clusters; do
@@ -1141,10 +1156,10 @@ cleanup_resources() {
     
     # Also check for users that might exist but weren't tracked properly
     local potential_users
-    if potential_users=$("$PROJECT_ROOT/matlas" atlas users list --project-id "$ATLAS_PROJECT_ID" 2>/dev/null); then
+    if [[ -n "${ATLAS_PROJECT_ID:-}" ]] && potential_users=$("$PROJECT_ROOT/matlas" atlas users list --project-id "$ATLAS_PROJECT_ID" 2>/dev/null); then
         local cli_users yaml_users
-        cli_users=$(echo "$potential_users" | grep -E "cli-test-user-[0-9]+" | awk '{print $1}' || true)
-        yaml_users=$(echo "$potential_users" | grep -E "yaml-test-user-[0-9]+" | awk '{print $1}' || true)
+        cli_users=$(echo "$potential_users" | grep -E "cli-u-[0-9]+-[0-9]+" | awk '{print $1}' || true)
+        yaml_users=$(echo "$potential_users" | grep -E "(yaml-u|yex-u|ym[12]-u|yp[12]-u)-[0-9]+-[0-9]+" | awk '{print $1}' || true)
         
         # Add any found test users to cleanup list if they're not already tracked
         for user in $cli_users $yaml_users; do
@@ -1248,7 +1263,8 @@ run_cluster_lifecycle_tests() {
     
     print_header "MongoDB Atlas Cluster Lifecycle Tests"
     print_warning "⚠️  WARNING: These tests create real Atlas clusters and may incur costs!"
-    print_warning "⚠️  Only run in dedicated test environments!"
+    print_success "✓ SAFE MODE: Tests now use --preserve-existing to protect existing clusters"
+    print_info "Tests only manage resources they create - existing resources are preserved"
     echo
     
     # Setup cleanup trap
@@ -1321,12 +1337,12 @@ show_usage() {
     echo
     echo "Commands:"
     echo "  cli              Run CLI-based cluster lifecycle tests only"
-    echo "  yaml             Run YAML-based cluster lifecycle tests only (legacy)"
+    echo "  yaml             Run YAML-based cluster lifecycle tests (now SAFE with --preserve-existing)"
     echo "  yaml-existing    Run YAML test with existing clusters (safe individual resources)"
     echo "  yaml-multi       Run YAML multi-cluster test (clean project scenario)"
     echo "  yaml-partial     Run YAML partial removal test (add 2, remove 1)"
     echo "  comprehensive    Run all test scenarios (recommended for validation)"
-    echo "  all              Run basic test suite (CLI + legacy YAML) (default)"
+    echo "  all              Run basic test suite (CLI + SAFE YAML) (default)"
     echo
     echo "Test Scenarios:"
     echo "  • Existing clusters:"
@@ -1344,26 +1360,29 @@ show_usage() {
     echo "  ATLAS_ORG_ID        Atlas organization ID"
     echo
     echo "Examples:"
-    echo "  $0                     # Run basic tests (CLI + legacy YAML)"
+    echo "  $0                     # Run basic safe tests (CLI + YAML with --preserve-existing)"
     echo "  $0 comprehensive       # Run all test scenarios (recommended)"
     echo "  $0 yaml-existing       # Test YAML with existing clusters (safe)"
     echo "  $0 yaml-multi          # Test YAML multi-cluster management"
     echo "  $0 yaml-partial        # Test YAML partial removal"
     echo "  $0 cli                 # Test CLI approach only"
+    echo ""
+    echo "SAFETY: All YAML tests now use --preserve-existing to protect existing resources"
 }
 
 # Main execution
 main() {
-    case "${1:-all}" in
+    local test_type="${1:-all}"
+    case "$test_type" in
         "cli"|"yaml"|"yaml-existing"|"yaml-multi"|"yaml-partial"|"comprehensive"|"all")
-            run_cluster_lifecycle_tests "$1"
+            run_cluster_lifecycle_tests "$test_type"
             ;;
         "-h"|"--help"|"help")
             show_usage
             exit 0
             ;;
         *)
-            echo "Unknown command: $1"
+            echo "Unknown command: $test_type"
             echo
             show_usage
             exit 1

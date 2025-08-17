@@ -108,16 +108,16 @@ func TestTempUserManager_CreateTempUserForDiscovery(t *testing.T) {
 						t.Error("Expected roles to be set")
 					}
 
-					// Check for read permissions
-					hasReadRole := false
+					// Check for proper permissions (discovery operations require admin-level access)
+					hasProperRole := false
 					for _, role := range *user.Roles {
-						if role.RoleName == "read" {
-							hasReadRole = true
+						if role.RoleName == "readWriteAnyDatabase" || role.RoleName == "dbAdminAnyDatabase" {
+							hasProperRole = true
 							break
 						}
 					}
-					if !hasReadRole {
-						t.Error("Expected user to have read role")
+					if !hasProperRole {
+						t.Error("Expected user to have proper discovery roles (readWriteAnyDatabase or dbAdminAnyDatabase)")
 					}
 
 					if len(tt.clusterNames) > 0 && (user.Scopes == nil || len(*user.Scopes) == 0) {
@@ -193,25 +193,27 @@ func TestTempUserManager_CreateTempUserForDiscovery_WithDatabaseName(t *testing.
 		t.Fatal("Expected result to be non-nil")
 	}
 
-	// Verify that the created user has the correct database name in roles
+	// Verify that the created user has roles defined
+	// Note: Atlas users always use "admin" database for authentication
 	if createdUser == nil || createdUser.Roles == nil || len(*createdUser.Roles) == 0 {
 		t.Fatal("Expected user to have roles defined")
 	}
 
 	roles := *createdUser.Roles
 	for _, role := range roles {
+		// When a specific database name is provided, roles should be scoped to that database for better security
 		if role.DatabaseName != databaseName {
 			t.Errorf("Expected role to have database name '%s', got '%s'", databaseName, role.DatabaseName)
 		}
 	}
 
-	// Verify specific roles are present
+	// Verify specific roles are present for database-specific operations
 	roleNames := make([]string, len(roles))
 	for i, role := range roles {
 		roleNames[i] = role.RoleName
 	}
 
-	expectedRoles := []string{"readAnyDatabase"}
+	expectedRoles := []string{"readWrite", "dbAdmin"}
 	for _, expectedRole := range expectedRoles {
 		found := false
 		for _, roleName := range roleNames {

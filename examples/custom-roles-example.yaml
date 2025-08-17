@@ -1,0 +1,119 @@
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: custom-roles-example
+  labels:
+    environment: development
+    purpose: role-management
+resources:
+  # Custom database role for application data access
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseRole
+    metadata:
+      name: app-data-role
+      labels:
+        purpose: application
+        team: backend
+    spec:
+      roleName: appDataAccess
+      databaseName: myapp
+      privileges:
+        # Full access to user data
+        - actions: ["find", "insert", "update", "remove"]
+          resource:
+            database: myapp
+            collection: users
+        # Full access to application logs
+        - actions: ["find", "insert", "update", "remove"]
+          resource:
+            database: myapp
+            collection: logs
+        # Read-only access to configuration
+        - actions: ["find"]
+          resource:
+            database: myapp
+            collection: config
+        # Database-level read access for analytics
+        - actions: ["find", "listCollections"]
+          resource:
+            database: analytics
+      inheritedRoles:
+        # Inherit read access to reference data
+        - roleName: read
+          databaseName: reference-data
+
+  # Custom role for reporting and analytics
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseRole
+    metadata:
+      name: analytics-role
+      labels:
+        purpose: analytics
+        team: data
+    spec:
+      roleName: analyticsReader
+      databaseName: analytics
+      privileges:
+        # Read access to all analytics collections
+        - actions: ["find", "listCollections", "listIndexes"]
+          resource:
+            database: analytics
+        # Read access to user data for analytics
+        - actions: ["find"]
+          resource:
+            database: myapp
+            collection: users
+      inheritedRoles:
+        # Inherit basic read permissions
+        - roleName: read
+          databaseName: analytics
+
+  # Database user with custom role
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: app-service-user
+      labels:
+        purpose: application
+        service: backend-api
+    spec:
+      projectName: "My Project"  # Replace with your project name
+      username: app-service
+      authDatabase: admin
+      password: "${APP_SERVICE_PASSWORD}"  # Use environment variable
+      roles:
+        # Use our custom role
+        - roleName: appDataAccess
+          databaseName: myapp
+        # Also give basic admin access for authentication
+        - roleName: read
+          databaseName: admin
+      scopes:
+        # Limit to specific cluster
+        - name: "production-cluster"  # Replace with your cluster name
+          type: CLUSTER
+
+  # Analytics user with analytics role
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: analytics-user
+      labels:
+        purpose: analytics
+        team: data
+    spec:
+      projectName: "My Project"  # Replace with your project name
+      username: analytics-reader
+      authDatabase: admin
+      password: "${ANALYTICS_PASSWORD}"  # Use environment variable
+      roles:
+        # Use our custom analytics role
+        - roleName: analyticsReader
+          databaseName: analytics
+        # Read access to admin for authentication
+        - roleName: read
+          databaseName: admin
+      scopes:
+        # Limit to specific cluster
+        - name: "production-cluster"  # Replace with your cluster name
+          type: CLUSTER

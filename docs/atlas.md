@@ -44,7 +44,9 @@ matlas atlas projects delete <project-id> [--yes]
 
 ## Users
 
-Manage database users within Atlas projects.
+Manage Atlas database users within Atlas projects.
+
+**Note**: These are Atlas-managed database users created via the Atlas Admin API. They are assigned built-in MongoDB roles and managed centrally at the project level. For database-specific users with custom roles, use `matlas database users` commands.
 
 ### List users
 ```bash
@@ -58,11 +60,20 @@ matlas atlas users get <username> --project-id <id> [--database-name admin]
 
 ### Create user
 ```bash
+# Create user (password will be prompted)
 matlas atlas users create \
   --project-id <id> \
   --username <username> \
   --database-name admin \
   --roles role@db[,role@db]
+
+# Create user and display password
+matlas atlas users create \
+  --project-id <id> \
+  --username <username> \
+  --database-name admin \
+  --roles role@db[,role@db] \
+  --show-password
 ```
 
 ### Update user
@@ -140,10 +151,12 @@ Use `matlas atlas network-containers <command> --help` for detailed flag informa
 
 ## Clusters
 
-**Note:** Cluster management is primarily handled through the [infrastructure workflows](infra). Use `matlas discover` and `matlas infra` commands for cluster operations.
+**Note:** Cluster management is primarily handled through the [infrastructure workflows](/infra/). Use `matlas discover` and `matlas infra` commands for cluster operations.
 
 ## Feature availability
 
 **Warning:** The following features are not supported in the current build:
 - Search indexes: `matlas atlas search ...`
 - VPC endpoints: `matlas atlas vpc-endpoints ...`
+ 
+ Hidden commands exist for the unsupported groups to provide clear error messages and help text, but they are not visible in standard help output.

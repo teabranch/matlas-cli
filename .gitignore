@@ -1,6 +1,3 @@
-# If you prefer the allow list template instead of the deny list, see community template:
-# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
-#
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -8,39 +5,64 @@
 *.so
 *.dylib
 
-# Test binary, built with `go test -c`
-*.test
+# Test binary
+matlas
+matlas-test
 
-# Code coverage profiles and other test artifacts
+# Output of the go coverage tool, specifically when used with LiteIDE
 *.out
-coverage.*
-*.coverprofile
-profile.cov
 
 # Dependency directories (remove the comment below to include it)
-# vendor/
+vendor/
 
 # Go workspace file
 go.work
-go.work.sum
-vendor/
-bin/
-# env file  
-.env
 
-# Built documentation site
-_site/
+# IDE
+.vscode/
+.idea/
 
-# Jekyll files
-docs/vendor/
-docs/Gemfile.lock
-docs/.bundle/
-
-# Editor/IDE
-# .idea/
-# .vscode/
-
-new_gaps.md
-test-reports/*
-logs_*
+# OS
 .DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Local env files
+.env
+.env.local
+
+# Build artifacts
+dist/
+build/
+
+# Node modules (for semantic-release)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Package lock files (we want to commit package-lock.json for semantic-release)
+# yarn.lock
+
+# Release artifacts
+*.tar.gz
+*.zip
+
+# Temporary files
+*.tmp
+*.temp
+
+# Coverage
+coverage.out
+coverage.html
+
+# Test cache
+.cache/
+
+# Local configuration
+config.local.yaml
+.matlas/
+test-reports/
+new_gaps.md

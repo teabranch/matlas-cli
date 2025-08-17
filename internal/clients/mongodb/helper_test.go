@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
+	"github.com/teabranch/matlas-cli/internal/logging"
 )
 
 func TestClientConfig_AllFields(t *testing.T) {
@@ -33,7 +33,7 @@ func TestClientConfig_AllFields(t *testing.T) {
 }
 
 func TestNewClient_FailFastValidation(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.Default()
 	ctx := context.Background()
 
 	tests := []struct {
@@ -101,7 +101,7 @@ func TestDefaultClientConfig_FieldValues(t *testing.T) {
 }
 
 func TestClient_ConfigAssignment(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.Default()
 
 	// Test that we can create a client struct (even if connection fails)
 	// This tests the basic constructor logic
@@ -120,7 +120,7 @@ func TestClient_ConfigAssignment(t *testing.T) {
 
 func TestClient_MethodSignatures(t *testing.T) {
 	// Test that we can call Close safely with nil client
-	logger := zap.NewNop()
+	logger := logging.Default()
 	client := &Client{
 		client: nil,
 		logger: logger,

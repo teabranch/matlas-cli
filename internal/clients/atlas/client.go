@@ -6,25 +6,25 @@ import (
 	"os"
 	"time"
 
+	"github.com/teabranch/matlas-cli/internal/logging"
 	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
-	"go.uber.org/zap"
 )
 
 // Config defines optional settings for initializing the Atlas client wrapper.
 // Zero values are replaced by sensible defaults or environment variables.
 type Config struct {
-	PublicKey  string        // Atlas public API key; fallback: ATLAS_PUB_KEY env var
-	PrivateKey string        // Atlas private API key; fallback: ATLAS_API_KEY env var
-	BaseURL    string        // Override Atlas API base URL (for testing)
-	RetryMax   int           // Maximum retry attempts for transient failures (default 3)
-	RetryDelay time.Duration // Initial back-off between retries (default 250ms doubled each attempt)
-	Logger     *zap.Logger   // Optional structured logger (default Zap Nop)
+	PublicKey  string          // Atlas public API key; fallback: ATLAS_PUB_KEY env var
+	PrivateKey string          // Atlas private API key; fallback: ATLAS_API_KEY env var
+	BaseURL    string          // Override Atlas API base URL (for testing)
+	RetryMax   int             // Maximum retry attempts for transient failures (default 3)
+	RetryDelay time.Duration   // Initial back-off between retries (default 250ms doubled each attempt)
+	Logger     *logging.Logger // Optional structured logger (default logging.Default())
 }
 
 // Client wraps the Atlas SDK admin API client, adding logging and (soon) retry middleware.
 type Client struct {
 	Atlas        *admin.APIClient
-	logger       *zap.Logger
+	logger       *logging.Logger
 	retryMax     int
 	retryBackoff time.Duration
 }
@@ -49,7 +49,7 @@ func NewClient(cfg Config) (*Client, error) {
 		cfg.RetryDelay = 250 * time.Millisecond
 	}
 	if cfg.Logger == nil {
-		cfg.Logger = zap.NewNop()
+		cfg.Logger = logging.Default()
 	}
 
 	modifiers := []admin.ClientModifier{
@@ -68,7 +68,7 @@ func NewClient(cfg Config) (*Client, error) {
 
 	return &Client{
 		Atlas:        atlasClient,
-		logger:       cfg.Logger.With(zap.String("component", "atlas.Client")),
+		logger:       cfg.Logger.WithFields(map[string]any{"component": "atlas.Client"}),
 		retryMax:     cfg.RetryMax,
 		retryBackoff: cfg.RetryDelay,
 	}, nil

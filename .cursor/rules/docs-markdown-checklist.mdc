@@ -1,0 +1,21 @@
+---
+globs: docs/**/*.md
+description: Checklist for authoring Markdown documentation under docs/
+---
+
+# Docs Markdown Authoring Checklist
+
+This rule applies to all Markdown files under `docs/`.
+
+- Include valid Jekyll frontmatter at the top (`--- ... ---`) with at least:
+  - `layout: page` (or `home` where appropriate)
+  - `title: <Concise Title>`
+  - `description:` (recommended)
+  - `permalink:` for top-level navigation pages
+
+- Use relative URLs with Jekyll helpers where possible, e.g. `{{ '/atlas/' | relative_url }}`.
+- Keep pages within the site structure and navigation defined in [docs/_config.yml](mdc:docs/_config.yml).
+- For code examples, use fenced code blocks with language tags and avoid excessive inline code.
+- Images and assets must be placed under `docs/assets/` and referenced with `{{ '/assets/... ' | relative_url }}`.
+- Do not add documentation outside the `docs/` directory or bypass the site theme.
+

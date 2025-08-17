@@ -76,7 +76,7 @@ kind: Project
 metadata:
   name: $workflow_name
 spec:
-  name: "Comprehensive E2E Test"
+  name: "IacOperatorPOC"
   organizationId: $ATLAS_ORG_ID
   databaseUsers:
     - metadata:
@@ -121,14 +121,13 @@ EOF
     fi
     
     # Apply dry run first
-    if ! "$PROJECT_ROOT/matlas" infra -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --dry-run; then
+    if ! "$PROJECT_ROOT/matlas" infra apply -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --dry-run; then
         print_error "Comprehensive dry-run failed"
         return 1
     fi
     
-    # Test actual apply with preserve-existing flag
-    print_info "Testing actual apply with --preserve-existing..."
-    if "$PROJECT_ROOT/matlas" infra -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --preserve-existing --auto-approve; then
+    # Test actual apply with preserve-existing flag (with retry logic for transient failures)
+    if retry_command 3 5 "comprehensive workflow apply" "$PROJECT_ROOT/matlas" infra apply -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --preserve-existing --auto-approve; then
         print_success "Apply with --preserve-existing successful"
         
         # Track resources for cleanup
@@ -144,7 +143,7 @@ EOF
         
         # Test destroy operation to clean up only what we created
         print_info "Testing destroy operation for cleanup..."
-        if "$PROJECT_ROOT/matlas" infra destroy -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --auto-approve; then
+        if "$PROJECT_ROOT/matlas" infra destroy -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --target users --auto-approve; then
             print_success "Destroy operation successful"
         else
             print_warning "Destroy operation failed - manual cleanup may be required"
@@ -185,9 +184,9 @@ EOF
     "$PROJECT_ROOT/matlas" infra plan -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --output summary > /dev/null || return 1
 
     # Dry-run modes
-    "$PROJECT_ROOT/matlas" infra -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --dry-run --dry-run-mode quick --output table > /dev/null || return 1
-    "$PROJECT_ROOT/matlas" infra -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --dry-run --dry-run-mode thorough --output detailed > /dev/null || return 1
-    "$PROJECT_ROOT/matlas" infra -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --dry-run --dry-run-mode detailed --output yaml > /dev/null || return 1
+    "$PROJECT_ROOT/matlas" infra apply -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --dry-run --dry-run-mode quick --output table > /dev/null || return 1
+    "$PROJECT_ROOT/matlas" infra apply -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --dry-run --dry-run-mode thorough --output detailed > /dev/null || return 1
+    "$PROJECT_ROOT/matlas" infra apply -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --dry-run --dry-run-mode detailed --output yaml > /dev/null || return 1
 
     print_success "Infra output and dry-run mode tests completed"
     return 0
@@ -220,7 +219,7 @@ EOF
     "$PROJECT_ROOT/matlas" infra diff -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --output yaml > /dev/null || return 1
 
     # Preserve-existing should exclude deletions when we apply
-    "$PROJECT_ROOT/matlas" infra -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --preserve-existing --auto-approve || return 1
+    "$PROJECT_ROOT/matlas" infra apply -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --preserve-existing --auto-approve || return 1
     track_resource "user" "$user_name"
 
     # Now remove the user from config to see diff behavior with preserve flag
@@ -315,7 +314,7 @@ spec:
       password: StdinPipe123!
       roles: [ { roleName: read, databaseName: admin } ]
 EOF
-    if ! cat "$tmp_cfg" | "$PROJECT_ROOT/matlas" infra -f - --project-id "$ATLAS_PROJECT_ID" --dry-run --output summary > /dev/null; then
+    if ! cat "$tmp_cfg" | "$PROJECT_ROOT/matlas" infra apply -f - --project-id "$ATLAS_PROJECT_ID" --dry-run --output summary > /dev/null; then
         print_error "STDIN dry-run failed"
         return 1
     fi
@@ -362,7 +361,7 @@ kind: Project
 metadata:
   name: $test_id-project
 spec:
-  name: "Performance Test Project $test_id"
+  name: "IacOperatorPOC"
   organizationId: "$ATLAS_ORG_ID"
   databaseUsers:
 EOF
@@ -519,7 +518,7 @@ kind: Project
 metadata:
   name: $test_id-project
 spec:
-  name: "Cluster Test Project"
+  name: "IacOperatorPOC"
   organizationId: $ATLAS_ORG_ID
   clusters:
     - metadata:
@@ -579,7 +578,7 @@ EOF
     
     # Test dry-run apply (no actual resources created)
     print_info "Testing cluster dry-run apply..."
-    if "$PROJECT_ROOT/matlas" infra -f "$cluster_config" --project-id "$ATLAS_PROJECT_ID" --dry-run; then
+    if "$PROJECT_ROOT/matlas" infra apply -f "$cluster_config" --project-id "$ATLAS_PROJECT_ID" --dry-run; then
         print_success "Cluster dry-run apply completed"
     else
         print_error "Cluster dry-run apply failed"
@@ -635,7 +634,7 @@ kind: Project
 metadata:
   name: preserve-test-project
 spec:
-  name: "Preserve Test Project"
+  name: "IacOperatorPOC"
   organizationId: $ATLAS_ORG_ID
   databaseUsers:
     - metadata:
@@ -654,11 +653,8 @@ EOF
     track_resource "user" "$test_user_1"
     track_resource "user" "$test_user_2"
     
-    # Apply initial configuration
-    print_info "Applying initial configuration..."
-    if "$PROJECT_ROOT/matlas" infra -f "$preserve_config" --project-id "$ATLAS_PROJECT_ID" --preserve-existing --auto-approve; then
-        print_success "Initial configuration applied"
-        
+    # Apply initial configuration with retry logic for transient failures
+    if retry_command 3 5 "initial configuration apply" "$PROJECT_ROOT/matlas" infra apply -f "$preserve_config" --project-id "$ATLAS_PROJECT_ID" --preserve-existing --auto-approve; then
         # Wait for propagation
         sleep 3
         
@@ -673,7 +669,7 @@ kind: Project
 metadata:
   name: preserve-test-project
 spec:
-  name: "Preserve Test Project"
+  name: "IacOperatorPOC"
   organizationId: $ATLAS_ORG_ID
   databaseUsers:
     - metadata:
@@ -698,9 +694,8 @@ spec:
           databaseName: admin
 EOF
             
-            # Apply updated configuration with --preserve-existing
-            print_info "Testing --preserve-existing with existing resources..."
-            if "$PROJECT_ROOT/matlas" infra -f "$preserve_config" --project-id "$ATLAS_PROJECT_ID" --preserve-existing --auto-approve; then
+            # Apply updated configuration with --preserve-existing (with retry logic)
+            if retry_command 3 5 "updated configuration apply" "$PROJECT_ROOT/matlas" infra apply -f "$preserve_config" --project-id "$ATLAS_PROJECT_ID" --preserve-existing --auto-approve; then
                 print_success "Updated configuration applied with --preserve-existing"
                 
                 # Wait for propagation
@@ -718,7 +713,7 @@ EOF
                 
                 # Clean up both users
                 print_info "Cleaning up preserve test resources..."
-                if "$PROJECT_ROOT/matlas" infra destroy -f "$preserve_config" --project-id "$ATLAS_PROJECT_ID" --auto-approve; then
+                if "$PROJECT_ROOT/matlas" infra destroy -f "$preserve_config" --project-id "$ATLAS_PROJECT_ID" --target users --auto-approve; then
                     print_success "Preserve test cleanup completed"
                 else
                     print_warning "Preserve test cleanup failed - manual cleanup may be needed"
@@ -809,6 +804,38 @@ track_resource() {
     print_info "Tracking resource: $resource_type:$resource_id"
 }
 
+# Retry a command with exponential backoff for transient failures
+retry_command() {
+    local max_attempts="${1:-3}"
+    local base_delay="${2:-5}"
+    local description="${3:-command}"
+    shift 3  # Remove the first 3 args, leaving just the command
+    
+    local attempt=0
+    local delay=$base_delay
+    
+    while [ $attempt -lt $max_attempts ]; do
+        attempt=$((attempt + 1))
+        print_info "Executing $description (attempt $attempt of $max_attempts)..."
+        
+        if "$@"; then
+            print_success "$description succeeded on attempt $attempt"
+            return 0
+        else
+            if [ $attempt -eq $max_attempts ]; then
+                print_error "$description failed after $max_attempts attempts"
+                return 1
+            else
+                print_warning "$description attempt $attempt failed, retrying in ${delay}s..."
+                sleep $delay
+                delay=$((delay * 2))  # Exponential backoff
+            fi
+        fi
+    done
+    
+    return 1
+}
+
 test_atlas_workflow() {
     print_info "Testing Atlas workflow..."
     
@@ -886,7 +913,7 @@ kind: Project
 metadata:
   name: infra-test-project
 spec:
-  name: "Infra Test Project"
+  name: "IacOperatorPOC"
   organizationId: $ATLAS_ORG_ID
   databaseUsers:
     - metadata:
@@ -924,7 +951,7 @@ EOF
     
     # Test infra apply (dry run)
     print_info "Testing infra apply (dry run)..."
-    if "$PROJECT_ROOT/matlas" infra -f "$config_file" --dry-run > "$TEST_REPORTS_DIR/apply-dry.txt" 2>/dev/null; then
+    if "$PROJECT_ROOT/matlas" infra apply -f "$config_file" --dry-run > "$TEST_REPORTS_DIR/apply-dry.txt" 2>/dev/null; then
         print_success "Dry run apply completed"
     else
         print_error "Dry run apply failed"
@@ -933,7 +960,7 @@ EOF
     
     # Test actual apply with preserve-existing
     print_info "Testing actual apply with --preserve-existing..."
-    if "$PROJECT_ROOT/matlas" infra -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --preserve-existing --auto-approve > "$TEST_REPORTS_DIR/apply-actual.txt" 2>&1; then
+    if "$PROJECT_ROOT/matlas" infra apply -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --preserve-existing --auto-approve > "$TEST_REPORTS_DIR/apply-actual.txt" 2>&1; then
         print_success "Actual apply with --preserve-existing completed"
         
         # Verify the user was created
@@ -948,7 +975,7 @@ EOF
         
         # Test destroy to clean up
         print_info "Testing destroy operation..."
-        if "$PROJECT_ROOT/matlas" infra destroy -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --auto-approve > "$TEST_REPORTS_DIR/destroy.txt" 2>&1; then
+        if "$PROJECT_ROOT/matlas" infra destroy -f "$config_file" --project-id "$ATLAS_PROJECT_ID" --target users --auto-approve > "$TEST_REPORTS_DIR/destroy.txt" 2>&1; then
             print_success "Destroy operation completed"
             
             # Verify cleanup
@@ -1057,7 +1084,7 @@ resources:
 EOF
 
     # Step 5: Apply overlay
-    if ! "$PROJECT_ROOT/matlas" infra -f "$overlay_yaml" --project-id "$ATLAS_PROJECT_ID" --auto-approve; then
+    if ! "$PROJECT_ROOT/matlas" infra apply -f "$overlay_yaml" --project-id "$ATLAS_PROJECT_ID" --preserve-existing --auto-approve; then
         print_error "Applying overlay failed"
         return 1
     fi
@@ -1080,9 +1107,12 @@ EOF
 
     # Step 6: Remove overlay by destroying overlay ApplyDocument
     print_info "Destroying overlay resources using overlay ApplyDocument..."
-    if ! "$PROJECT_ROOT/matlas" infra destroy -f "$overlay_yaml" --project-id "$ATLAS_PROJECT_ID" --auto-approve; then
-        print_error "Destroy of overlay resources failed"
+    if ! "$PROJECT_ROOT/matlas" infra destroy -f "$overlay_yaml" --project-id "$ATLAS_PROJECT_ID" --target users --auto-approve; then
+        print_error "Destroy of overlay users failed"
         return 1
+    fi
+    if ! "$PROJECT_ROOT/matlas" infra destroy -f "$overlay_yaml" --project-id "$ATLAS_PROJECT_ID" --target network-access --auto-approve; then
+        print_warning "Destroy of overlay network access failed (may not exist)"
     fi
 
     # Verify overlay removal

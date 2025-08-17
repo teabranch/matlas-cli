@@ -29,6 +29,12 @@ var (
 	apiKey     string
 	publicKey  string
 
+	// Build information
+	appVersion string
+	appCommit  string
+	appDate    string
+	appBuiltBy string
+
 	logger           *logging.Logger
 	cfg              *config.Config
 	signalHandler    *cli.SignalHandler
@@ -93,7 +99,12 @@ var (
 )
 
 // Execute runs the matlas root command.
-func Execute() {
+func Execute(version, commit, date, builtBy string) {
+	// Set build information
+	appVersion = version
+	appCommit = commit
+	appDate = date
+	appBuiltBy = builtBy
 	// Use enhanced error handling with recovery
 	err := cli.HandleWithRecovery("root_execution", func() error {
 		return rootCmd.Execute()
@@ -156,10 +167,11 @@ func init() {
 		Use:   "version",
 		Short: "Show version information",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// This would include build info, version, etc.
-			fmt.Println("matlas-cli version: development")
-			fmt.Println("Build time: unknown")
-			fmt.Println("Git commit: unknown")
+			// Display build information
+			fmt.Printf("matlas-cli version: %s\n", appVersion)
+			fmt.Printf("Build time: %s\n", appDate)
+			fmt.Printf("Git commit: %s\n", appCommit)
+			fmt.Printf("Built by: %s\n", appBuiltBy)
 			fmt.Println("Go version:", "go1.24.5")
 
 			if verbose {

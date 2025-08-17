@@ -72,10 +72,10 @@ resources:
       comment: yaml-network-test
 EOF
   "$PROJECT_ROOT/matlas" infra validate -f "$cfg" || { print_error "Validate failed"; return 1; }
-  "$PROJECT_ROOT/matlas" infra -f "$cfg" --project-id "$ATLAS_PROJECT_ID" --auto-approve || { print_error "Apply failed"; return 1; }
+  "$PROJECT_ROOT/matlas" infra apply -f "$cfg" --project-id "$ATLAS_PROJECT_ID" --preserve-existing --auto-approve || { print_error "Apply failed"; return 1; }
   track_ip "$ip"
   sleep 2
-  "$PROJECT_ROOT/matlas" infra destroy -f "$cfg" --project-id "$ATLAS_PROJECT_ID" --auto-approve || print_warning "Destroy failed"
+  "$PROJECT_ROOT/matlas" infra destroy -f "$cfg" --project-id "$ATLAS_PROJECT_ID" --target network-access --auto-approve || print_warning "Destroy failed"
 }
 
 main(){

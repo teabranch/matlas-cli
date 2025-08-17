@@ -59,19 +59,25 @@ Override any configuration using command line flags:
 
 | Flag | Description |
 |:-----|:------------|
-| `--api-key` | Private API key |
-| `--pub-key` | Public API key |
-| `--project-id` | Project ID |
-| `--org-id` | Organization ID |
-| `--output` | Output format (table, json, yaml) |
-| `--timeout` | Request timeout |
+Global flags available on all commands:
+| Flag | Description |
+|:-----|:------------|
 | `--config` | Config file path |
+| `--output, -o` | Output format (table, text, json, yaml) |
+| `--timeout` | Context timeout for operations |
+| `--verbose, -v` | Verbose logging |
+| `--quiet, -q` | Suppress non-error output |
+| `--log-format` | Log output format: text, json |
+| `--api-key` | Atlas private API key (discouraged on CLI; prefer env var) |
+| `--pub-key` | Atlas public API key (discouraged on CLI; prefer env var) |
+
+Per-command flags still apply, for example `--project-id` on Atlas, discover, and infra subcommands, or `--cluster` on database commands.
 
 ## macOS Keychain integration
 
-On macOS, matlas can fallback to keychain lookup if credentials aren't found elsewhere.
+On macOS, matlas falls back to Keychain if credentials aren't found in flags/env/config.
 
-If API keys aren't found in flags/environment/config file, matlas attempts keychain lookup:
+Lookups performed using `security find-generic-password`:
 - Service: `api-key`, Account: `matlas` → `ATLAS_API_KEY`
 - Service: `pub-key`, Account: `matlas` → `ATLAS_PUB_KEY`
 

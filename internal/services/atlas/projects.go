@@ -5,21 +5,39 @@ import (
 	"fmt"
 
 	atlasclient "github.com/teabranch/matlas-cli/internal/clients/atlas"
+	"github.com/teabranch/matlas-cli/internal/logging"
 	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
 )
 
 // ProjectsService provides high-level helpers around the Atlas Projects API.
 type ProjectsService struct {
 	client *atlasclient.Client
+	logger *logging.Logger
 }
 
 // NewProjectsService returns a ProjectsService bound to the provided Client.
 func NewProjectsService(client *atlasclient.Client) *ProjectsService {
-	return &ProjectsService{client: client}
+	return &ProjectsService{
+		client: client,
+		logger: logging.Default(),
+	}
+}
+
+// NewProjectsServiceWithLogger returns a ProjectsService with a custom logger.
+func NewProjectsServiceWithLogger(client *atlasclient.Client, logger *logging.Logger) *ProjectsService {
+	if logger == nil {
+		logger = logging.Default()
+	}
+	return &ProjectsService{
+		client: client,
+		logger: logger,
+	}
 }
 
 // List returns all projects visible to the authenticated account.
 func (s *ProjectsService) List(ctx context.Context) ([]admin.Group, error) {
+	s.logger.Debug("Listing all projects")
+
 	var out []admin.Group
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
 		resp, _, err := api.ProjectsApi.ListProjects(ctx).Execute()
@@ -32,7 +50,14 @@ func (s *ProjectsService) List(ctx context.Context) ([]admin.Group, error) {
 		out = *resp.Results
 		return nil
 	})
-	return out, err
+
+	if err != nil {
+		s.logger.Error("Failed to list projects", "error", err.Error())
+		return nil, err
+	}
+
+	s.logger.Debug("Listed projects successfully", "count", len(out))
+	return out, nil
 }
 
 // ListByOrg returns projects under the specified organization ID.
@@ -40,6 +65,9 @@ func (s *ProjectsService) ListByOrg(ctx context.Context, orgID string) ([]admin.
 	if orgID == "" {
 		return nil, fmt.Errorf("orgID is required")
 	}
+
+	s.logger.Debug("Listing projects by organization", "org_id", orgID)
+
 	var out []admin.Group
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
 		resp, _, err := api.OrganizationsApi.ListOrganizationProjects(ctx, orgID).Execute()
@@ -52,7 +80,14 @@ func (s *ProjectsService) ListByOrg(ctx context.Context, orgID string) ([]admin.
 		out = *resp.Results
 		return nil
 	})
-	return out, err
+
+	if err != nil {
+		s.logger.Error("Failed to list projects by organization", "org_id", orgID, "error", err.Error())
+		return nil, err
+	}
+
+	s.logger.Debug("Listed projects by organization successfully", "org_id", orgID, "count", len(out))
+	return out, nil
 }
 
 // Get fetches a single project by its 24-digit ID.
@@ -60,6 +95,9 @@ func (s *ProjectsService) Get(ctx context.Context, projectID string) (*admin.Gro
 	if projectID == "" {
 		return nil, fmt.Errorf("projectID is required")
 	}
+
+	s.logger.Debug("Getting project", "project_id", projectID)
+
 	var result *admin.Group
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
 		grp, _, err := api.ProjectsApi.GetProject(ctx, projectID).Execute()
@@ -69,7 +107,14 @@ func (s *ProjectsService) Get(ctx context.Context, projectID string) (*admin.Gro
 		result = grp
 		return nil
 	})
-	return result, err
+
+	if err != nil {
+		s.logger.Error("Failed to get project", "project_id", projectID, "error", err.Error())
+		return nil, err
+	}
+
+	s.logger.Debug("Got project successfully", "project_id", projectID)
+	return result, nil
 }
 
 // Create creates a new project under the specified organization. Optional tags can be supplied.

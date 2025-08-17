@@ -1,0 +1,16 @@
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: cluster-basic
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: Cluster
+    metadata:
+      name: basic-cluster
+    spec:
+      projectName: "My Project"
+      provider: AWS
+      region: us-west-2
+      instanceSize: M10
+
+

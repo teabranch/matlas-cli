@@ -1,0 +1,31 @@
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: project-with-cluster-and-users
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: Cluster
+    metadata:
+      name: main-cluster
+    spec:
+      projectName: "My Project"
+      provider: AWS
+      region: us-east-1
+      instanceSize: M10
+      backupEnabled: true
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: app-user
+    spec:
+      projectName: "My Project"
+      username: app-user
+      authDatabase: admin
+      password: "${APP_USER_PASSWORD}"
+      roles:
+        - roleName: readWrite
+          databaseName: appdb
+        - roleName: read
+          databaseName: admin
+
+

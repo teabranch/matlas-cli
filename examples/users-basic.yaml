@@ -1,0 +1,19 @@
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: users-basic
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: app-user
+    spec:
+      projectName: "My Project"  # Replace with your Atlas project name
+      username: app-user
+      authDatabase: admin
+      password: "${APP_USER_PASSWORD}"  # Set env var before running
+      roles:
+        - roleName: read
+          databaseName: admin
+
+

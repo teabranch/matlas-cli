@@ -1,0 +1,146 @@
+---
+alwaysApply: true
+description: Task tracking and todo management for development continuity and team visibility
+---
+
+# Task Tracking and Todo Management
+
+## Always Create Todo Lists
+
+For ANY development task, ALWAYS:
+
+1. **Create todo lists using the todo_write tool** at the start of any task
+2. **Break down complex tasks** into specific, actionable items
+3. **Update todo status in real-time** as work progresses
+4. **Add detailed comments** explaining what was accomplished for each completed task
+5. **Create permanent tracking files** by category for team visibility and cross-session continuity
+
+## Todo Requirements
+
+### Initial Task Planning
+- Use `todo_write` tool to create structured task lists
+- Break multi-step tasks into granular, measurable items
+- Set initial status as `pending` or `in_progress` for first task
+- Include clear, descriptive task names
+
+### Progress Tracking
+- Mark todos as `completed` IMMEDIATELY after finishing each task
+- Add detailed comments explaining:
+  - What was accomplished
+  - Key decisions made
+  - Files modified
+  - Any issues encountered and how they were resolved
+  - Next steps or dependencies
+
+### Task Comments Format
+When completing todos, include comments like:
+```
+"Completed: Added user authentication endpoint. Modified auth.go to include JWT validation, updated routes in main.go, added tests in auth_test.go. Issue: Had to handle edge case for expired tokens by implementing refresh logic."
+```
+
+## Development Continuity
+
+### Documentation Trail
+- Each completed todo should serve as a development log
+- Comments must be detailed enough for another developer to understand progress
+- Include file paths, function names, and key implementation details
+
+### Handoff Preparation
+- Todos and comments should enable seamless handoff
+- Anyone should be able to pick up work from where it left off
+- Include context about why certain approaches were chosen
+
+## Tool Usage Patterns
+
+### Parallel Todo Management
+- Batch todo updates with other tool calls for efficiency
+- Update multiple todos in single calls when appropriate
+- Use `merge: true` to update existing todos without losing progress
+
+### Status Management
+- Only ONE task should be `in_progress` at a time
+- Complete current tasks before starting new ones
+- Use `cancelled` status for tasks that become obsolete
+
+## Examples
+
+### Good Todo Creation
+```
+1. "Set up database connection pool" [in_progress]
+2. "Implement user CRUD operations" [pending] 
+3. "Add input validation middleware" [pending]
+4. "Write integration tests" [pending]
+```
+
+### Good Completion Comments
+```
+"Completed: Set up database connection pool in internal/database/pool.go. Configured max connections (50), idle timeout (30s), and connection retry logic. Added health check endpoint. Tested with local PostgreSQL instance. Ready for user operations implementation."
+```
+
+## Category-Based Permanent Tracking
+
+### Required Tracking Files
+
+Create permanent tracking files in the `tracking/` directory for team visibility:
+
+- **Features**: `tracking/features.md` - New functionality, enhancements, capabilities
+- **Bugfixes**: `tracking/bugfixes.md` - Bug resolutions, corrections, patches
+- **Refactoring**: `tracking/refactoring.md` - Code improvements without behavior changes
+- **Documentation**: `tracking/documentation.md` - Docs updates, README changes
+- **Infrastructure**: `tracking/infrastructure.md` - Build, CI/CD, deployment changes
+- **Performance**: `tracking/performance.md` - Optimization work, performance improvements
+
+### File Format
+
+Each tracking file should maintain entries in chronological order:
+
+```markdown
+# [Category] Tracking
+
+## [YYYY-MM-DD] [Brief Description]
+
+**Status**: [In Progress | Completed | Cancelled]  
+**Developer**: [Name/Username]  
+**Related Issues**: [#123, #456]  
+
+### Summary
+Brief description of the work being done.
+
+### Tasks
+- [x] Task 1 description
+- [x] Task 2 description  
+- [ ] Task 3 description
+
+### Files Modified
+- `path/to/file1.go` - Description of changes
+- `path/to/file2.go` - Description of changes
+
+### Notes
+Any important decisions, blockers, or context for future developers.
+
+---
+```
+
+### When to Create Entries
+
+- **Start of work**: Create entry with "In Progress" status
+- **During work**: Update tasks and add notes
+- **Completion**: Mark as "Completed" with final summary
+- **Abandonment**: Mark as "Cancelled" with reason
+
+### Team Benefits
+
+- **Visibility**: Anyone can see current work across categories
+- **Handoffs**: Easy to pick up work from where others left off
+- **Planning**: Historical context for future similar work
+- **Reviews**: Complete picture of changes for code reviews
+
+## Never Skip This Process
+
+- Even for "simple" tasks, create todos for visibility
+- Single-file changes still benefit from progress tracking
+- Documentation and planning prevent forgotten requirements
+- Comments serve as inline documentation for future reference
+- **ALWAYS create permanent tracking entries** for team awareness
+
+This rule ensures development work is always trackable, resumable, well-documented, and visible to the entire team.

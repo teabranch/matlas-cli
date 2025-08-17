@@ -7,13 +7,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
+	"github.com/teabranch/matlas-cli/internal/logging"
 	"github.com/teabranch/matlas-cli/internal/types"
 )
 
 func TestClient_Close(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.Default()
 
 	tests := []struct {
 		name        string
@@ -59,7 +59,7 @@ func TestClient_Close(t *testing.T) {
 }
 
 func TestClient_GetUnderlyingClientMethods(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.Default()
 	client := &Client{
 		client: nil,
 		logger: logger,
@@ -71,7 +71,7 @@ func TestClient_GetUnderlyingClientMethods(t *testing.T) {
 
 func TestClient_ListDatabases_Structure(t *testing.T) {
 	// Test that the method exists and has correct signature without calling it
-	logger := zap.NewNop()
+	logger := logging.Default()
 	client := &Client{
 		client: nil,
 		logger: logger,
@@ -87,7 +87,7 @@ func TestClient_ListDatabases_Structure(t *testing.T) {
 }
 
 func TestClient_MethodsExist(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.Default()
 	client := &Client{
 		client: nil,
 		logger: logger,
@@ -166,7 +166,7 @@ func TestClientConfig_Validation(t *testing.T) {
 }
 
 func TestNewClient_WithMockConfig(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.Default()
 	ctx := context.Background()
 
 	tests := []struct {
@@ -211,7 +211,7 @@ func TestNewClient_WithMockConfig(t *testing.T) {
 }
 
 func TestClient_StructureValidation(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.Default()
 
 	// Test creating client with minimal structure
 	client := &Client{

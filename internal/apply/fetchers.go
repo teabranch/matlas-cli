@@ -267,3 +267,45 @@ func extractClusterRegion(cluster admin.ClusterDescription20240805) string {
 
 	return "N/A"
 }
+
+// convertDatabaseRoleToManifest would convert a MongoDB custom role to our DatabaseRoleManifest type
+// NOTE: Custom database roles are not available through Atlas API and require direct MongoDB connection
+// This function serves as a placeholder for future implementation that would need:
+// 1. MongoDB connection string resolution
+// 2. Database authentication with appropriate privileges  
+// 3. MongoDB rolesInfo command execution to fetch role details
+func (d *AtlasStateDiscovery) convertDatabaseRoleToManifest(roleName, databaseName, projectName string) types.DatabaseRoleManifest {
+	// Since we cannot fetch custom database roles through Atlas API,
+	// we can only create a minimal manifest based on the known role name and database
+	metadata := types.ResourceMetadata{
+		Name: roleName,
+		Labels: map[string]string{
+			"atlas.mongodb.com/role-name":    roleName,
+			"atlas.mongodb.com/database":     databaseName,
+			"atlas.mongodb.com/project-name": projectName,
+		},
+		Annotations: map[string]string{
+			"matlas.mongodb.com/fetch-limitation": "Custom database roles cannot be fetched through Atlas API - requires direct MongoDB connection",
+		},
+	}
+
+	spec := types.DatabaseRoleSpec{
+		RoleName:     roleName,
+		DatabaseName: databaseName,
+		// Privileges and InheritedRoles cannot be populated without direct MongoDB access
+		Privileges:     []types.CustomRolePrivilegeConfig{},
+		InheritedRoles: []types.CustomRoleInheritedRoleConfig{},
+	}
+
+	return types.DatabaseRoleManifest{
+		APIVersion: types.APIVersionV1,
+		Kind:       types.KindDatabaseRole,
+		Metadata:   metadata,
+		Spec:       spec,
+		Status: &types.ResourceStatusInfo{
+			Phase:      types.StatusUnknown,
+			Message:    "Custom database roles cannot be fetched through Atlas API - requires direct MongoDB connection",
+			LastUpdate: time.Now().UTC().Format(time.RFC3339),
+		},
+	}
+}

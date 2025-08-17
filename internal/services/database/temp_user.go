@@ -76,8 +76,9 @@ func (m *TempUserManager) CreateTempUser(ctx context.Context, config TempUserCon
 		config.TTL = 1 * time.Hour // Default 1 hour
 	}
 
-	// Set default roles if not provided (read-only access)
+	// Set default roles if not provided
 	if len(config.Roles) == 0 {
+		// Default to read-only access on all databases
 		config.Roles = []admin.DatabaseUserRole{
 			{
 				RoleName:     "readAnyDatabase",
@@ -99,6 +100,18 @@ func (m *TempUserManager) CreateTempUser(ctx context.Context, config TempUserCon
 
 	// Set expiration time
 	atlasUser.DeleteAfterDate = admin.PtrTime(expiresAt)
+
+	// Mark as temporary user with labels
+	atlasUser.Labels = &[]admin.ComponentLabel{
+		{
+			Key:   admin.PtrString("temporary"),
+			Value: admin.PtrString("true"),
+		},
+		{
+			Key:   admin.PtrString("purpose"),
+			Value: admin.PtrString(config.Purpose),
+		},
+	}
 
 	// Create the user
 	_, err := m.usersService.Create(ctx, m.projectID, atlasUser)
@@ -135,27 +148,63 @@ func (m *TempUserManager) CreateTempUserForDiscovery(ctx context.Context, cluste
 		})
 	}
 
+	return m.CreateTempUserForDiscoveryWithRoles(ctx, clusterNames, databaseName, nil)
+}
+
+// CreateTempUserForDiscoveryWithRoles creates a temporary user with custom roles
+func (m *TempUserManager) CreateTempUserForDiscoveryWithRoles(ctx context.Context, clusterNames []string, databaseName string, customRoles []admin.DatabaseUserRole) (*TempUserResult, error) {
+	// Create scopes for all specified clusters
+	var scopes []admin.UserScope
+	for _, clusterName := range clusterNames {
+		scopes = append(scopes, admin.UserScope{
+			Name: clusterName,
+			Type: "CLUSTER",
+		})
+	}
+
 	if databaseName == "" {
 		databaseName = "admin" // Default to admin when none provided
 	}
 
-	// Determine the least-privileged role name according to requirements
-	roleName := "read"           // default expectation
-	if databaseName != "admin" { // specific DB supplied – allow readAnyDatabase
-		roleName = "readAnyDatabase"
+	var roles []admin.DatabaseUserRole
+	if len(customRoles) > 0 {
+		// Use provided roles
+		roles = customRoles
+	} else {
+		// Create database-specific roles for better security
+		if databaseName != "admin" {
+			// Database-specific permissions
+			roles = []admin.DatabaseUserRole{
+				{
+					RoleName:     "readWrite",
+					DatabaseName: databaseName,
+				},
+				{
+					RoleName:     "dbAdmin",
+					DatabaseName: databaseName,
+				},
+			}
+		} else {
+			// Admin database permissions - need broader access for operations
+			roles = []admin.DatabaseUserRole{
+				{
+					RoleName:     "readWriteAnyDatabase",
+					DatabaseName: "admin",
+				},
+				{
+					RoleName:     "dbAdminAnyDatabase",
+					DatabaseName: "admin",
+				},
+			}
+		}
 	}
 
 	config := TempUserConfig{
 		Purpose:      "database-discovery",
-		TTL:          5 * time.Minute, // Reduced TTL since we cleanup immediately
+		TTL:          10 * time.Minute, // Increased TTL to allow more time for propagation
 		ClusterNames: clusterNames,
 		Scopes:       scopes,
-		Roles: []admin.DatabaseUserRole{
-			{
-				RoleName:     roleName,
-				DatabaseName: databaseName,
-			},
-		},
+		Roles:        roles,
 	}
 
 	return m.CreateTempUser(ctx, config)

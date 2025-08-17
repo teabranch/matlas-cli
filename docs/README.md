@@ -1,3 +1,14 @@
+# Documentation
+
+This site documents the current matlas CLI as implemented in the repository. To preview locally:
+
+```bash
+cd docs
+bundle install
+bundle exec jekyll serve
+```
+
+Ensure updates follow the navigation and frontmatter conventions in this repo.
 ---
 title: About
 nav_order: 99

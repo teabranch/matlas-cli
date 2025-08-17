@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 
 	"github.com/teabranch/matlas-cli/internal/cli"
 	"github.com/teabranch/matlas-cli/internal/config"
+	"github.com/teabranch/matlas-cli/internal/logging"
 	"github.com/teabranch/matlas-cli/internal/output"
 	atlasservice "github.com/teabranch/matlas-cli/internal/services/atlas"
 	"github.com/teabranch/matlas-cli/internal/services/database"
@@ -365,8 +365,8 @@ func runListCollections(cmd *cobra.Command, connectionString, clusterName, proje
 	progress.StartSpinner(fmt.Sprintf("Listing collections in database '%s'...", databaseName))
 
 	// Create database service
-	zapLogger, _ := zap.NewDevelopment()
-	dbService := database.NewService(zapLogger)
+	logger := logging.Default()
+	dbService := database.NewService(logger)
 	defer func() {
 		if err := dbService.Close(ctx); err != nil {
 			fmt.Printf("Warning: Failed to close database service: %v\n", err)
@@ -462,8 +462,8 @@ func runCreateCollection(cmd *cobra.Command, connectionString, clusterName, proj
 	progress.StartSpinner(fmt.Sprintf("Creating collection '%s'...", collectionName))
 
 	// Create database service
-	zapLogger, _ := zap.NewDevelopment()
-	dbService := database.NewService(zapLogger)
+	logger := logging.Default()
+	dbService := database.NewService(logger)
 	defer func() {
 		if err := dbService.Close(ctx); err != nil {
 			fmt.Printf("Warning: Failed to close database service: %v\n", err)
@@ -525,8 +525,8 @@ func runDeleteCollection(cmd *cobra.Command, connectionString, clusterName, proj
 	progress.StartSpinner(fmt.Sprintf("Deleting collection '%s'...", collectionName))
 
 	// Create database service
-	zapLogger, _ := zap.NewDevelopment()
-	dbService := database.NewService(zapLogger)
+	logger := logging.Default()
+	dbService := database.NewService(logger)
 	defer func() {
 		if err := dbService.Close(ctx); err != nil {
 			fmt.Printf("Warning: Failed to close database service: %v\n", err)
@@ -575,8 +575,8 @@ func runListIndexes(cmd *cobra.Command, connectionString, clusterName, projectID
 	progress.StartSpinner(fmt.Sprintf("Listing indexes for collection '%s.%s'...", databaseName, collectionName))
 
 	// Create database service
-	zapLogger, _ := zap.NewDevelopment()
-	dbService := database.NewService(zapLogger)
+	logger := logging.Default()
+	dbService := database.NewService(logger)
 	defer func() {
 		if err := dbService.Close(ctx); err != nil {
 			fmt.Printf("Warning: Failed to close database service: %v\n", err)
@@ -702,8 +702,8 @@ func runCreateIndex(cmd *cobra.Command, connectionString, clusterName, projectID
 	progress.StartSpinner(fmt.Sprintf("Creating index on collection '%s.%s'...", databaseName, collectionName))
 
 	// Create database service
-	zapLogger, _ := zap.NewDevelopment()
-	dbService := database.NewService(zapLogger)
+	logger := logging.Default()
+	dbService := database.NewService(logger)
 	defer func() {
 		if err := dbService.Close(ctx); err != nil {
 			fmt.Printf("Warning: Failed to close database service: %v\n", err)
@@ -768,8 +768,8 @@ func runDeleteIndex(cmd *cobra.Command, connectionString, clusterName, projectID
 	progress.StartSpinner(fmt.Sprintf("Deleting index '%s'...", indexName))
 
 	// Create database service
-	zapLogger, _ := zap.NewDevelopment()
-	dbService := database.NewService(zapLogger)
+	logger := logging.Default()
+	dbService := database.NewService(logger)
 	defer func() {
 		if err := dbService.Close(ctx); err != nil {
 			fmt.Printf("Warning: Failed to close database service: %v\n", err)

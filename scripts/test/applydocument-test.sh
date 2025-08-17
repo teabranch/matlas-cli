@@ -1,4 +1,63 @@
 #!/usr/bin/env bash
+# Additional scenarios for users and roles
+print_info(){ echo -e "\033[0;35mℹ $1\033[0m"; }
+print_success(){ echo -e "\033[0;32m✓ $1\033[0m"; }
+print_error(){ echo -e "\033[0;31m✗ $1\033[0m"; }
+
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+TMP_DIR="$PROJECT_ROOT/test-reports/applydocument"
+mkdir -p "$TMP_DIR"
+
+# Ensure matlas is built in root
+if [[ ! -f "$PROJECT_ROOT/matlas" ]]; then
+  echo "Building matlas binary..."
+  (cd "$PROJECT_ROOT" && go build -o matlas) || { echo "Build failed"; exit 1; }
+fi
+
+# Scenario: DatabaseRole present with DatabaseUser referencing it; expect validate+plan to succeed
+role_cfg="$TMP_DIR/role-user.yaml"
+project_name="$ATLAS_PROJECT_ID"
+cat > "$role_cfg" << EOF
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata: { name: roles-users-sanity }
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseRole
+    metadata: { name: testrule$(date +%s) }
+    spec:
+      roleName: testrule$(date +%s)
+      databaseName: testdb
+      privileges:
+        - actions: ["find"]
+          resource: { database: testdb, collection: users }
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata: { name: testuser$(date +%s) }
+    spec:
+      projectName: "$project_name"
+      username: testuser$(date +%s)
+      databaseName: admin
+      password: TestUser123!
+      roles:
+        - roleName: testrule$(date +%s)
+          databaseName: testdb
+EOF
+
+print_info "Validating roles+users ApplyDocument..."
+if "$PROJECT_ROOT/matlas" infra validate -f "$role_cfg"; then
+  print_success "Validation passed"
+else
+  print_error "Validation failed"; exit 1
+fi
+
+print_info "Planning roles+users ApplyDocument..."
+if "$PROJECT_ROOT/matlas" infra plan -f "$role_cfg" --project-id "$ATLAS_PROJECT_ID" --dry-run >/dev/null 2>&1; then
+  print_success "Plan passed"
+else
+  print_error "Plan failed"; exit 1
+fi
+
 
 # ApplyDocument Format Testing for matlas-cli
 # Tests the ApplyDocument YAML format comprehensively

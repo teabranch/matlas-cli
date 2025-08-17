@@ -1,0 +1,31 @@
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: cluster-advanced
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: Cluster
+    metadata:
+      name: advanced-cluster
+    spec:
+      projectName: "My Project"
+      provider: AWS
+      region: us-east-1
+      instanceSize: M30
+      backupEnabled: true
+      autoScaling:
+        compute:
+          enabled: true
+          scaleDownEnabled: true
+          minInstanceSize: M10
+          maxInstanceSize: M60
+      replicationSpecs:
+        - zoneName: zone-1
+          regionConfigs:
+            - regionName: us-east-1
+              providerName: AWS
+              electableNodes: 3
+              analyticsNodes: 0
+              readOnlyNodes: 0
+
+

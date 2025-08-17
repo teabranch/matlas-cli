@@ -86,12 +86,31 @@ matlas discover \
 | `--resource-type` | Filter by specific resource type |
 | `--resource-name` | Filter by resource name pattern |
 | `--convert-to-apply` | Convert to ApplyDocument format |
-| `--output` | Output format (yaml, json, table) |
-| `-o` | Save to file |
+| `--output` | Output format (yaml, json) |
+| `--output-file, -o` | Save to file |
+| `--no-cache` | Disable discovery caching |
+| `--parallel` | Enable parallel discovery of resources |
+| `--max-concurrency` | Maximum concurrent API calls |
+| `--mongo-uri` | Override MongoDB connection for enumeration |
+| `--mongo-username` | Username for DB enumeration when needed |
+| `--mongo-password` | Password for DB enumeration when needed |
+| `--temp-user-database` | Scope temporary user to specific DB |
+| `--cache-stats` | Print discovery cache statistics |
 
 ---
 
 ## Plan
+
+## Supported resource kinds
+
+- ApplyDocument
+- Project
+- Cluster
+- DatabaseUser
+- DatabaseRole
+- NetworkAccess
+
+Note: DatabaseRole is supported for validation, diff, and plan. Apply is not yet implemented; use the database roles CLI commands (`matlas database roles ...`) to manage custom roles.
 
 Generate an execution plan showing what changes would be made without applying them.
 
@@ -127,7 +146,7 @@ matlas infra diff -f config.yaml --detailed --show-context 3
 |:-----|:------------|
 | `--detailed` | Show detailed field-level changes |
 | `--show-context N` | Show N lines of context around changes |
-| `--ignore-order` | Ignore array element ordering |
+| `--no-truncate` | Do not truncate long resource names in table output |
 
 ---
 
@@ -222,8 +241,9 @@ matlas infra destroy --discovery-only --project-id <project-id> --auto-approve
 |:-----|:------------|
 | `--discovery-only` | Destroy all discovered resources in project |
 | `--auto-approve` | Skip confirmation prompts |
-| `--force` | Skip safety checks |
+| `--force` | Skip additional confirmation for high-risk deletes |
 | `--dry-run` | Preview what would be destroyed |
+| `--target` | Only destroy a specific resource type (clusters, users, network-access) |
 
 ---
 

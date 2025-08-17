@@ -1,0 +1,156 @@
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: user-role-distinction-example
+  description: Example showing the distinction between Atlas and Database users/roles
+resources:
+  # ===================================
+  # ATLAS LEVEL - API-based management
+  # ===================================
+  
+  # Atlas database user with built-in roles
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: atlas-api-user
+      labels:
+        management-level: atlas
+        purpose: centralized-access
+    spec:
+      projectName: "My Project"
+      username: atlas-api-user
+      authDatabase: admin
+      password: "${ATLAS_USER_PASSWORD}"
+      # Built-in MongoDB roles only
+      roles:
+        - roleName: readWrite
+          databaseName: myapp
+        - roleName: read
+          databaseName: logs
+        - roleName: dbAdmin
+          databaseName: myapp
+
+  # =====================================
+  # DATABASE LEVEL - Connection-based management
+  # =====================================
+  
+  # Custom database role with granular privileges
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseRole
+    metadata:
+      name: app-data-role
+      labels:
+        management-level: database
+        purpose: granular-permissions
+    spec:
+      roleName: appDataRole
+      databaseName: myapp
+      connectionConfig:
+        cluster: my-cluster
+        projectId: "${ATLAS_PROJECT_ID}"
+        useTempUser: true
+      privileges:
+        # Collection-level privileges
+        - actions: ["find", "insert", "update"]
+          resource:
+            database: myapp
+            collection: users
+        - actions: ["find", "insert"]
+          resource:
+            database: myapp
+            collection: audit_logs
+        - actions: ["find"]
+          resource:
+            database: myapp
+            collection: reports
+        # Database-level privileges
+        - actions: ["listCollections", "listIndexes"]
+          resource:
+            database: myapp
+      inheritedRoles:
+        - roleName: read
+          databaseName: logs
+
+  # Database user with custom role
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseDirectUser
+    metadata:
+      name: app-database-user
+      labels:
+        management-level: database
+        purpose: application-specific
+    spec:
+      connectionConfig:
+        cluster: my-cluster
+        projectId: "${ATLAS_PROJECT_ID}"
+        useTempUser: true
+        tempUserRole: "userAdminAnyDatabase@admin"
+      username: app-db-user
+      database: myapp
+      password: "${DB_USER_PASSWORD}"
+      # Can use custom roles created above
+      roles:
+        - roleName: appDataRole
+          databaseName: myapp
+        - roleName: read
+          databaseName: logs
+
+  # ===================================
+  # COMPARISON EXAMPLES
+  # ===================================
+  
+  # Atlas user for broad access across multiple databases
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: admin-atlas-user
+      annotations:
+        use-case: "Centralized admin access across project"
+        management: "Atlas API - built-in roles only"
+    spec:
+      projectName: "My Project"
+      username: project-admin
+      authDatabase: admin
+      password: "${ADMIN_PASSWORD}"
+      roles:
+        - roleName: dbAdminAnyDatabase
+          databaseName: admin
+        - roleName: readWriteAnyDatabase
+          databaseName: admin
+
+  # Database role for highly specific application needs
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseRole
+    metadata:
+      name: reporting-role
+      annotations:
+        use-case: "Specific reporting permissions"
+        management: "Direct MongoDB - custom privileges"
+    spec:
+      roleName: reportingRole
+      databaseName: analytics
+      connectionConfig:
+        cluster: my-cluster
+        projectId: "${ATLAS_PROJECT_ID}"
+        useTempUser: true
+      privileges:
+        # Read-only access to specific collections
+        - actions: ["find", "listIndexes"]
+          resource:
+            database: analytics
+            collection: sales_data
+        - actions: ["find"]
+          resource:
+            database: analytics
+            collection: user_metrics
+        # Aggregation pipeline permissions
+        - actions: ["collStats", "dbStats"]
+          resource:
+            database: analytics
+
+---
+# Environment variables needed:
+# ATLAS_USER_PASSWORD=SecureAtlasPass123!
+# DB_USER_PASSWORD=SecureDbPass123!
+# ADMIN_PASSWORD=SecureAdminPass123!
+# ATLAS_PROJECT_ID=507f1f77bcf86cd799439011

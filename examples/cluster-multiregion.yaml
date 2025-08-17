@@ -1,0 +1,26 @@
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: cluster-multiregion
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: Cluster
+    metadata:
+      name: multiregion-cluster
+    spec:
+      projectName: "My Project"
+      provider: AWS
+      region: us-east-1
+      instanceSize: M40
+      clusterType: REPLICASET
+      replicationSpecs:
+        - zoneName: zone-1
+          regionConfigs:
+            - regionName: us-east-1
+              providerName: AWS
+              electableNodes: 3
+            - regionName: us-west-2
+              providerName: AWS
+              electableNodes: 2
+
+

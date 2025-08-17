@@ -4,13 +4,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
+	"github.com/teabranch/matlas-cli/internal/logging"
 	"github.com/teabranch/matlas-cli/internal/types"
 )
 
 func TestService_BasicStructure(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.New(logging.DefaultConfig())
 	service := NewService(logger)
 
 	// Test service structure
@@ -21,7 +21,7 @@ func TestService_BasicStructure(t *testing.T) {
 }
 
 func TestDocumentService_BasicStructure(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.New(logging.DefaultConfig())
 	dbService := NewService(logger)
 	docService := NewDocumentService(dbService, logger)
 
@@ -48,7 +48,7 @@ func TestConnectionInfo_BasicStructure(t *testing.T) {
 }
 
 func TestService_EmptyValidation(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.New(logging.DefaultConfig())
 	service := NewService(logger)
 
 	// Test that service handles empty inputs gracefully
@@ -60,7 +60,7 @@ func TestService_EmptyValidation(t *testing.T) {
 }
 
 func TestDocumentService_EmptyValidation(t *testing.T) {
-	logger := zap.NewNop()
+	logger := logging.New(logging.DefaultConfig())
 	dbService := NewService(logger)
 	docService := NewDocumentService(dbService, logger)
 

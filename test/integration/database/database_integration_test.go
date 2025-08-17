@@ -11,8 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
+	"github.com/teabranch/matlas-cli/internal/logging"
 	"github.com/teabranch/matlas-cli/internal/services/database"
 	"github.com/teabranch/matlas-cli/internal/types"
 )
@@ -28,7 +28,7 @@ type DatabaseTestConfig struct {
 type DatabaseTestEnvironment struct {
 	Config  DatabaseTestConfig
 	Service *database.Service
-	Logger  *zap.Logger
+	Logger  *logging.Logger
 }
 
 func setupDatabaseIntegrationTest(t *testing.T) *DatabaseTestEnvironment {
@@ -51,8 +51,9 @@ func setupDatabaseIntegrationTest(t *testing.T) *DatabaseTestEnvironment {
 	}
 
 	// Create logger
-	logger, err := zap.NewDevelopment()
-	require.NoError(t, err, "Failed to create logger")
+	logConfig := logging.DefaultConfig()
+	logConfig.Level = logging.LevelDebug
+	logger := logging.New(logConfig)
 
 	// Create database service
 	service := database.NewService(logger)

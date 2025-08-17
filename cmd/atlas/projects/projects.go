@@ -9,10 +9,10 @@ import (
 
 	"github.com/spf13/cobra"
 	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
-	"go.uber.org/zap"
 
 	atlasclient "github.com/teabranch/matlas-cli/internal/clients/atlas"
 	"github.com/teabranch/matlas-cli/internal/config"
+	"github.com/teabranch/matlas-cli/internal/logging"
 	"github.com/teabranch/matlas-cli/internal/output"
 	atlasservice "github.com/teabranch/matlas-cli/internal/services/atlas"
 )
@@ -431,7 +431,7 @@ WARNING: This action cannot be undone. The project must be empty (no clusters) b
 
 // createAtlasClient creates an Atlas client using environment variables or config
 func createAtlasClient() (*atlasclient.Client, error) {
-	logger := zap.NewNop()
+	logger := logging.Default()
 
 	// When running inside `go test` we want deterministic behaviour even if
 	// the developer happens to have Atlas credentials in their shell

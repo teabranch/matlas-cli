@@ -43,7 +43,10 @@ scripts/
 ./scripts/test.sh unit                 # Unit tests only
 ./scripts/test.sh integration          # Integration tests only
 ./scripts/test.sh e2e                  # E2E tests only
+./scripts/test.sh cluster              # Cluster lifecycle tests (creates real clusters!)
+./scripts/test.sh database             # Database operations tests (creates test cluster!)
 ./scripts/test.sh all                  # All tests
+./scripts/test.sh comprehensive        # All tests including cluster and database tests
 ./scripts/test.sh all --coverage       # All tests with coverage
 ./scripts/test.sh clean                # Clean test cache
 ```
@@ -159,6 +162,43 @@ export VERBOSE=true                  # Enable verbose output
 - **Coverage**: Complete cluster lifecycle with CLI and YAML approaches
 - **Safety**: Creates real clusters (costs money!) but guarantees cleanup
 - **⚠️ WARNING**: This creates actual Atlas clusters and incurs real costs!
+
+### Database Operations Tests (`./scripts/test/database-operations.sh`)
+- **Purpose**: Comprehensive database management functionality testing
+- **Dependencies**: Atlas credentials + existing cluster required
+- **Duration**: ~10-15 minutes (no cluster creation/deletion)
+- **Coverage**: Database CRUD, Collection CRUD, Index CRUD with all options
+- **Features Tested**:
+  - Database creation, listing, deletion
+  - Collection creation (regular and capped), listing, deletion
+  - Index creation (single, compound, unique, sparse, background, text), listing, deletion
+  - Error scenarios and parameter validation
+  - Complete database → collection → index workflow
+- **Safety**: Uses existing cluster, cleans up created test data
+- **⚠️ NOTE**: Runs against existing cluster (ATLAS_CLUSTER_NAME), creates/deletes test data
+
+#### Database Test Requirements:
+```bash
+# Required environment variables
+export ATLAS_PUB_KEY="your_atlas_public_key"
+export ATLAS_API_KEY="your_atlas_private_key"
+export ATLAS_PROJECT_ID="your_project_id"
+export ATLAS_ORG_ID="your_org_id"
+export ATLAS_CLUSTER_NAME="your_existing_cluster_name"  # NEW: existing cluster to test against
+```
+
+#### Database Test Modes:
+```bash
+# Run all database operations tests
+./scripts/test/database-operations.sh
+
+# Run specific test categories
+./scripts/test/database-operations.sh databases     # Test database CRUD only
+./scripts/test/database-operations.sh collections  # Test collection CRUD only
+./scripts/test/database-operations.sh indexes      # Test index CRUD only
+./scripts/test/database-operations.sh errors       # Test error scenarios only
+./scripts/test/database-operations.sh workflow     # Test complete workflow only
+```
 
 #### Cluster Test Modes:
 ```bash

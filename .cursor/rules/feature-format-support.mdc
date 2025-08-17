@@ -1,0 +1,75 @@
+---
+alwaysApply: true
+description: Ensure every new feature supports both CLI and YAML ApplyDocument, and clearly distinguishes INFRA vs non-INFRA commands.
+---
+
+# Feature Interface Consistency (CLI + YAML ApplyDocument)
+
+When introducing any new user-facing feature, always provide both:
+
+- CLI interface with appropriate subcommands and flags
+- YAML ApplyDocument support via a dedicated YAML kind (create one if it does not exist)
+
+This policy prevents drift between interfaces and guarantees first-class automation support.
+
+## Command taxonomy: INFRA vs other commands
+
+- INFRA-related functionality belongs under `cmd/infra` (e.g., plan/apply/diff/show/validate flows)
+  - Keep business logic in the `internal/apply` pipeline and `internal/services/*` layers
+  - Ensure operations are surfaced in: `apply`, `plan`, `diff`, `show`, `validate`
+
+- Non-INFRA functionality belongs in its domain-specific command group:
+  - `cmd/atlas/*` for Atlas resources and account/project/cluster/user/network surfaces
+  - `cmd/database/*` for MongoDB database-level operations
+  - `cmd/config/*` for CLI configuration and credentials
+
+Both paths must call the same service-layer code in `internal/services/*` to avoid divergence.
+
+## CLI requirements
+
+- Add or extend a subcommand in the correct command group (`cmd/infra`, `cmd/atlas`, `cmd/database`, `cmd/config`)
+- Provide flags that are consistent with existing naming and patterns
+- Validate inputs and route requests through shared services in `internal/services/*`
+- Update command help and autocompletion if applicable
+
+Relevant entry points and patterns:
+- `cmd/infra/*.go`
+- `cmd/atlas/**/*.go`
+- `cmd/database/**/*.go`
+- `internal/services/*`
+
+## YAML (ApplyDocument) requirements
+
+- If a unique YAML kind already exists for the object, ensure ApplyDocument supports the new fields/behaviors.
+- If no unique YAML kind exists, create one and implement end-to-end support:
+  - Define or extend types in: [internal/types/apply.go](mdc:internal/types/apply.go), [internal/types/*.go](mdc:internal/types)
+  - Load and map kinds in: [internal/apply/loader.go](mdc:internal/apply/loader.go)
+  - Validate schema and semantics in: [internal/apply/validation.go](mdc:internal/apply/validation.go), [internal/validation/schema.go](mdc:internal/validation/schema.go)
+  - Wire execution to services in: [internal/apply/executor.go](mdc:internal/apply/executor.go), [internal/apply/fetchers.go](mdc:internal/apply/fetchers.go)
+  - Keep diff/dry-run output coherent in: [internal/apply/diff_formatter.go](mdc:internal/apply/diff_formatter.go), [internal/apply/dryrun_formatter.go](mdc:internal/apply/dryrun_formatter.go)
+
+Both CLI and YAML paths must use the same service-layer implementations in `internal/services/*` (e.g., [internal/services/atlas](mdc:internal/services/atlas), [internal/services/database](mdc:internal/services/database)).
+
+## Documentation and examples
+
+- Add a minimal YAML example to `examples/` and reference it from `docs/`
+- Update relevant docs pages under `docs/` to describe the CLI flags and YAML kind usage
+
+## Per-feature tracking
+
+To ensure clarity and traceability, every feature MUST include a concise per-feature summary file:
+
+- Location: `features/`
+- Template: `features/TEMPLATE.md`
+- Naming: `YYYY-MM-DD-<short-slug>.md` (e.g., `2025-08-13-temporary-users.md`) or `FTR-<id>-<short-slug>.md`
+- Minimum content: a top-level title (`Feature: <name>`) and a short "Summary" (2–6 sentences)
+- Recommended content: sections mapping changes across CLI, YAML ApplyDocument, service layer, apply pipeline, types, tests, docs, and any breaking/migration notes
+
+## Acceptance checklist (must have)
+
+- CLI subcommand/flags added in the correct command group
+- YAML kind exists and is supported by ApplyDocument end-to-end
+- Both interfaces call the same `internal/services/*` logic
+- Docs updated and example YAML added
+ - Per-feature tracking file added under `features/` using the template, with a filled Summary and links to relevant code/docs
+

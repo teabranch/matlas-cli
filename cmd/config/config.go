@@ -639,6 +639,39 @@ func generateApplyTemplate() map[string]interface{} {
 					},
 				},
 			},
+			"databaseRoles": []map[string]interface{}{
+				{
+					"metadata": map[string]interface{}{
+						"name": "custom-app-role",
+						"labels": map[string]string{
+							"purpose": "application",
+						},
+					},
+					"roleName":     "appDataRole",
+					"databaseName": "app-database",
+					"privileges": []map[string]interface{}{
+						{
+							"actions": []string{"find", "insert", "update", "remove"},
+							"resource": map[string]interface{}{
+								"database":   "app-database",
+								"collection": "users",
+							},
+						},
+						{
+							"actions": []string{"find"},
+							"resource": map[string]interface{}{
+								"database": "logs",
+							},
+						},
+					},
+					"inheritedRoles": []map[string]interface{}{
+						{
+							"roleName":     "read",
+							"databaseName": "reference-data",
+						},
+					},
+				},
+			},
 			"networkAccess": []map[string]interface{}{
 				{
 					"metadata": map[string]interface{}{
