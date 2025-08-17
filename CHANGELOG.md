@@ -1,3 +1,48 @@
+## 1.0.0 (2025-08-17)
+
+### ⚠ BREAKING CHANGES
+
+* **cli:** config template generate and export commands now use --file instead of --output flag
+
+## Error Handling Fixes
+- Fix unchecked MarkHidden() error returns in database command (cmd/database/database.go)
+- Fix unchecked MongoDB client.Disconnect() error returns in roles command (cmd/database/roles/roles.go)
+- Fix unchecked MongoDB client.Disconnect() error returns in users command (cmd/database/users/users.go)
+- Add proper error handling with panic for flag configuration failures
+- Add warning messages for MongoDB connection cleanup failures
+
+## CLI Improvements
+- Standardize config command flags: rename --output/-o to --file for consistency
+- Update template generate command examples and help text
+- Update export command examples and help text
+- Improve flag naming consistency across config subcommands
+
+## Testing Infrastructure
+- Add comprehensive config command test suite (scripts/test/config-test.sh)
+- Test template generation, validation, experimental commands, error handling
+- Add config tests to main test runner (scripts/test.sh)
+- Include config tests in comprehensive test suite
+
+## Documentation
+- Update config.md to reflect --file flag usage
+- Update command help text and examples
+
+## Project Tracking
+- Document all bug fixes and improvements in tracking/bugfixes.md
+- Update test script tracking documentation
+
+Resolves GoLinting errcheck violations and improves CLI consistency.
+
+Refs: #errcheck-fixes #config-standardization
+
+### Bug Fixes
+
+* **cli:** resolve errcheck violations and standardize config command flags ([ce7924b](https://github.com/teabranch/matlas-cli/commit/ce7924b45a0f1b248376d1921d089eac38bae2fc))
+
+### Documentation
+
+* comprehensive documentation updates for discovery and authentication features ([7bd2a13](https://github.com/teabranch/matlas-cli/commit/7bd2a131eaeb1a4c1e98128b2cb7c186a17c2e2f))
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
