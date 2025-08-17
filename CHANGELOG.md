@@ -1,8 +1,24 @@
+<<<<<<< HEAD
 ## [1.0.2](https://github.com/teabranch/matlas-cli/compare/v1.0.1...v1.0.2) (2025-08-17)
 
 ### Bug Fixes
 
 * go.mod ([be3b546](https://github.com/teabranch/matlas-cli/commit/be3b546849aa4875156fa149a01e4dc401b0a8f9))
+=======
+## [Unreleased]
+
+### Changed
+- Improved release workflow strategy with proper pre-release and official release separation
+- Main branch now creates pre-releases with `-main` suffix for development builds
+- Release branch creates official stable releases following semantic versioning
+- CI workflow now builds reusable artifacts that are attached to releases
+- Eliminated duplicate artifact building between CI and release workflows
+
+### Added
+- Comprehensive release process documentation explaining branching strategy
+- Automated artifact attachment from CI builds to GitHub releases
+- Support for both development pre-releases and stable official releases
+>>>>>>> c2c47d4 (fix: release workflow)
 
 ## [1.0.1](https://github.com/teabranch/matlas-cli/compare/v1.0.0...v1.0.1) (2025-08-17)
 

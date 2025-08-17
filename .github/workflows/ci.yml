@@ -256,19 +256,65 @@ jobs:
           COMMIT=$(git rev-parse --short HEAD)
           BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           
+          # Create dist directory
+          mkdir -p dist
+          
+          # Build binary
+          BINARY_NAME="matlas${{ matrix.ext }}"
           go build \
             -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.buildTime=${BUILD_TIME}" \
-            -o "matlas-${VERSION}-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }}" \
+            -o "dist/${BINARY_NAME}" \
             .
+          
+          # Create release archive
+          cd dist
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            zip "matlas_${{ matrix.goos }}_${{ matrix.goarch }}.zip" "${BINARY_NAME}"
+          else
+            tar -czf "matlas_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz" "${BINARY_NAME}"
+            # Also create zip for consistency
+            zip "matlas_${{ matrix.goos }}_${{ matrix.goarch }}.zip" "${BINARY_NAME}"
+          fi
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: matlas-${{ matrix.os }}-${{ matrix.arch }}
-          path: matlas-*
+          path: |
+            dist/*.zip
+            dist/*.tar.gz
           retention-days: 90
 
+  create-checksums:
+    name: 📋 Create Checksums
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
 
+      - name: Create consolidated dist directory
+        run: |
+          mkdir -p dist
+          find artifacts/ -name "*.zip" -exec cp {} dist/ \;
+          find artifacts/ -name "*.tar.gz" -exec cp {} dist/ \;
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum *.zip *.tar.gz > checksums.txt || shasum -a 256 *.zip *.tar.gz > checksums.txt
+          echo "Generated checksums:"
+          cat checksums.txt
+
+      - name: Upload consolidated artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist/
+          retention-days: 90
 
   # ==============================================================================
   # Release Management

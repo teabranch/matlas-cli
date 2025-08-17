@@ -49,6 +49,8 @@ navigation:
     url: /config/
   - title: Development Guide
     url: /development/
+  - title: Release Process
+    url: /release-process/
 
 # Social links
 github_username: teabranch
