@@ -45,6 +45,7 @@ COMMANDS:
     network     Run network access lifecycle live tests
     projects    Run projects lifecycle live tests (creates real project)
     discovery   Run discovery lifecycle tests (comprehensive discovery feature testing)
+                Use --cluster-lifecycle flag to include cluster creation/deletion tests (costs money!)
     applydoc    Run ApplyDocument format tests (comprehensive coverage)
     all         Run all tests (unit + integration + e2e)
     comprehensive Run all tests including cluster and applydoc tests
@@ -64,6 +65,7 @@ EXAMPLES:
     $0 cluster-safe         # Run ultra-safe cluster tests (explicit safety)
     $0 database             # Run database operations tests
     $0 discovery            # Run discovery lifecycle tests
+    $0 discovery --cluster-lifecycle  # Run discovery tests with cluster creation (costs money!)
     $0 applydoc             # Run ApplyDocument format tests
     $0 e2e                  # Run e2e tests (users/network only)
     $0 e2e --include-clusters  # Run e2e tests with real clusters

@@ -2,6 +2,12 @@
 
 # Discovery Lifecycle Tests
 # Comprehensive testing of the discovery feature with real resources
+# 
+# SAFETY: This test is designed to be non-destructive to existing resources:
+# - Uses --preserve-existing flags to protect existing Atlas resources
+# - Only manages test resources it creates (tracked in arrays)
+# - Cleanup only removes resources created during the test
+# - Uses correct Atlas API commands for Atlas-managed database users
 
 set -euo pipefail
 
@@ -26,10 +32,16 @@ print_info() { echo -e "${BLUE}ℹ $1${NC}"; }
 # Resource tracking
 declare -a CREATED_USERS=()
 declare -a CREATED_NETWORK=()
+declare -a CREATED_CLUSTERS=()
 declare -a TEMP_FILES=()
 
 setup_discovery_environment() {
     mkdir -p "$TEST_REPORTS_DIR"
+    
+    print_info "Setting up discovery test environment..."
+    print_success "✓ SAFE MODE: Discovery tests use --preserve-existing to protect existing resources"
+    print_info "Tests only manage resources they create - existing resources are preserved"
+    echo
     
     # Load environment
     if [[ -f "$PROJECT_ROOT/.env" ]]; then
@@ -44,6 +56,9 @@ setup_discovery_environment() {
         print_info "Set ATLAS_PUB_KEY, ATLAS_API_KEY, ATLAS_PROJECT_ID, and ATLAS_ORG_ID in .env file"
         return 1
     fi
+    
+    # Note: Atlas database users are managed via Atlas API, not direct database connections
+    # No cluster name required for Atlas user management operations
     
     # Ensure matlas binary exists
     if [[ ! -f "$PROJECT_ROOT/matlas" ]]; then
@@ -72,6 +87,11 @@ track_network() {
     CREATED_NETWORK+=("$entry_id")
 }
 
+track_cluster() {
+    local cluster_name="$1"
+    CREATED_CLUSTERS+=("$cluster_name")
+}
+
 track_temp_file() {
     local file="$1"
     TEMP_FILES+=("$file")
@@ -79,20 +99,32 @@ track_temp_file() {
 
 cleanup_resources() {
     print_info "Cleaning up test resources..."
+    print_info "Only removing resources created during this test - existing resources are preserved"
     
-    # Clean up users
-    for user_id in "${CREATED_USERS[@]}"; do
-        print_info "Cleaning up user: $user_id"
-        if ! matlas database users delete "$user_id" --project-id "$ATLAS_PROJECT_ID" --force --no-confirm 2>/dev/null; then
-            print_warning "Failed to cleanup user: $user_id"
+    # Clean up clusters first (users depend on clusters)
+    for cluster_name in "${CREATED_CLUSTERS[@]}"; do
+        print_info "Cleaning up test cluster: $cluster_name"
+        if ! matlas atlas clusters delete "$cluster_name" --project-id "$ATLAS_PROJECT_ID" --yes 2>/dev/null; then
+            print_warning "Failed to cleanup test cluster: $cluster_name"
+        else
+            print_info "Waiting for cluster deletion to complete..."
+            sleep 30  # Wait for cluster deletion to propagate
         fi
     done
     
-    # Clean up network access entries
+    # Clean up users (only ones created by this test)
+    for user_id in "${CREATED_USERS[@]}"; do
+        print_info "Cleaning up test user: $user_id"
+        if ! matlas atlas users delete "$user_id" --project-id "$ATLAS_PROJECT_ID" --database-name admin --yes 2>/dev/null; then
+            print_warning "Failed to cleanup test user: $user_id"
+        fi
+    done
+    
+    # Clean up network access entries (only ones created by this test)
     for entry_id in "${CREATED_NETWORK[@]}"; do
-        print_info "Cleaning up network entry: $entry_id"
-        if ! matlas atlas network delete "$entry_id" --project-id "$ATLAS_PROJECT_ID" --force --no-confirm 2>/dev/null; then
-            print_warning "Failed to cleanup network entry: $entry_id"
+        print_info "Cleaning up test network entry: $entry_id"
+        if ! matlas atlas network delete "$entry_id" --project-id "$ATLAS_PROJECT_ID" --yes 2>/dev/null; then
+            print_warning "Failed to cleanup test network entry: $entry_id"
         fi
     done
     
@@ -123,6 +155,46 @@ wait_for_propagation() {
     local seconds="${1:-10}"
     print_info "Waiting ${seconds}s for Atlas propagation..."
     sleep "$seconds"
+}
+
+# Wait for cluster to be available (aligned with cluster-lifecycle.sh)
+wait_for_cluster_ready() {
+    local cluster_name="$1"
+    local max_wait_time=${2:-1800}  # 30 minutes default
+    local wait_interval=30
+    local elapsed_time=0
+    
+    print_info "Waiting for cluster '$cluster_name' to be ready (max ${max_wait_time}s)..."
+    
+    while [[ $elapsed_time -lt $max_wait_time ]]; do
+        local cluster_status
+        cluster_status=$(matlas atlas clusters get "$cluster_name" \
+            --project-id "$ATLAS_PROJECT_ID" \
+            --output json 2>/dev/null | jq -r '.stateName // "UNKNOWN"' 2>/dev/null || echo "UNKNOWN")
+        
+        case "$cluster_status" in
+            "IDLE")
+                print_success "Cluster '$cluster_name' is ready"
+                return 0
+                ;;
+            "CREATING"|"UPDATING"|"REPAIRING")
+                print_info "Cluster status: $cluster_status (${elapsed_time}/${max_wait_time}s)"
+                ;;
+            "ERROR"|"UNKNOWN")
+                print_error "Cluster in error state: $cluster_status"
+                return 1
+                ;;
+            *)
+                print_info "Cluster status: $cluster_status (${elapsed_time}/${max_wait_time}s)"
+                ;;
+        esac
+        
+        sleep $wait_interval
+        ((elapsed_time += wait_interval))
+    done
+    
+    print_error "Timeout waiting for cluster '$cluster_name' to be ready"
+    return 1
 }
 
 test_basic_discovery() {
@@ -163,10 +235,11 @@ test_basic_discovery() {
     print_success "Converted to ApplyDocument: $apply_file"
     
     # Test 3: Apply the same document to check consistency (no changes)
-    print_info "Step 3: Applying converted document to verify consistency..."
+    print_info "Step 3: Planning converted document to verify consistency..."
+    print_info "Using --preserve-existing to protect existing resources"
     local plan_output="$TEST_REPORTS_DIR/${test_name}-plan.txt"
     
-    if ! matlas infra plan -f "$apply_file" --project-id "$ATLAS_PROJECT_ID" > "$plan_output" 2>&1; then
+    if ! matlas infra plan -f "$apply_file" --project-id "$ATLAS_PROJECT_ID" --preserve-existing > "$plan_output" 2>&1; then
         print_error "Failed to plan converted document"
         cat "$plan_output"
         return 1
@@ -234,7 +307,8 @@ EOF
     
     # Step 3: Apply the new user
     print_info "Step 3: Applying new user..."
-    if ! matlas infra apply -f "$user_apply_doc" --project-id "$ATLAS_PROJECT_ID" --no-confirm --verbose; then
+    print_info "Using --preserve-existing to protect existing resources"
+    if ! matlas infra apply -f "$user_apply_doc" --project-id "$ATLAS_PROJECT_ID" --preserve-existing --auto-approve --verbose; then
         print_error "Failed to apply new user"
         return 1
     fi
@@ -283,7 +357,7 @@ EOF
     
     # Step 6: Remove the user while retaining other resources
     print_info "Step 6: Removing test user while retaining other resources..."
-    if ! matlas database users delete "$test_user" --project-id "$ATLAS_PROJECT_ID" --force --no-confirm; then
+    if ! matlas atlas users delete "$test_user" --project-id "$ATLAS_PROJECT_ID" --database-name admin --yes; then
         print_error "Failed to remove test user"
         return 1
     fi
@@ -570,6 +644,267 @@ test_discovery_caching() {
     return 0
 }
 
+test_cluster_lifecycle_discovery() {
+    print_info "Testing cluster lifecycle discovery (creates real clusters - may incur costs)..."
+    print_warning "⚠️  WARNING: This test creates and deletes real Atlas clusters!"
+    print_success "✓ SAFE MODE: Uses --preserve-existing to protect existing resources"
+    
+    local test_name="cluster-lifecycle-$(date +%s)"
+    local initial_discovery="$TEST_REPORTS_DIR/${test_name}-initial.yaml"
+    local cluster_apply_doc="$TEST_REPORTS_DIR/${test_name}-cluster-addition.yaml"
+    local user_apply_doc="$TEST_REPORTS_DIR/${test_name}-user-addition.yaml"
+    local final_discovery="$TEST_REPORTS_DIR/${test_name}-final.yaml"
+    local post_removal_discovery="$TEST_REPORTS_DIR/${test_name}-post-removal.yaml"
+    
+    # Step 1: Discover existing project and convert to ApplyDocument
+    print_info "Step 1: Discovering existing project and converting to ApplyDocument..."
+    if ! matlas discover --project-id "$ATLAS_PROJECT_ID" --convert-to-apply --output-file "$initial_discovery" --verbose; then
+        print_error "Failed to discover initial state"
+        return 1
+    fi
+    
+    track_temp_file "$initial_discovery"
+    
+    # Extract cluster count and get an existing cluster spec for reference
+    local initial_cluster_count
+    initial_cluster_count=$(grep -c "kind: Cluster" "$initial_discovery" || echo "0")
+    print_success "Initial state captured with $initial_cluster_count clusters"
+    
+    if [[ $initial_cluster_count -eq 0 ]]; then
+        print_error "No existing clusters found - cannot create similar cluster spec"
+        print_info "This test requires at least one existing cluster to copy specifications from"
+        return 1
+    fi
+    
+    # Extract existing cluster name and basic specs for reference
+    local existing_cluster_name
+    existing_cluster_name=$(grep -A 10 "kind: Cluster" "$initial_discovery" | grep "name:" | head -1 | awk '{print $2}' | tr -d '"')
+    
+    if [[ -z "$existing_cluster_name" ]]; then
+        print_error "Could not extract existing cluster name"
+        return 1
+    fi
+    
+    print_info "Found existing cluster: $existing_cluster_name"
+    
+    # Step 2: Create new cluster with similar spec
+    print_info "Step 2: Creating new cluster with similar spec to existing cluster..."
+    local test_cluster="disc-test-$(date +%s)"
+    
+    # Create a simplified cluster ApplyDocument (M10 tier like the existing cluster)
+    cat > "$cluster_apply_doc" << EOF
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: discovery-test-cluster-addition
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: Cluster
+    metadata:
+      name: $test_cluster
+    spec:
+      projectName: "$ATLAS_PROJECT_ID"
+      provider: AWS
+      region: US_EAST_1
+      instanceSize: M10
+      clusterType: REPLICASET
+      tierType: REPLICASET
+      mongodbVersion: "7.0"
+      backupEnabled: false
+EOF
+    
+    track_temp_file "$cluster_apply_doc"
+    
+    # Apply the cluster
+    print_info "Creating cluster $test_cluster (this may take several minutes)..."
+    print_info "Using --preserve-existing to protect existing resources"
+    if ! matlas infra apply -f "$cluster_apply_doc" --project-id "$ATLAS_PROJECT_ID" --preserve-existing --auto-approve --verbose; then
+        print_error "Failed to create test cluster"
+        return 1
+    fi
+    
+    track_cluster "$test_cluster"
+    print_success "Cluster $test_cluster created successfully"
+    
+    # Wait for cluster to be ready
+    if ! wait_for_cluster_ready "$test_cluster"; then
+        print_error "Cluster failed to become ready"
+        return 1
+    fi
+    
+    # Step 3: Add a database user to the new cluster
+    print_info "Step 3: Adding database user to new cluster..."
+    local test_user="disc-user-$(date +%s)"
+    
+    cat > "$user_apply_doc" << EOF
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: discovery-test-user-addition
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: $test_user
+    spec:
+      username: $test_user
+      authDatabase: admin
+      password: "ClusterDiscoveryTest123!"
+      projectName: "$ATLAS_PROJECT_ID"
+      roles:
+        - roleName: readWrite
+          databaseName: test
+EOF
+    
+    track_temp_file "$user_apply_doc"
+    
+    # Apply the user
+    print_info "Creating user $test_user..."
+    if ! matlas infra apply -f "$user_apply_doc" --project-id "$ATLAS_PROJECT_ID" --preserve-existing --auto-approve --verbose; then
+        print_error "Failed to create test user"
+        return 1
+    fi
+    
+    track_user "$test_user"
+    print_success "User $test_user created successfully"
+    
+    # Wait for propagation to ensure both cluster and user are visible in Atlas
+    wait_for_propagation 15
+    
+    # Additional wait specifically for cluster to be visible in discovery
+    print_info "Allowing additional time for cluster to be visible in discovery..."
+    wait_for_propagation 10
+    
+    # Step 4: Verify both cluster and user are discoverable
+    print_info "Step 4: Verifying cluster and user are discoverable..."
+    if ! matlas discover --project-id "$ATLAS_PROJECT_ID" --convert-to-apply --output-file "$final_discovery" --verbose; then
+        print_error "Failed to discover final state"
+        return 1
+    fi
+    
+    track_temp_file "$final_discovery"
+    
+    # Verify new cluster is in discovery
+    if grep -q "$test_cluster" "$final_discovery"; then
+        print_success "New cluster found in discovery results"
+    else
+        print_error "New cluster NOT found in discovery results"
+        return 1
+    fi
+    
+    # Verify new user is in discovery
+    if grep -q "$test_user" "$final_discovery"; then
+        print_success "New user found in discovery results"
+    else
+        print_error "New user NOT found in discovery results"
+        return 1
+    fi
+    
+    # Count resources
+    local final_cluster_count
+    final_cluster_count=$(grep -c "kind: Cluster" "$final_discovery" || echo "0")
+    local final_user_count
+    final_user_count=$(grep -c "kind: DatabaseUser" "$final_discovery" || echo "0")
+    
+    print_info "Final state: $final_cluster_count clusters, $final_user_count users"
+    print_info "Comparison: final=$final_cluster_count, initial=$initial_cluster_count"
+    
+    # Ensure we're doing integer comparison
+    if [[ $((final_cluster_count)) -gt $((initial_cluster_count)) ]]; then
+        print_success "Cluster count increased as expected ($initial_cluster_count → $final_cluster_count)"
+    else
+        print_error "Cluster count did not increase as expected (initial: $initial_cluster_count, final: $final_cluster_count)"
+        return 1
+    fi
+    
+    # Step 5: Remove the test user and cluster while retaining existing resources
+    print_info "Step 5: Removing test resources while retaining existing resources..."
+    
+    # Remove user first
+    print_info "Removing test user: $test_user"
+    if ! matlas atlas users delete "$test_user" --project-id "$ATLAS_PROJECT_ID" --database-name admin --yes; then
+        print_error "Failed to remove test user"
+        return 1
+    fi
+    
+    # Remove from tracking since we've manually deleted it
+    for i in "${!CREATED_USERS[@]}"; do
+        if [[ "${CREATED_USERS[i]}" == "$test_user" ]]; then
+            unset 'CREATED_USERS[i]'
+            break
+        fi
+    done
+    
+    print_success "Test user removed"
+    
+    # Remove cluster
+    print_info "Removing test cluster: $test_cluster (this may take several minutes)..."
+    if ! matlas atlas clusters delete "$test_cluster" --project-id "$ATLAS_PROJECT_ID" --yes; then
+        print_error "Failed to remove test cluster"
+        return 1
+    fi
+    
+    # Remove from tracking since we've manually deleted it
+    for i in "${!CREATED_CLUSTERS[@]}"; do
+        if [[ "${CREATED_CLUSTERS[i]}" == "$test_cluster" ]]; then
+            unset 'CREATED_CLUSTERS[i]'
+            break
+        fi
+    done
+    
+    print_success "Test cluster deletion initiated"
+    
+    # Wait for cluster deletion to propagate
+    print_info "Waiting for cluster deletion to propagate..."
+    wait_for_propagation 60
+    
+    # Step 6: Verify resources are removed but existing resources remain
+    print_info "Step 6: Verifying resource removal and retention of existing resources..."
+    if ! matlas discover --project-id "$ATLAS_PROJECT_ID" --convert-to-apply --output-file "$post_removal_discovery" --verbose; then
+        print_error "Failed to discover post-removal state"
+        return 1
+    fi
+    
+    track_temp_file "$post_removal_discovery"
+    
+    # Verify test cluster is gone
+    if grep -q "$test_cluster" "$post_removal_discovery"; then
+        print_warning "Removed cluster still appears in discovery (may still be deleting)"
+    else
+        print_success "Removed cluster no longer appears in discovery"
+    fi
+    
+    # Verify test user is gone
+    if grep -q "$test_user" "$post_removal_discovery"; then
+        print_error "Removed user still appears in discovery"
+        return 1
+    else
+        print_success "Removed user no longer appears in discovery"
+    fi
+    
+    # Verify existing cluster is still there
+    if grep -q "$existing_cluster_name" "$post_removal_discovery"; then
+        print_success "Existing cluster $existing_cluster_name is preserved"
+    else
+        print_error "Existing cluster $existing_cluster_name was affected (should be preserved)"
+        return 1
+    fi
+    
+    # Verify cluster count is back to original
+    local post_removal_cluster_count
+    post_removal_cluster_count=$(grep -c "kind: Cluster" "$post_removal_discovery" || echo "0")
+    
+    if [[ $post_removal_cluster_count -eq $initial_cluster_count ]]; then
+        print_success "Cluster count restored to initial value ($initial_cluster_count)"
+    else
+        print_info "Post-removal cluster count: $post_removal_cluster_count (initial: $initial_cluster_count)"
+        print_info "Note: Cluster deletion may still be in progress"
+    fi
+    
+    print_success "Cluster lifecycle discovery test completed successfully!"
+    return 0
+}
+
 run_discovery_integration_tests() {
     print_info "Running Go integration tests for discovery..."
     
@@ -593,17 +928,19 @@ Discovery Lifecycle Tests - Comprehensive testing of the discovery feature
 OPTIONS:
     --basic-only       Run only basic discovery tests
     --incremental-only Run only incremental discovery tests
+    --cluster-lifecycle Run cluster lifecycle discovery tests (creates real clusters - may incur costs)
     --skip-integration Skip Go integration tests
     --skip-cleanup     Skip resource cleanup (for debugging)
     --verbose          Enable verbose output
     --help             Show this help message
 
 EXAMPLES:
-    $0                     # Run all discovery tests
-    $0 --basic-only        # Run only basic tests
-    $0 --incremental-only  # Run only incremental tests
-    $0 --skip-integration  # Skip Go integration tests
-    $0 --verbose           # Run with verbose output
+    $0                        # Run all discovery tests (excludes cluster lifecycle)
+    $0 --basic-only           # Run only basic tests
+    $0 --incremental-only     # Run only incremental tests
+    $0 --cluster-lifecycle    # Run cluster lifecycle tests (WARNING: creates real clusters)
+    $0 --skip-integration     # Skip Go integration tests
+    $0 --verbose              # Run with verbose output
 
 WHAT IT TESTS:
     1. Basic Discovery Flow:
@@ -617,15 +954,23 @@ WHAT IT TESTS:
        - Run discovery again and verify user in results
        - Remove user while retaining other resources
     
-    3. Resource-Specific Discovery:
+    3. Cluster Lifecycle Discovery (--cluster-lifecycle flag):
+       - Discover existing project and convert to ApplyDocument
+       - Create new cluster with similar spec to existing
+       - Add database user to new cluster
+       - Verify both cluster and user are discoverable
+       - Remove test cluster and user while preserving existing resources
+       ⚠️  WARNING: Creates and deletes real Atlas clusters (may incur costs)
+    
+    4. Resource-Specific Discovery:
        - Test discovery of individual resource types
        - Test filtering options (include/exclude)
     
-    4. Format and Conversion Testing:
+    5. Format and Conversion Testing:
        - Test YAML and JSON output formats
        - Test DiscoveredProject to ApplyDocument conversion
     
-    5. Advanced Features:
+    6. Advanced Features:
        - Test discovery caching functionality
        - Test Go integration tests
 
@@ -640,6 +985,7 @@ EOF
 main() {
     local basic_only=false
     local incremental_only=false
+    local cluster_lifecycle=false
     local skip_integration=false
     local skip_cleanup=false
     local verbose=false
@@ -653,6 +999,10 @@ main() {
                 ;;
             --incremental-only)
                 incremental_only=true
+                shift
+                ;;
+            --cluster-lifecycle)
+                cluster_lifecycle=true
                 shift
                 ;;
             --skip-integration)
@@ -702,9 +1052,14 @@ main() {
     elif [[ "$incremental_only" == "true" ]]; then
         print_info "Running incremental discovery tests only..."
         test_incremental_discovery || ((failed++))
+    elif [[ "$cluster_lifecycle" == "true" ]]; then
+        print_info "Running cluster lifecycle discovery tests only..."
+        print_warning "⚠️  WARNING: This creates and deletes real Atlas clusters and may incur costs!"
+        test_cluster_lifecycle_discovery || ((failed++))
     else
-        # Run all tests
+        # Run all tests (excluding cluster lifecycle by default)
         print_info "Running comprehensive discovery test suite..."
+        print_info "ℹ️  NOTE: Cluster lifecycle tests excluded (use --cluster-lifecycle to enable)"
         
         test_basic_discovery || ((failed++))
         test_incremental_discovery || ((failed++))
@@ -731,6 +1086,7 @@ main() {
 }
 
 main "$@"
+
 
 
 

@@ -99,6 +99,8 @@ ATLAS_PROJECT_ID=your-test-atlas-project-id
 ATLAS_ORG_ID=your-atlas-org-id
 ```
 
+**Note**: Discovery tests manage Atlas database users via the Atlas API, so no cluster name is required for user operations.
+
 ### Optional Configuration
 ```bash
 ATLAS_TEST_TIMEOUT=10m
