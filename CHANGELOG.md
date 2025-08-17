@@ -1,3 +1,9 @@
+## [1.0.1](https://github.com/teabranch/matlas-cli/compare/v1.0.0...v1.0.1) (2025-08-17)
+
+### Bug Fixes
+
+* lint and 1 test ([3fe0357](https://github.com/teabranch/matlas-cli/commit/3fe03575c256679389edb5b614cc5a91c0be22a2))
+
 ## 1.0.0 (2025-08-17)
 
 ### ⚠ BREAKING CHANGES
