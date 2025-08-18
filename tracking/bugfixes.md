@@ -1,5 +1,43 @@
 # Bugfixes Tracking
 
+## [2025-01-27] Semantic Release Workflow Fix
+
+**Status**: Completed  
+**Developer**: Assistant  
+**Related Issues**: Artifact attachment failure, chore commit interference  
+
+### Summary
+Fixed semantic-release workflow where post-release chore commits were preventing CI artifacts from being attached to releases, causing releases to be published without binaries.
+
+### Tasks
+- [x] Analyze semantic-release workflow issue where chore commits break artifact attachment
+- [x] Identify that @semantic-release/git plugin creates chore commits after releases, causing confusion
+- [x] Remove @semantic-release/git and @semantic-release/changelog plugins from .releaserc.json
+- [x] Verify the updated configuration works correctly  
+- [x] Update changelog to document the fix
+
+### Files Modified
+- `.releaserc.json` - Removed @semantic-release/git and @semantic-release/changelog plugins
+- `CHANGELOG.md` - Documented the workflow fix and plugin removal
+- `tracking/bugfixes.md` - Added permanent tracking entry
+
+### Notes
+The issue was that semantic-release was creating a `chore(release): vX.X.X [skip ci]` commit after creating the GitHub release. This caused confusion in the release workflow when trying to find CI artifacts, as it would look for artifacts associated with the chore commit (which don't exist) instead of the original feature/fix commit.
+
+By removing the problematic plugins, the workflow now cleanly:
+1. Analyzes commits and generates release notes
+2. Creates GitHub release and tag pointing to the correct commit
+3. Release workflow finds CI artifacts for the correct commit SHA
+4. Artifacts are successfully attached to the release
+
+The changelog is now maintained manually as per project standards, which is actually cleaner and more predictable.
+
+**Root Cause**: The `@semantic-release/git` plugin in `.releaserc.json` was configured to create a commit with the updated CHANGELOG.md after the release was already created. This created a timing issue where the release tag pointed to the original commit, but the latest commit in the repo became the chore commit, confusing the artifact lookup process.
+
+**Solution**: Removed both `@semantic-release/changelog` and `@semantic-release/git` plugins, keeping only the essential plugins: `@semantic-release/commit-analyzer`, `@semantic-release/release-notes-generator`, and `@semantic-release/github`. The changelog is maintained manually per project standards.
+
+---
+
 ## [2025-01-27] Error Handling and Logging Standardization Analysis
 
 **Status**: Completed  
