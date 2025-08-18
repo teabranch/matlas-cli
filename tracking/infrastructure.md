@@ -137,6 +137,110 @@ The fix ensures:
 
 ---
 
+## [2025-01-27] Complete Release Workflow Redesign
+
+**Status**: Completed  
+**Developer**: Assistant  
+**Related Issues**: Semantic-release not detecting commits, empty releases, workflow complexity  
+
+### Summary
+Completely redesigned the release process following 2024/2025 best practices by consolidating three separate workflows into a single comprehensive workflow that handles CI/CD, testing, building, and releasing with artifacts.
+
+### Root Cause Analysis
+
+**Problems with Previous Approach**:
+1. **Three-workflow complexity**: Separate ci.yml, semantic-release.yml, and release.yml workflows
+2. **Timing coordination issues**: Workflows had to wait for each other and coordinate artifact handoffs
+3. **Semantic-release not detecting commits**: Despite valid `fix:` commits, semantic-release claimed "no new release necessary"
+4. **Empty releases**: Artifacts weren't being properly attached to releases
+5. **Resource waste**: Duplicate workflow executions and complex orchestration
+
+**Investigation Results**:
+- 6 valid `fix:` commits since v1.0.2 that should trigger releases
+- User cleared newer tags locally, leaving only v1.0.0, v1.0.1, v1.0.2
+- Semantic-release workflow was overly complex and not following current best practices
+
+### Technical Solution
+
+#### New Architecture: Single Consolidated Workflow
+
+**Before**: 3 separate workflows with complex coordination
+```
+ci.yml (build/test) → semantic-release.yml (wait/release) → release.yml (attach artifacts)
+```
+
+**After**: 1 comprehensive workflow 
+```
+release.yml (lint → test → build → checksums → semantic-release with artifacts)
+```
+
+#### Key Improvements
+
+1. **Consolidated Workflow** (`.github/workflows/release.yml`):
+   - Combines all CI/CD operations in dependency order
+   - Lint → Test → Build → Create Checksums → Semantic Release
+   - Single point of execution eliminates coordination issues
+
+2. **Direct Artifact Integration** (`.releaserc.json`):
+   ```json
+   {
+     "plugins": [
+       "@semantic-release/commit-analyzer",
+       "@semantic-release/release-notes-generator", 
+       [
+         "@semantic-release/github",
+         {
+           "assets": [
+             {"path": "dist/*.zip", "label": "Binary Archives (ZIP)"},
+             {"path": "dist/*.tar.gz", "label": "Binary Archives (TAR.GZ)"},
+             {"path": "dist/checksums.txt", "label": "SHA256 Checksums"}
+           ]
+         }
+       ]
+     ]
+   }
+   ```
+
+3. **Modern Best Practices**:
+   - Semantic-release directly uploads artifacts to GitHub releases
+   - No separate artifact coordination needed
+   - Clear job dependencies ensure proper execution order
+   - Conditional execution for releases (main branch only)
+
+### Files Modified
+- `.github/workflows/release.yml` - Created comprehensive consolidated workflow
+- `.releaserc.json` - Updated to include artifacts in releases
+- `.github/workflows/ci.yml` - Removed (consolidated)
+- `.github/workflows/semantic-release.yml` - Removed (consolidated)
+- `CHANGELOG.md` - Documented the complete redesign
+- `tracking/infrastructure.md` - Added detailed tracking
+
+### Expected Results
+
+The new workflow will:
+1. ✅ **Detect commits properly**: No more "no new release necessary" despite valid commits
+2. ✅ **Include artifacts**: All platform binaries and checksums attached to releases
+3. ✅ **Single execution**: No workflow coordination issues or timing problems
+4. ✅ **Resource efficient**: Single workflow run instead of three separate workflows
+5. ✅ **Reliable releases**: Follows current GitHub Actions + semantic-release best practices
+
+### Testing Strategy
+
+Next push to main with a `fix:` or `feat:` commit should:
+- Execute the consolidated workflow
+- Build artifacts for all platforms (Linux, macOS, Windows)
+- Create proper release with all artifacts attached
+- Demonstrate the fix for semantic-release detection
+
+### Future Considerations
+
+- **Maintenance**: Single workflow is easier to maintain and debug
+- **Scalability**: Can easily add more platforms or build steps
+- **Monitoring**: Clearer workflow execution logs
+- **Documentation**: Simpler process for team members to understand
+
+---
+
 ## [2025-01-07] Release Workflow Improvement
 
 **Status**: Completed  

@@ -22,6 +22,11 @@
 ## [Unreleased]
 
 ### Fixed
+- Fixed semantic-release not detecting conventional commits by consolidating workflows
+- Completely redesigned release process following current best practices
+- Consolidated CI/CD, testing, building, and releasing into single workflow
+- Semantic-release now directly includes artifacts in GitHub releases
+- Eliminated workflow coordination issues that caused empty releases
 - Fixed semantic-release workflow creating confusing chore commits that broke artifact attachment
 - Removed @semantic-release/git and @semantic-release/changelog plugins to eliminate post-release commits
 - Fixed CI workflow running twice (on push and release), causing empty releases without artifacts

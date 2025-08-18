@@ -3,7 +3,25 @@
   "plugins": [
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
-    "@semantic-release/github"
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          {
+            "path": "dist/*.zip",
+            "label": "Binary Archives (ZIP)"
+          },
+          {
+            "path": "dist/*.tar.gz", 
+            "label": "Binary Archives (TAR.GZ)"
+          },
+          {
+            "path": "dist/checksums.txt",
+            "label": "SHA256 Checksums"
+          }
+        ]
+      }
+    ]
   ],
   "repositoryUrl": "https://github.com/teabranch/matlas-cli.git",
   "tagFormat": "v${version}",
