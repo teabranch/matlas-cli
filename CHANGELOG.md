@@ -24,6 +24,8 @@
 ### Fixed
 - Fixed semantic-release workflow creating confusing chore commits that broke artifact attachment
 - Removed @semantic-release/git and @semantic-release/changelog plugins to eliminate post-release commits
+- Fixed CI workflow running twice (on push and release), causing empty releases without artifacts
+- Enhanced semantic-release to verify artifacts exist before creating releases
 - Release workflow now consistently finds CI artifacts for the correct commit SHA
 - Fixed critical issue where CI artifacts weren't created for manual tags
 - Fixed timing issue where releases were created before CI artifacts were ready

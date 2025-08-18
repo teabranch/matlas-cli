@@ -29,6 +29,114 @@ Any important decisions, blockers, or context for future developers.
 ---
 ```
 
+## [2025-01-27] CI/Release Workflow Coordination Fix
+
+**Status**: Completed  
+**Developer**: Assistant  
+**Related Issues**: Empty releases without artifacts, workflow double-execution  
+
+### Summary
+Fixed critical issue where CI workflow was running twice (on push and release events), causing semantic-release workflow to find the wrong CI run and resulting in empty releases without artifacts.
+
+### Tasks
+- [x] Analyze workflow coordination between semantic-release.yml and ci.yml
+- [x] Identify that CI runs twice due to release trigger, causing artifact lookup confusion
+- [x] Remove release trigger from ci.yml to prevent duplicate CI runs
+- [x] Enhance semantic-release to verify artifacts exist before creating releases
+- [x] Update changelog and tracking documentation
+
+### Files Modified
+- `.github/workflows/ci.yml` - Removed `release: types: [published]` trigger to prevent double execution
+- `.github/workflows/semantic-release.yml` - Enhanced wait logic to verify artifacts exist before proceeding
+- `CHANGELOG.md` - Documented the workflow coordination fixes
+- `tracking/infrastructure.md` - Added permanent tracking entry
+
+### Root Cause Analysis
+
+**Problem**: Releases were created without attached artifacts, appearing empty to users.
+
+**Investigation**: 
+1. Semantic-release workflow waits for CI completion, then creates GitHub release
+2. Release creation triggers CI workflow again due to `release: published` trigger
+3. Release.yml workflow searches for CI artifacts but finds the newer (incomplete) CI run instead of the original CI run with artifacts
+
+**Timeline**:
+- Push `fix:` commit → CI runs (creates artifacts)
+- Semantic-release runs → waits for CI → creates release
+- Release published event → triggers CI again
+- Release.yml runs → finds wrong CI run → no artifacts attached
+
+### Technical Solution
+
+#### 1. Eliminated Double CI Execution
+```yaml
+# Before: CI triggered on both push AND release
+on:
+  push:
+    branches: [ main, develop, 'feature/*', 'fix/*' ]
+  pull_request:
+    branches: [ main, develop ]
+  release:
+    types: [ published ]  # ← Removed this
+
+# After: CI only triggered on push/PR
+on:
+  push:
+    branches: [ main, develop, 'feature/*', 'fix/*' ]
+  pull_request:
+    branches: [ main, develop ]
+```
+
+#### 2. Enhanced Artifact Verification
+```javascript
+// Before: Only waited for CI workflow completion
+if (run.status === 'completed' && run.conclusion === 'success') {
+  return; // ← Could return before artifacts are ready
+}
+
+// After: Also verifies artifacts exist
+if (run.status === 'completed' && run.conclusion === 'success') {
+  const artifacts = await github.rest.actions.listWorkflowRunArtifacts(...);
+  const releaseArtifacts = artifacts.artifacts.filter(a => 
+    a.name === 'release-artifacts' || a.name.startsWith('matlas-')
+  );
+  if (releaseArtifacts.length > 0) {
+    return; // ← Only returns when artifacts confirmed
+  }
+}
+```
+
+### Impact Assessment
+
+#### Before Fix
+- ❌ Empty releases without binaries
+- ❌ CI resources wasted on duplicate runs
+- ❌ Confusing workflow logs with multiple CI runs per commit
+- ❌ User experience degraded (no download artifacts)
+
+#### After Fix  
+- ✅ Releases include all platform binaries and checksums
+- ✅ CI runs only once per push, saving resources
+- ✅ Clear workflow execution logs
+- ✅ Reliable artifact attachment process
+- ✅ Better user experience with downloadable releases
+
+### Testing & Validation
+
+The fix ensures:
+1. **Single CI Execution**: Only runs on push/PR events, not release events
+2. **Artifact Verification**: Semantic-release confirms artifacts exist before creating releases
+3. **Correct Artifact Lookup**: Release.yml finds the original CI run with artifacts
+4. **Resource Efficiency**: No duplicate CI runs consuming runner minutes
+
+### Future Considerations
+
+- Monitor CI/release workflow execution to ensure continued reliability
+- Consider consolidating artifact attachment directly into semantic-release workflow if further simplification needed
+- Document the corrected workflow behavior for team understanding
+
+---
+
 ## [2025-01-07] Release Workflow Improvement
 
 **Status**: Completed  

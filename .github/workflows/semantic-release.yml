@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - name: Wait for CI workflow to complete
+      - name: Wait for CI workflow and artifacts to complete
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -36,7 +36,7 @@ jobs:
             const pollInterval = 30 * 1000; // 30 seconds
             const startTime = Date.now();
             
-            console.log(`Waiting for CI workflow to complete for commit: ${context.sha}`);
+            console.log(`Waiting for CI workflow and artifacts to complete for commit: ${context.sha}`);
             
             while (Date.now() - startTime < maxWaitTime) {
               const { data: runs } = await github.rest.actions.listWorkflowRuns({
@@ -53,20 +53,43 @@ jobs:
                 
                 if (run.status === 'completed') {
                   if (run.conclusion === 'success') {
+                    // Also verify that artifacts exist
                     console.log('✅ CI workflow completed successfully');
-                    console.log(`CI run URL: ${run.html_url}`);
-                    return;
+                    console.log('🔍 Checking for build artifacts...');
+                    
+                    try {
+                      const { data: artifacts } = await github.rest.actions.listWorkflowRunArtifacts({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        run_id: run.id,
+                      });
+                      
+                      const releaseArtifacts = artifacts.artifacts.filter(a => 
+                        a.name === 'release-artifacts' || a.name.startsWith('matlas-')
+                      );
+                      
+                      if (releaseArtifacts.length > 0) {
+                        console.log(`✅ Found ${releaseArtifacts.length} build artifacts`);
+                        console.log('Artifacts:', releaseArtifacts.map(a => a.name));
+                        console.log(`CI run URL: ${run.html_url}`);
+                        return;
+                      } else {
+                        console.log('⚠️ CI completed but no build artifacts found yet, waiting...');
+                      }
+                    } catch (error) {
+                      console.log('⚠️ Error checking artifacts, will retry:', error.message);
+                    }
                   } else {
                     throw new Error(`❌ CI workflow failed with conclusion: ${run.conclusion}`);
                   }
                 }
               }
               
-              console.log('⏳ Waiting for CI workflow to complete...');
+              console.log('⏳ Waiting for CI workflow and artifacts to complete...');
               await new Promise(resolve => setTimeout(resolve, pollInterval));
             }
             
-            throw new Error('⏰ Timeout waiting for CI workflow to complete');
+            throw new Error('⏰ Timeout waiting for CI workflow and artifacts to complete');
 
   semantic-release:
     name: 🚀 Semantic Release
