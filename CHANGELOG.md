@@ -25,7 +25,8 @@
 - Fixed semantic-release not detecting conventional commits by consolidating workflows
 - Completely redesigned release process following current best practices
 - Consolidated CI/CD, testing, building, and releasing into single workflow
-- Semantic-release now directly includes artifacts in GitHub releases
+- Semantic-release now directly includes artifacts in GitHub releases with proper filenames
+- Fixed artifact labels to show actual filenames (e.g., 'matlas_linux_amd64.zip') instead of generic descriptions
 - Eliminated workflow coordination issues that caused empty releases
 - Fixed semantic-release workflow creating confusing chore commits that broke artifact attachment
 - Removed @semantic-release/git and @semantic-release/changelog plugins to eliminate post-release commits

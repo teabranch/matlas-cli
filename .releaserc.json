@@ -7,18 +7,9 @@
       "@semantic-release/github",
       {
         "assets": [
-          {
-            "path": "dist/*.zip",
-            "label": "Binary Archives (ZIP)"
-          },
-          {
-            "path": "dist/*.tar.gz", 
-            "label": "Binary Archives (TAR.GZ)"
-          },
-          {
-            "path": "dist/checksums.txt",
-            "label": "SHA256 Checksums"
-          }
+          "dist/*.zip",
+          "dist/*.tar.gz",
+          "dist/checksums.txt"
         ]
       }
     ]
