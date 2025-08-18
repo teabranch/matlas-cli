@@ -35,23 +35,194 @@ We love how Terraform plans changes before applying, and how kubectl lets you de
 |---------|-------------|
 | 🌐 **Atlas** | List/get/create/update/delete projects, clusters, users, network access, peering, and network containers |
 | 🗄️ **Databases** | List/create/delete databases, collections, and indexes — either via connection string or Atlas cluster reference |
+| 👥 **Database Users** | Create/list/update/delete database-specific users with custom roles — via connection string or Atlas cluster reference |
 | 📋 **Infra** | Discover current state, plan/diff/apply/destroy via declarative YAML |
 
-## 📦 Install
+## 📦 Installation
 
-### Prerequisites
-- 🐹 **Go 1.22+** required
+### ⚡ Quick Install (Recommended)
 
-### Download from GitHub Releases
-Download the archive for your OS/architecture from the Releases page, extract, and place `matlas` in your PATH.
-
-### Build from source
+**macOS & Linux:**
 ```bash
+curl -fsSL https://raw.githubusercontent.com/teabranch/matlas-cli/main/install.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/teabranch/matlas-cli/main/install.ps1" -OutFile "install.ps1"; .\install.ps1
+```
+
+### 📋 Platform-Specific Installation
+
+#### macOS & Linux
+
+**Using the installation script:**
+```bash
+# Download and run installer
+curl -fsSL https://raw.githubusercontent.com/teabranch/matlas-cli/main/install.sh -o install.sh
+chmod +x install.sh
+./install.sh
+
+# Install specific version
+./install.sh --version v1.2.3
+
+# Install to custom directory (no sudo required)
+./install.sh --dir ~/.local/bin
+
+# Install to user directory via environment variable
+MATLAS_INSTALL_DIR=~/.local/bin ./install.sh
+```
+
+**Manual installation:**
+1. Download the latest release from [GitHub Releases](https://github.com/teabranch/matlas-cli/releases)
+2. Extract the archive: `tar -xzf matlas-*.tar.gz`
+3. Move binary to PATH: `sudo mv matlas /usr/local/bin/`
+4. Make executable: `sudo chmod +x /usr/local/bin/matlas`
+
+#### Windows
+
+**Using PowerShell (Recommended):**
+```powershell
+# Download installer
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/teabranch/matlas-cli/main/install.ps1" -OutFile "install.ps1"
+
+# Run installer (may require Administrator privileges)
+.\install.ps1
+
+# Install specific version
+.\install.ps1 -Version v1.2.3
+
+# Install to user directory (no admin required)
+.\install.ps1 -InstallDir "$env:USERPROFILE\matlas"
+
+# Skip automatic PATH setup
+.\install.ps1 -NoPathSetup
+```
+
+**Manual installation:**
+1. Download the Windows release from [GitHub Releases](https://github.com/teabranch/matlas-cli/releases)
+2. Extract the ZIP file
+3. Move `matlas.exe` to a directory in your PATH (e.g., `C:\Program Files\matlas\`)
+4. Add the directory to your system PATH if needed
+
+### 🛠️ Build from Source
+
+**Prerequisites:**
+- 🐹 **Go 1.24+** required
+
+```bash
+# Clone the repository
+git clone https://github.com/teabranch/matlas-cli.git
+cd matlas-cli
+
 # Quick build
 make build
 
 # Or manually
 go build -o bin/matlas ./...
+
+# Cross-compile for all platforms
+./scripts/build/build.sh cross
+```
+
+### 🗑️ Uninstallation
+
+**macOS & Linux:**
+```bash
+# Download and run uninstaller
+curl -fsSL https://raw.githubusercontent.com/teabranch/matlas-cli/main/uninstall.sh | bash
+
+# Or manually
+sudo rm /usr/local/bin/matlas
+rm -rf ~/.matlas  # Remove config directory
+```
+
+**Windows:**
+```powershell
+# Download and run uninstaller
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/teabranch/matlas-cli/main/uninstall.ps1" -OutFile "uninstall.ps1"; .\uninstall.ps1
+
+# Or manually remove
+Remove-Item "C:\Program Files\matlas\matlas.exe"  # Adjust path as needed
+Remove-Item -Recurse -Force "$env:USERPROFILE\.matlas"  # Remove config
+```
+
+### ✅ Verify Installation
+
+After installation, verify that matlas is working:
+
+```bash
+# Check if matlas is in PATH
+matlas --version
+
+# Show help
+matlas --help
+
+# Check configuration
+matlas config --help
+```
+
+### 🔄 Upgrading
+
+**Quick upgrade to latest version:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/teabranch/matlas-cli/main/upgrade.sh | bash
+```
+
+**Advanced upgrade options:**
+```bash
+# Download upgrade script
+curl -fsSL https://raw.githubusercontent.com/teabranch/matlas-cli/main/upgrade.sh -o upgrade.sh
+chmod +x upgrade.sh
+
+# Upgrade to latest version
+./upgrade.sh
+
+# Upgrade to specific version
+./upgrade.sh --version v1.2.3
+
+# Force reinstall current version
+./upgrade.sh --force
+```
+
+### 🔧 Installation Options
+
+| Method | Pros | Cons | Requires Admin |
+|--------|------|------|----------------|
+| **Quick Install** | Easy, automatic PATH setup | Requires internet | System dirs: Yes |
+| **Installation Script** | Customizable, version selection | Requires download | System dirs: Yes |
+| **Manual Install** | Full control | Manual PATH setup | System dirs: Yes |
+| **Build from Source** | Latest features, customizable | Requires Go toolchain | No |
+
+### 📁 Installation Directories
+
+**Default locations:**
+- **macOS/Linux**: `/usr/local/bin` (system-wide) or `~/.local/bin` (user)
+- **Windows**: `C:\Program Files\matlas` (system-wide) or `%USERPROFILE%\matlas` (user)
+
+**Custom installation:**
+- Set `MATLAS_INSTALL_DIR` environment variable
+- Use `--dir` (Unix) or `-InstallDir` (Windows) flag
+
+### 🐚 Shell Integration
+
+The installer automatically adds matlas to your PATH and detects your shell:
+
+- **Bash**: Updates `~/.bashrc` or `~/.bash_profile`
+- **Zsh**: Updates `~/.zshrc`
+- **Fish**: Updates `~/.config/fish/config.fish`
+- **PowerShell**: Updates user PATH environment variable
+
+To manually add to PATH:
+```bash
+# Bash/Zsh
+echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bashrc
+
+# Fish
+echo 'set -gx PATH /usr/local/bin $PATH' >> ~/.config/fish/config.fish
+
+# PowerShell
+$env:PATH += ";C:\Program Files\matlas"
 ```
 
 ## 🔐 Authenticate
@@ -94,6 +265,10 @@ matlas atlas projects get --project-id <id>
 # List database users
 matlas atlas users list --project-id <id>
 
+# Create Atlas user with password display (optional)
+matlas atlas users create --project-id <id> --username testuser --show-password \
+  --roles "readWriteAnyDatabase" --scopes "cluster1,cluster2"
+
 # List network access rules
 matlas atlas network list --project-id <id>
 ```
@@ -114,6 +289,16 @@ matlas database collections indexes list \
   --connection-string ... \
   --database mydb \
   --collection mycoll
+
+# Database user management
+matlas database users list --connection-string ... --database mydb
+matlas database users create --cluster <name> --project-id <id> --use-temp-user \
+  --database mydb --username testuser --password "securepass" --roles "readWrite"
+
+# Database custom roles management  
+matlas database roles list --cluster <name> --project-id <id> --use-temp-user --database mydb
+matlas database roles create --cluster <name> --project-id <id> --use-temp-user \
+  --database mydb --role-name "customRole" --privileges '...'
 ```
 
 ### 📋 Declarative Infrastructure Workflows
@@ -169,6 +354,8 @@ matlas completion powershell > matlas.ps1
 | 🗄️ **Database Commands** | [`docs/database.md`](docs/database.md) |
 | 📋 **Infrastructure Workflows** | [`docs/infra.md`](docs/infra.md) |
 | 🔐 **Authentication & Config** | [`docs/auth.md`](docs/auth.md) |
+| 📖 **YAML Configuration** | [`docs/yaml-kinds.md`](docs/yaml-kinds.md) |
+| 🔍 **Discovery Workflows** | [`docs/discovery.md`](docs/discovery.md) |
 
 ## 🛠️ Development
 
@@ -183,6 +370,11 @@ make fmt                     # Format code
 
 # Generate mocks
 make generate-mocks         # Update test mocks
+
+# Installation (for development)
+make install                # Install to /usr/local/bin (requires sudo)
+make install-user          # Install to ~/.local/bin (no sudo)
+make uninstall             # Remove installation
 ```
 
 ### Feature tracking
@@ -205,6 +397,6 @@ cp features/TEMPLATE.md features/$(date +%F)-<short-slug>.md
 
 **Built with ❤️ for the MongoDB community**
 
-[⭐ Star this repo](https://github.com/mongodb/matlas-cli) • [🐛 Report issues](https://github.com/mongodb/matlas-cli/issues) • [💡 Request features](https://github.com/mongodb/matlas-cli/issues/new)
+[⭐ Star this repo](https://github.com/teabranch/matlas-cli) • [🐛 Report issues](https://github.com/teabranch/matlas-cli/issues) • [💡 Request features](https://github.com/teabranch/matlas-cli/issues/new)
 
 </div>
