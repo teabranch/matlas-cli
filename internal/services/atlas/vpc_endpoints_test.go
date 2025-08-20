@@ -27,11 +27,11 @@ func TestVPCEndpointsService_ListPrivateEndpointServices_Validation(t *testing.T
 	ctx := context.Background()
 
 	tests := []struct {
-		name           string
-		projectID      string
-		cloudProvider  string
-		expectError    bool
-		errorMsg       string
+		name          string
+		projectID     string
+		cloudProvider string
+		expectError   bool
+		errorMsg      string
 	}{
 		{
 			name:          "missing project ID",

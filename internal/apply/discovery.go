@@ -38,15 +38,15 @@ type StateDiscovery interface {
 
 // ProjectState represents the complete discovered state of an Atlas project
 type ProjectState struct {
-	Project       *types.ProjectManifest         `json:"project"`
-	Clusters      []types.ClusterManifest        `json:"clusters"`
-	DatabaseUsers []types.DatabaseUserManifest   `json:"databaseUsers"`
-	DatabaseRoles []types.DatabaseRoleManifest   `json:"databaseRoles"`
-	NetworkAccess []types.NetworkAccessManifest  `json:"networkAccess"`
-	SearchIndexes []types.SearchIndexManifest    `json:"searchIndexes"`
-	VPCEndpoints  []types.VPCEndpointManifest    `json:"vpcEndpoints"`
-	Fingerprint   string                         `json:"fingerprint"`
-	DiscoveredAt  time.Time                      `json:"discoveredAt"`
+	Project       *types.ProjectManifest        `json:"project"`
+	Clusters      []types.ClusterManifest       `json:"clusters"`
+	DatabaseUsers []types.DatabaseUserManifest  `json:"databaseUsers"`
+	DatabaseRoles []types.DatabaseRoleManifest  `json:"databaseRoles"`
+	NetworkAccess []types.NetworkAccessManifest `json:"networkAccess"`
+	SearchIndexes []types.SearchIndexManifest   `json:"searchIndexes"`
+	VPCEndpoints  []types.VPCEndpointManifest   `json:"vpcEndpoints"`
+	Fingerprint   string                        `json:"fingerprint"`
+	DiscoveredAt  time.Time                     `json:"discoveredAt"`
 }
 
 // AtlasStateDiscovery implements StateDiscovery using Atlas services
@@ -454,11 +454,11 @@ func (d *AtlasStateDiscovery) DiscoverVPCEndpoints(ctx context.Context, projectI
 func GenerateStateFingerprint(state *ProjectState) (string, error) {
 	// Create a copy of the state without the fingerprint and timestamp for consistent hashing
 	hashableState := struct {
-		Project       *types.ProjectManifest         `json:"project"`
-		Clusters      []types.ClusterManifest        `json:"clusters"`
-		DatabaseUsers []types.DatabaseUserManifest   `json:"databaseUsers"`
-		NetworkAccess []types.NetworkAccessManifest  `json:"networkAccess"`
-		SearchIndexes []types.SearchIndexManifest    `json:"searchIndexes"`
+		Project       *types.ProjectManifest        `json:"project"`
+		Clusters      []types.ClusterManifest       `json:"clusters"`
+		DatabaseUsers []types.DatabaseUserManifest  `json:"databaseUsers"`
+		NetworkAccess []types.NetworkAccessManifest `json:"networkAccess"`
+		SearchIndexes []types.SearchIndexManifest   `json:"searchIndexes"`
 	}{
 		Project:       state.Project,
 		Clusters:      state.Clusters,

@@ -19,4 +19,5 @@ func TestNewVPCEndpointsCmd_Metadata(t *testing.T) {
 	assert.Contains(t, cmd.Aliases, "vpc-endpoint")
 	assert.Contains(t, cmd.Aliases, "vpc")
 }
+
 // Further tests for create/list/get/delete behavior should be added to validate new implementation.

@@ -16,8 +16,8 @@ import (
 
 func NewVPCEndpointsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "vpc-endpoints",
-		Short:   "Manage Atlas VPC endpoints and Private Link connections",
+		Use:   "vpc-endpoints",
+		Short: "Manage Atlas VPC endpoints and Private Link connections",
 		Long: `Atlas VPC endpoints and Private Link connections for secure connectivity to Atlas clusters.
 
 VPC endpoints allow you to create private network connections to Atlas clusters, providing enhanced
@@ -131,9 +131,9 @@ func newDeleteCmd() *cobra.Command {
 	var projectID, cloudProvider, endpointID string
 	var yes bool
 	cmd := &cobra.Command{
-		Use:   "delete",
+		Use:     "delete",
 		Aliases: []string{"rm", "remove"},
-		Short: "Delete a VPC endpoint",
+		Short:   "Delete a VPC endpoint",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runDeleteVPCEndpoint(cmd, projectID, cloudProvider, endpointID, yes)
 		},
@@ -353,7 +353,7 @@ func runUpdateVPCEndpoint(cmd *cobra.Command, projectID, cloudProvider, endpoint
 		return cli.WrapWithSuggestion(err, "Check your API key and public key configuration")
 	}
 	service := atlas.NewVPCEndpointsService(client)
-	
+
 	// For VPC endpoints, most properties are immutable after creation
 	// We can attempt to update the endpoint service, but it may be a no-op
 	updated, err := service.UpdatePrivateEndpointService(ctx, projectID, cloudProvider, endpointID)

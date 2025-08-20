@@ -203,7 +203,7 @@ func newDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete an Atlas Search index by ID or name",
-		Long: `Delete a MongoDB Atlas Search index. This action cannot be undone.`,
+		Long:  `Delete a MongoDB Atlas Search index. This action cannot be undone.`,
 		Example: `  # Delete by name
   matlas atlas search delete --project-id 507f1f77bcf86cd799439011 --cluster myCluster --name mySearchIndex --force`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -441,12 +441,12 @@ func runCreateSearchIndex(cmd *cobra.Command, projectID, clusterName, databaseNa
 
 	// Create the search index request
 	indexRequest := admin.NewSearchIndexCreateRequest(collectionName, databaseName, indexName)
-	
+
 	// Set index type if specified
 	if indexType != "" {
 		indexRequest.SetType(indexType)
 	}
-	
+
 	// Set definition
 	if indexDefinition != nil {
 		indexRequest.SetDefinition(*indexDefinition)
@@ -563,17 +563,17 @@ func mustMarkFlagRequired(cmd *cobra.Command, name string) {
 // createDefaultSearchIndexDefinition creates a default search index definition based on type
 func createDefaultSearchIndexDefinition(indexType string) *admin.BaseSearchIndexCreateRequestDefinition {
 	definition := admin.NewBaseSearchIndexCreateRequestDefinitionWithDefaults()
-	
+
 	if indexType == "vectorSearch" {
 		// Create default vector search definition
 		// Note: Vector search requires specific field definitions
 		// This is a basic example - users should provide proper vector field definitions
 		fields := []any{
 			map[string]interface{}{
-				"type": "vector",
-				"path": "vector_field", // Default vector field name
-				"numDimensions": 1536,  // Common dimension size for embeddings
-				"similarity": "cosine",
+				"type":          "vector",
+				"path":          "vector_field", // Default vector field name
+				"numDimensions": 1536,           // Common dimension size for embeddings
+				"similarity":    "cosine",
 			},
 		}
 		definition.SetFields(fields)
@@ -587,44 +587,44 @@ func createDefaultSearchIndexDefinition(indexType string) *admin.BaseSearchIndex
 		mappings.SetDynamic(dynamic)
 		definition.SetMappings(mappings)
 	}
-	
+
 	return definition
 }
 
 // convertToSearchIndexDefinition converts a raw definition to SDK definition
 func convertToSearchIndexDefinition(rawDefinition map[string]interface{}) (*admin.BaseSearchIndexCreateRequestDefinition, error) {
 	definition := admin.NewBaseSearchIndexCreateRequestDefinitionWithDefaults()
-	
+
 	// Convert mappings if present
 	if mappingsRaw, ok := rawDefinition["mappings"]; ok {
 		if mappingsMap, ok := mappingsRaw.(map[string]interface{}); ok {
 			mappings := admin.SearchMappings{}
-			
+
 			// Handle dynamic mapping
 			if dynamic, ok := mappingsMap["dynamic"]; ok {
 				if dynamicBool, ok := dynamic.(bool); ok {
 					mappings.SetDynamic(dynamicBool)
 				}
 			}
-			
+
 			// Handle fields mapping
 			if fields, ok := mappingsMap["fields"]; ok {
 				if fieldsMap, ok := fields.(map[string]interface{}); ok {
 					mappings.SetFields(fieldsMap)
 				}
 			}
-			
+
 			definition.SetMappings(mappings)
 		}
 	}
-	
+
 	// Convert fields if present (for vector search)
 	if fieldsRaw, ok := rawDefinition["fields"]; ok {
 		if fieldsSlice, ok := fieldsRaw.([]interface{}); ok {
 			definition.SetFields(fieldsSlice)
 		}
 	}
-	
+
 	// Convert analyzer if present (only for non-vector search)
 	// Note: Vector search indexes don't support analyzers
 	if analyzer, ok := rawDefinition["analyzer"]; ok {
@@ -632,13 +632,13 @@ func convertToSearchIndexDefinition(rawDefinition map[string]interface{}) (*admi
 			definition.SetAnalyzer(analyzerStr)
 		}
 	}
-	
+
 	// Convert searchAnalyzer if present (only for non-vector search)
 	if searchAnalyzer, ok := rawDefinition["searchAnalyzer"]; ok {
 		if searchAnalyzerStr, ok := searchAnalyzer.(string); ok {
 			definition.SetSearchAnalyzer(searchAnalyzerStr)
 		}
 	}
-	
+
 	return definition, nil
 }

@@ -167,17 +167,17 @@ func (d *AtlasStateDiscovery) convertSearchIndexToManifest(index *admin.SearchIn
 	// Removed unsupported call to GetClusterName; SearchIndexResponse has no such method
 	databaseName := index.GetDatabase()
 	collectionName := index.GetCollectionName()
-	
+
 	// Use a combination of identifiers as the resource name (omit clusterName)
 	resourceName := fmt.Sprintf("%s-%s-%s", databaseName, collectionName, indexName)
-	
+
 	metadata := types.ResourceMetadata{
 		Name: resourceName,
 		Labels: map[string]string{
-			"atlas.mongodb.com/index-id":      index.GetIndexID(),
-			"atlas.mongodb.com/database":      databaseName,
-			"atlas.mongodb.com/collection":    collectionName,
-			"atlas.mongodb.com/index-name":    indexName,
+			"atlas.mongodb.com/index-id":   index.GetIndexID(),
+			"atlas.mongodb.com/database":   databaseName,
+			"atlas.mongodb.com/collection": collectionName,
+			"atlas.mongodb.com/index-name": indexName,
 		},
 	}
 

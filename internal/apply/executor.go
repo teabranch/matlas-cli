@@ -1768,37 +1768,37 @@ func convertNetworkAccessManifestToEntry(manifest *types.NetworkAccessManifest) 
 // convertSearchDefinitionToSDK converts a raw search definition to Atlas SDK format
 func convertSearchDefinitionToSDK(rawDefinition map[string]interface{}, indexType string) (*admin.BaseSearchIndexCreateRequestDefinition, error) {
 	definition := admin.NewBaseSearchIndexCreateRequestDefinitionWithDefaults()
-	
+
 	// Convert mappings if present (for text search)
 	if mappingsRaw, ok := rawDefinition["mappings"]; ok {
 		if mappingsMap, ok := mappingsRaw.(map[string]interface{}); ok {
 			mappings := admin.SearchMappings{}
-			
+
 			// Handle dynamic mapping
 			if dynamic, ok := mappingsMap["dynamic"]; ok {
 				if dynamicBool, ok := dynamic.(bool); ok {
 					mappings.SetDynamic(dynamicBool)
 				}
 			}
-			
+
 			// Handle fields mapping
 			if fields, ok := mappingsMap["fields"]; ok {
 				if fieldsMap, ok := fields.(map[string]interface{}); ok {
 					mappings.SetFields(fieldsMap)
 				}
 			}
-			
+
 			definition.SetMappings(mappings)
 		}
 	}
-	
+
 	// Convert fields if present (for vector search)
 	if fieldsRaw, ok := rawDefinition["fields"]; ok {
 		if fieldsSlice, ok := fieldsRaw.([]interface{}); ok {
 			definition.SetFields(fieldsSlice)
 		}
 	}
-	
+
 	// Only set analyzer and searchAnalyzer for non-vector search indexes
 	// Vector search doesn't support these attributes
 	if indexType != "vectorSearch" {
@@ -1808,7 +1808,7 @@ func convertSearchDefinitionToSDK(rawDefinition map[string]interface{}, indexTyp
 				definition.SetAnalyzer(analyzerStr)
 			}
 		}
-		
+
 		// Convert searchAnalyzer if present
 		if searchAnalyzer, ok := rawDefinition["searchAnalyzer"]; ok {
 			if searchAnalyzerStr, ok := searchAnalyzer.(string); ok {
@@ -1816,13 +1816,13 @@ func convertSearchDefinitionToSDK(rawDefinition map[string]interface{}, indexTyp
 			}
 		}
 	}
-	
+
 	// Remove default analyzer attributes for vector search, which does not support analyzer fields
 	if indexType == "vectorSearch" {
 		definition.Analyzer = nil
 		definition.SearchAnalyzer = nil
 	}
-	
+
 	return definition, nil
 }
 

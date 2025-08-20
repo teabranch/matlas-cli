@@ -1661,7 +1661,7 @@ func validateVPCEndpointManifest(manifest *types.ResourceManifest, basePath stri
 // convertToSearchIndexSpec converts a map to SearchIndexSpec
 func convertToSearchIndexSpec(specMap map[string]interface{}) types.SearchIndexSpec {
 	spec := types.SearchIndexSpec{}
-	
+
 	if val, ok := specMap["projectName"].(string); ok {
 		spec.ProjectName = val
 	}
@@ -1693,14 +1693,14 @@ func convertToSearchIndexSpec(specMap map[string]interface{}) types.SearchIndexS
 			}
 		}
 	}
-	
+
 	return spec
 }
 
 // convertToVPCEndpointSpec converts a map to VPCEndpointSpec
 func convertToVPCEndpointSpec(specMap map[string]interface{}) types.VPCEndpointSpec {
 	spec := types.VPCEndpointSpec{}
-	
+
 	if val, ok := specMap["projectName"].(string); ok {
 		spec.ProjectName = val
 	}
@@ -1721,6 +1721,6 @@ func convertToVPCEndpointSpec(specMap map[string]interface{}) types.VPCEndpointS
 			}
 		}
 	}
-	
+
 	return spec
 }

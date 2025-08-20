@@ -45,7 +45,7 @@ func (s *VPCEndpointsService) ListAllPrivateEndpointServices(ctx context.Context
 
 	result := make(map[string][]admin.EndpointService)
 	providers := []string{"AWS", "AZURE", "GCP"}
-	
+
 	for _, provider := range providers {
 		services, err := s.ListPrivateEndpointServices(ctx, projectID, provider)
 		if err != nil {

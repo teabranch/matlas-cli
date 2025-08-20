@@ -115,10 +115,10 @@ type ClusterSpec struct {
 
 // SearchIndexManifest represents a search index resource manifest
 type SearchIndexManifest struct {
-	APIVersion APIVersion         `yaml:"apiVersion" json:"apiVersion"`
-	Kind       ResourceKind       `yaml:"kind" json:"kind"`
-	Metadata   ResourceMetadata   `yaml:"metadata" json:"metadata"`
-	Spec       SearchIndexSpec    `yaml:"spec" json:"spec"`
+	APIVersion APIVersion          `yaml:"apiVersion" json:"apiVersion"`
+	Kind       ResourceKind        `yaml:"kind" json:"kind"`
+	Metadata   ResourceMetadata    `yaml:"metadata" json:"metadata"`
+	Spec       SearchIndexSpec     `yaml:"spec" json:"spec"`
 	Status     *ResourceStatusInfo `yaml:"status,omitempty" json:"status,omitempty"`
 }
 
@@ -136,20 +136,20 @@ type SearchIndexSpec struct {
 
 // VPCEndpointManifest represents a VPC endpoint resource manifest
 type VPCEndpointManifest struct {
-	APIVersion APIVersion         `yaml:"apiVersion" json:"apiVersion"`
-	Kind       ResourceKind       `yaml:"kind" json:"kind"`
-	Metadata   ResourceMetadata   `yaml:"metadata" json:"metadata"`
-	Spec       VPCEndpointSpec    `yaml:"spec" json:"spec"`
+	APIVersion APIVersion          `yaml:"apiVersion" json:"apiVersion"`
+	Kind       ResourceKind        `yaml:"kind" json:"kind"`
+	Metadata   ResourceMetadata    `yaml:"metadata" json:"metadata"`
+	Spec       VPCEndpointSpec     `yaml:"spec" json:"spec"`
 	Status     *ResourceStatusInfo `yaml:"status,omitempty" json:"status,omitempty"`
 }
 
 // VPCEndpointSpec represents the specification for a VPC endpoint resource
 type VPCEndpointSpec struct {
-	ProjectName     string   `yaml:"projectName" json:"projectName"`
-	CloudProvider   string   `yaml:"cloudProvider" json:"cloudProvider"` // AWS, AZURE, GCP
-	Region          string   `yaml:"region" json:"region"`
-	EndpointID      string   `yaml:"endpointId,omitempty" json:"endpointId,omitempty"`
-	DependsOn       []string `yaml:"dependsOn,omitempty" json:"dependsOn,omitempty"`
+	ProjectName   string   `yaml:"projectName" json:"projectName"`
+	CloudProvider string   `yaml:"cloudProvider" json:"cloudProvider"` // AWS, AZURE, GCP
+	Region        string   `yaml:"region" json:"region"`
+	EndpointID    string   `yaml:"endpointId,omitempty" json:"endpointId,omitempty"`
+	DependsOn     []string `yaml:"dependsOn,omitempty" json:"dependsOn,omitempty"`
 }
 
 // DatabaseUserManifest represents a database user resource manifest
