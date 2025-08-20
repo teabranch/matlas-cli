@@ -26,6 +26,7 @@ type InfrastructureTestEnvironment struct {
 	DatabaseUserService  *atlas.DatabaseUsersService
 	NetworkAccessService *atlas.NetworkAccessListsService
 	ProjectService       *atlas.ProjectsService
+	SearchService        *atlas.SearchService
 	DatabaseService      *database.Service
 	CreatedResources     []string
 	ExecutionMetrics     *ExecutionMetrics
@@ -387,6 +388,7 @@ func (env *InfrastructureTestEnvironment) createExecutor() *apply.AtlasExecutor 
 		env.DatabaseUserService,
 		env.NetworkAccessService,
 		env.ProjectService,
+		env.SearchService,
 		env.DatabaseService,
 		config,
 	)
@@ -402,6 +404,7 @@ func (env *InfrastructureTestEnvironment) createExecutorWithConcurrency(maxConcu
 		env.DatabaseUserService,
 		env.NetworkAccessService,
 		env.ProjectService,
+		env.SearchService,
 		env.DatabaseService,
 		config,
 	)

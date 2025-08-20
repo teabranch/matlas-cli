@@ -26,6 +26,7 @@ type TestEnvironment struct {
 	DatabaseUserService  *atlas.DatabaseUsersService
 	NetworkAccessService *atlas.NetworkAccessListsService
 	ProjectService       *atlas.ProjectsService
+	SearchService        *atlas.SearchService
 	DatabaseService      *database.Service
 	Resources            []TestResource
 	cleanupFuncs         []func() error
@@ -160,6 +161,7 @@ func SetupTestEnvironment(t *testing.T) *TestEnvironment {
 		DatabaseUserService:  atlas.NewDatabaseUsersService(atlasClient),
 		NetworkAccessService: atlas.NewNetworkAccessListsService(atlasClient),
 		ProjectService:       atlas.NewProjectsService(atlasClient),
+		SearchService:        atlas.NewSearchService(atlasClient),
 		DatabaseService:      nil, // Database service is separate and will be implemented later
 		Resources:            []TestResource{},
 		cleanupFuncs:         []func() error{},
@@ -214,6 +216,7 @@ func (env *TestEnvironment) CreateExecutor() *apply.AtlasExecutor {
 		env.DatabaseUserService,
 		env.NetworkAccessService,
 		env.ProjectService,
+		env.SearchService,
 		env.DatabaseService,
 		config,
 	)

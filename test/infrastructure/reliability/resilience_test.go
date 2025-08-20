@@ -25,6 +25,7 @@ type ReliabilityTestEnvironment struct {
 	DatabaseUserService  *atlas.DatabaseUsersService
 	NetworkAccessService *atlas.NetworkAccessListsService
 	ProjectService       *atlas.ProjectsService
+	SearchService        *atlas.SearchService
 	DatabaseService      *database.Service
 	CreatedResources     []string
 	FailureSimulator     *FailureSimulator
@@ -412,6 +413,7 @@ func (env *ReliabilityTestEnvironment) createResilientExecutor(networkDelay time
 		env.DatabaseUserService,
 		env.NetworkAccessService,
 		env.ProjectService,
+		env.SearchService,
 		env.DatabaseService,
 		config,
 	)
@@ -442,6 +444,7 @@ func (env *ReliabilityTestEnvironment) createRateLimitAwareExecutor() *apply.Atl
 		env.DatabaseUserService,
 		env.NetworkAccessService,
 		env.ProjectService,
+		env.SearchService,
 		env.DatabaseService,
 		config,
 	)

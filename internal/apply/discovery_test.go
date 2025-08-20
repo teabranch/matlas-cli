@@ -233,3 +233,14 @@ func (m *MockStateDiscovery) DiscoverNetworkAccess(ctx context.Context, projectI
 func (m *MockStateDiscovery) DiscoverProjectSettings(ctx context.Context, projectID string) (*types.ProjectManifest, error) {
 	return nil, nil
 }
+
+// DiscoverVPCEndpoints stub implementation for tests
+func (m *MockStateDiscovery) DiscoverVPCEndpoints(ctx context.Context, projectID string) ([]types.VPCEndpointManifest, error) {
+	return nil, nil
+}
+
+// DiscoverSearchIndexes fetches all search indexes (stub implementation for tests)
+func (m *MockStateDiscovery) DiscoverSearchIndexes(ctx context.Context, projectID string) ([]types.SearchIndexManifest, error) {
+	// Return empty list for test
+	return nil, nil
+}

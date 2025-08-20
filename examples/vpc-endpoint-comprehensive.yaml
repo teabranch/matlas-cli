@@ -1,0 +1,61 @@
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: vpc-endpoint-comprehensive-example
+  labels:
+    example: vpc-endpoint
+    environment: multi-cloud
+resources:
+  # AWS VPC Endpoint
+  - apiVersion: matlas.mongodb.com/v1
+    kind: VPCEndpoint
+    metadata:
+      name: aws-production-vpc-endpoint
+      labels:
+        environment: production
+        provider: aws
+        region: us-east-1
+    spec:
+      projectName: "your-project-id"
+      cloudProvider: "AWS"
+      region: "us-east-1"
+  
+  # Azure VPC Endpoint  
+  - apiVersion: matlas.mongodb.com/v1
+    kind: VPCEndpoint
+    metadata:
+      name: azure-production-vpc-endpoint
+      labels:
+        environment: production
+        provider: azure
+        region: eastus
+    spec:
+      projectName: "your-project-id" 
+      cloudProvider: "AZURE"
+      region: "eastus"
+      
+  # GCP VPC Endpoint
+  - apiVersion: matlas.mongodb.com/v1
+    kind: VPCEndpoint
+    metadata:
+      name: gcp-production-vpc-endpoint
+      labels:
+        environment: production
+        provider: gcp
+        region: us-central1
+    spec:
+      projectName: "your-project-id"
+      cloudProvider: "GCP"
+      region: "us-central1"
+      
+  # Network access for VPC endpoints
+  - apiVersion: matlas.mongodb.com/v1
+    kind: NetworkAccess
+    metadata:
+      name: vpc-network-access
+      labels:
+        environment: production
+    spec:
+      projectName: "your-project-id"
+      cidr: "10.0.0.0/16"
+      comment: "Private network access for VPC endpoints"

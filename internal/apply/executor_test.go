@@ -21,6 +21,8 @@ type MockAtlasServices struct {
 	usersService         *atlas.DatabaseUsersService
 	networkAccessService *atlas.NetworkAccessListsService
 	projectsService      *atlas.ProjectsService
+	searchService        *atlas.SearchService
+	vpcEndpointsService  *atlas.VPCEndpointsService
 	databaseService      *database.Service
 }
 
@@ -33,6 +35,8 @@ func TestNewAtlasExecutor(t *testing.T) {
 		mockServices.usersService,
 		mockServices.networkAccessService,
 		mockServices.projectsService,
+		mockServices.searchService,
+		mockServices.vpcEndpointsService,
 		mockServices.databaseService,
 		config,
 	)
@@ -578,6 +582,8 @@ func createTestExecutor() *AtlasExecutor {
 		mockServices.usersService,
 		mockServices.networkAccessService,
 		mockServices.projectsService,
+		mockServices.searchService,
+		mockServices.vpcEndpointsService,
 		mockServices.databaseService,
 		config,
 	)
@@ -591,6 +597,8 @@ func createMockServices() *MockAtlasServices {
 		usersService:         nil,
 		networkAccessService: nil,
 		projectsService:      nil,
+		searchService:        nil,
+		vpcEndpointsService:  nil,
 		databaseService:      nil,
 	}
 }

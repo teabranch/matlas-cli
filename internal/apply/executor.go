@@ -40,6 +40,8 @@ type AtlasExecutor struct {
 	usersService         *atlas.DatabaseUsersService
 	networkAccessService *atlas.NetworkAccessListsService
 	projectsService      *atlas.ProjectsService
+	searchService        *atlas.SearchService
+	vpcEndpointsService  *atlas.VPCEndpointsService
 
 	// Database service clients
 	databaseService *database.Service
@@ -142,6 +144,8 @@ func NewAtlasExecutor(
 	usersService *atlas.DatabaseUsersService,
 	networkAccessService *atlas.NetworkAccessListsService,
 	projectsService *atlas.ProjectsService,
+	searchService *atlas.SearchService,
+	vpcEndpointsService *atlas.VPCEndpointsService,
 	databaseService *database.Service,
 	config ExecutorConfig,
 ) *AtlasExecutor {
@@ -150,6 +154,8 @@ func NewAtlasExecutor(
 		usersService:         usersService,
 		networkAccessService: networkAccessService,
 		projectsService:      projectsService,
+		searchService:        searchService,
+		vpcEndpointsService:  vpcEndpointsService,
 		databaseService:      databaseService,
 		config:               config,
 		retryManager:         NewRetryManager(config.RetryConfig),
@@ -372,6 +378,10 @@ func (e *AtlasExecutor) executeCreate(ctx context.Context, operation *PlannedOpe
 		return e.createDatabaseRole(ctx, operation, result)
 	case types.KindNetworkAccess:
 		return e.createNetworkAccess(ctx, operation, result)
+	case types.KindSearchIndex:
+		return e.createSearchIndex(ctx, operation, result)
+	case types.KindVPCEndpoint:
+		return e.createVPCEndpoint(ctx, operation, result)
 	default:
 		return fmt.Errorf("unsupported resource type for create: %s", operation.ResourceType)
 	}
@@ -440,6 +450,8 @@ func (e *AtlasExecutor) executeUpdate(ctx context.Context, operation *PlannedOpe
 		return e.updateDatabaseRole(ctx, operation, result)
 	case types.KindNetworkAccess:
 		return e.updateNetworkAccess(ctx, operation, result)
+	case types.KindVPCEndpoint:
+		return e.updateVPCEndpoint(ctx, operation, result)
 	default:
 		return fmt.Errorf("unsupported resource type for update: %s", operation.ResourceType)
 	}
@@ -456,6 +468,8 @@ func (e *AtlasExecutor) executeDelete(ctx context.Context, operation *PlannedOpe
 		return e.deleteDatabaseRole(ctx, operation, result)
 	case types.KindNetworkAccess:
 		return e.deleteNetworkAccess(ctx, operation, result)
+	case types.KindVPCEndpoint:
+		return e.deleteVPCEndpoint(ctx, operation, result)
 	case types.KindProject:
 		// Projects are typically not deleted directly through apply operations
 		// Log this and treat as a no-op for now
@@ -997,6 +1011,74 @@ func (e *AtlasExecutor) deleteNetworkAccess(ctx context.Context, operation *Plan
 	result.Metadata["resourceName"] = operation.ResourceName
 	result.Metadata["ipAddress"] = ipAddress
 	result.Metadata["atlasResourceId"] = ipAddress
+	result.Status = OperationStatusCompleted
+
+	return nil
+}
+
+// createSearchIndex creates a new search index
+func (e *AtlasExecutor) createSearchIndex(ctx context.Context, operation *PlannedOperation, result *OperationResult) error {
+	if e.searchService == nil {
+		result.Metadata["operation"] = "createSearchIndex"
+		result.Metadata["resourceName"] = operation.ResourceName
+		return fmt.Errorf("search service not available")
+	}
+
+	// Convert from apply types to search index request
+	searchManifest, ok := operation.Desired.(*types.SearchIndexManifest)
+	if !ok {
+		return fmt.Errorf("invalid resource type for search index operation: expected SearchIndexManifest, got %T", operation.Desired)
+	}
+
+	// Get project ID from operation context
+	projectID := ""
+	if e.currentPlan != nil {
+		projectID = e.currentPlan.ProjectID
+	}
+	if projectID == "" {
+		return fmt.Errorf("project ID not available for search index creation")
+	}
+
+	// Create the search index request
+	indexRequest := admin.NewSearchIndexCreateRequest(
+		searchManifest.Spec.CollectionName,
+		searchManifest.Spec.DatabaseName,
+		searchManifest.Spec.IndexName,
+	)
+
+	// Set index type if specified
+	if searchManifest.Spec.IndexType != "" {
+		indexRequest.SetType(searchManifest.Spec.IndexType)
+	}
+
+	// Convert and set definition
+	if searchManifest.Spec.Definition != nil {
+		definition, err := convertSearchDefinitionToSDK(searchManifest.Spec.Definition, searchManifest.Spec.IndexType)
+		if err != nil {
+			return fmt.Errorf("failed to convert search definition: %w", err)
+		}
+		indexRequest.SetDefinition(*definition)
+	}
+
+	// Create the search index
+	created, err := e.searchService.CreateSearchIndex(ctx, projectID, searchManifest.Spec.ClusterName, *indexRequest)
+	if err != nil {
+		result.Metadata["operation"] = "createSearchIndex"
+		result.Metadata["resourceName"] = operation.ResourceName
+		result.Metadata["error"] = err.Error()
+		return fmt.Errorf("failed to create search index: %w", err)
+	}
+
+	// Record success metadata
+	result.Metadata["operation"] = "createSearchIndex"
+	result.Metadata["resourceName"] = operation.ResourceName
+	result.Metadata["indexName"] = searchManifest.Spec.IndexName
+	result.Metadata["clusterName"] = searchManifest.Spec.ClusterName
+	result.Metadata["databaseName"] = searchManifest.Spec.DatabaseName
+	result.Metadata["collectionName"] = searchManifest.Spec.CollectionName
+	if created.GetIndexID() != "" {
+		result.Metadata["atlasResourceId"] = created.GetIndexID()
+	}
 	result.Status = OperationStatusCompleted
 
 	return nil
@@ -1681,4 +1763,216 @@ func convertNetworkAccessManifestToEntry(manifest *types.NetworkAccessManifest) 
 		}
 	}
 	return entry, nil
+}
+
+// convertSearchDefinitionToSDK converts a raw search definition to Atlas SDK format
+func convertSearchDefinitionToSDK(rawDefinition map[string]interface{}, indexType string) (*admin.BaseSearchIndexCreateRequestDefinition, error) {
+	definition := admin.NewBaseSearchIndexCreateRequestDefinitionWithDefaults()
+	
+	// Convert mappings if present (for text search)
+	if mappingsRaw, ok := rawDefinition["mappings"]; ok {
+		if mappingsMap, ok := mappingsRaw.(map[string]interface{}); ok {
+			mappings := admin.SearchMappings{}
+			
+			// Handle dynamic mapping
+			if dynamic, ok := mappingsMap["dynamic"]; ok {
+				if dynamicBool, ok := dynamic.(bool); ok {
+					mappings.SetDynamic(dynamicBool)
+				}
+			}
+			
+			// Handle fields mapping
+			if fields, ok := mappingsMap["fields"]; ok {
+				if fieldsMap, ok := fields.(map[string]interface{}); ok {
+					mappings.SetFields(fieldsMap)
+				}
+			}
+			
+			definition.SetMappings(mappings)
+		}
+	}
+	
+	// Convert fields if present (for vector search)
+	if fieldsRaw, ok := rawDefinition["fields"]; ok {
+		if fieldsSlice, ok := fieldsRaw.([]interface{}); ok {
+			definition.SetFields(fieldsSlice)
+		}
+	}
+	
+	// Only set analyzer and searchAnalyzer for non-vector search indexes
+	// Vector search doesn't support these attributes
+	if indexType != "vectorSearch" {
+		// Convert analyzer if present
+		if analyzer, ok := rawDefinition["analyzer"]; ok {
+			if analyzerStr, ok := analyzer.(string); ok {
+				definition.SetAnalyzer(analyzerStr)
+			}
+		}
+		
+		// Convert searchAnalyzer if present
+		if searchAnalyzer, ok := rawDefinition["searchAnalyzer"]; ok {
+			if searchAnalyzerStr, ok := searchAnalyzer.(string); ok {
+				definition.SetSearchAnalyzer(searchAnalyzerStr)
+			}
+		}
+	}
+	
+	// Remove default analyzer attributes for vector search, which does not support analyzer fields
+	if indexType == "vectorSearch" {
+		definition.Analyzer = nil
+		definition.SearchAnalyzer = nil
+	}
+	
+	return definition, nil
+}
+
+// VPC Endpoint operation implementations
+
+func (e *AtlasExecutor) createVPCEndpoint(ctx context.Context, operation *PlannedOperation, result *OperationResult) error {
+	if e.vpcEndpointsService == nil {
+		result.Metadata["operation"] = "createVPCEndpoint"
+		result.Metadata["resourceName"] = operation.ResourceName
+		return fmt.Errorf("VPC endpoints service not available")
+	}
+
+	// Convert from apply types to VPCEndpointManifest
+	var vpcEndpoint *types.VPCEndpointManifest
+	switch desired := operation.Desired.(type) {
+	case *types.VPCEndpointManifest:
+		vpcEndpoint = desired
+	default:
+		return fmt.Errorf("invalid resource type for VPC endpoint operation: expected VPCEndpointManifest, got %T", operation.Desired)
+	}
+
+	// Get project ID from operation context or VPC endpoint spec
+	projectID := ""
+	if e.currentPlan != nil {
+		projectID = e.currentPlan.ProjectID
+	}
+	if projectID == "" {
+		projectID = vpcEndpoint.Spec.ProjectName
+	}
+
+	if projectID == "" {
+		return fmt.Errorf("project ID not available for VPC endpoint creation")
+	}
+
+	// Build Atlas VPC endpoint service request
+	serviceRequest := admin.CloudProviderEndpointServiceRequest{
+		ProviderName: vpcEndpoint.Spec.CloudProvider,
+		Region:       vpcEndpoint.Spec.Region,
+	}
+
+	// Create the VPC endpoint service
+	created, err := e.vpcEndpointsService.CreatePrivateEndpointService(ctx, projectID, vpcEndpoint.Spec.CloudProvider, serviceRequest)
+	if err != nil {
+		// Check if we should ignore conflict errors
+		if e.shouldIgnoreConflictError(err) {
+			result.Metadata["operation"] = "createVPCEndpoint"
+			result.Metadata["resourceName"] = operation.ResourceName
+			result.Metadata["skipped"] = "true"
+			result.Metadata["reason"] = "VPC endpoint already exists (preserve-existing enabled)"
+			return nil
+		}
+
+		result.Metadata["operation"] = "createVPCEndpoint"
+		result.Metadata["resourceName"] = operation.ResourceName
+		result.Metadata["error"] = err.Error()
+		return fmt.Errorf("failed to create VPC endpoint: %w", err)
+	}
+
+	// Record success metadata
+	result.Metadata["operation"] = "createVPCEndpoint"
+	result.Metadata["resourceName"] = operation.ResourceName
+	result.Metadata["endpointServiceName"] = created.GetEndpointServiceName()
+	result.Metadata["atlasResourceId"] = created.GetId()
+	result.Metadata["cloudProvider"] = created.GetCloudProvider()
+	result.Metadata["region"] = created.GetRegionName()
+
+	return nil
+}
+
+func (e *AtlasExecutor) updateVPCEndpoint(ctx context.Context, operation *PlannedOperation, result *OperationResult) error {
+	if e.vpcEndpointsService == nil {
+		result.Metadata["operation"] = "updateVPCEndpoint"
+		result.Metadata["resourceName"] = operation.ResourceName
+		return fmt.Errorf("VPC endpoints service not available")
+	}
+
+	// Convert from apply types to VPCEndpointManifest
+	var vpcEndpoint *types.VPCEndpointManifest
+	switch desired := operation.Desired.(type) {
+	case *types.VPCEndpointManifest:
+		vpcEndpoint = desired
+	default:
+		return fmt.Errorf("invalid resource type for VPC endpoint operation: expected VPCEndpointManifest, got %T", operation.Desired)
+	}
+
+	// Get project ID from operation context or VPC endpoint spec
+	projectID := ""
+	if e.currentPlan != nil {
+		projectID = e.currentPlan.ProjectID
+	}
+	if projectID == "" {
+		projectID = vpcEndpoint.Spec.ProjectName
+	}
+
+	if projectID == "" {
+		return fmt.Errorf("project ID not available for VPC endpoint update")
+	}
+
+	// For VPC endpoints, most properties are immutable after creation
+	// This is essentially a no-op but we log that update was requested
+	result.Metadata["operation"] = "updateVPCEndpoint"
+	result.Metadata["resourceName"] = operation.ResourceName
+	result.Metadata["endpointId"] = vpcEndpoint.Spec.EndpointID
+	result.Metadata["reason"] = "VPC endpoint properties are immutable after creation"
+
+	return nil
+}
+
+func (e *AtlasExecutor) deleteVPCEndpoint(ctx context.Context, operation *PlannedOperation, result *OperationResult) error {
+	if e.vpcEndpointsService == nil {
+		result.Metadata["operation"] = "deleteVPCEndpoint"
+		result.Metadata["resourceName"] = operation.ResourceName
+		return fmt.Errorf("VPC endpoints service not available")
+	}
+
+	// Convert from apply types to VPCEndpointManifest
+	var vpcEndpoint *types.VPCEndpointManifest
+	switch current := operation.Current.(type) {
+	case *types.VPCEndpointManifest:
+		vpcEndpoint = current
+	default:
+		return fmt.Errorf("invalid resource type for VPC endpoint operation: expected VPCEndpointManifest, got %T", operation.Current)
+	}
+
+	// Get project ID from operation context or VPC endpoint spec
+	projectID := ""
+	if e.currentPlan != nil {
+		projectID = e.currentPlan.ProjectID
+	}
+	if projectID == "" {
+		projectID = vpcEndpoint.Spec.ProjectName
+	}
+
+	if projectID == "" {
+		return fmt.Errorf("project ID not available for VPC endpoint deletion")
+	}
+
+	// Delete the VPC endpoint service
+	if err := e.vpcEndpointsService.DeletePrivateEndpointService(ctx, projectID, vpcEndpoint.Spec.CloudProvider, vpcEndpoint.Spec.EndpointID); err != nil {
+		result.Metadata["operation"] = "deleteVPCEndpoint"
+		result.Metadata["resourceName"] = operation.ResourceName
+		result.Metadata["error"] = err.Error()
+		return fmt.Errorf("failed to delete VPC endpoint: %w", err)
+	}
+
+	// Record success metadata
+	result.Metadata["operation"] = "deleteVPCEndpoint"
+	result.Metadata["resourceName"] = operation.ResourceName
+	result.Metadata["endpointId"] = vpcEndpoint.Spec.EndpointID
+	result.Metadata["cloudProvider"] = vpcEndpoint.Spec.CloudProvider
+
+	return nil
 }

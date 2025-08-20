@@ -55,11 +55,12 @@ export ATLAS_PROJECT_ID="507f1f77bcf86cd799439011"
 
 ## Command line flags
 
-Override any configuration using command line flags:
+Override any configuration using command line flags.
 
-| Flag | Description |
-|:-----|:------------|
+### Global flags
+
 Global flags available on all commands:
+
 | Flag | Description |
 |:-----|:------------|
 | `--config` | Config file path |

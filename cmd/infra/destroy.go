@@ -653,6 +653,8 @@ func executeDestroyPlan(ctx context.Context, plan *apply.Plan, services *Service
 		services.UsersService,
 		services.NetworkAccessService,
 		services.ProjectsService,
+		services.SearchService,
+		services.VPCEndpointsService,
 		services.DatabaseService,
 		apply.DefaultEnhancedExecutorConfig(),
 	)

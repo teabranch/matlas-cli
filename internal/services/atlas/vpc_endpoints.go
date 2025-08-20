@@ -19,108 +19,139 @@ func NewVPCEndpointsService(client *atlasclient.Client) *VPCEndpointsService {
 	return &VPCEndpointsService{client: client}
 }
 
-// ListPrivateEndpoints returns all private endpoints for the specified project.
-// Note: This is a placeholder implementation until the API becomes available in the SDK.
-func (s *VPCEndpointsService) ListPrivateEndpoints(ctx context.Context, projectID string) ([]admin.PrivateLinkEndpoint, error) {
+// ListPrivateEndpointServices returns all private endpoint services for the specified project and provider.
+func (s *VPCEndpointsService) ListPrivateEndpointServices(ctx context.Context, projectID, cloudProvider string) ([]admin.EndpointService, error) {
+	if projectID == "" || cloudProvider == "" {
+		return nil, fmt.Errorf("projectID and cloudProvider are required")
+	}
+
+	var services []admin.EndpointService
+	err := s.client.Do(ctx, func(api *admin.APIClient) error {
+		result, _, err := api.PrivateEndpointServicesApi.ListPrivateEndpointServices(ctx, projectID, cloudProvider).Execute()
+		if err != nil {
+			return err
+		}
+		services = result
+		return nil
+	})
+	return services, err
+}
+
+// ListAllPrivateEndpointServices returns all private endpoint services across all cloud providers.
+func (s *VPCEndpointsService) ListAllPrivateEndpointServices(ctx context.Context, projectID string) (map[string][]admin.EndpointService, error) {
 	if projectID == "" {
 		return nil, fmt.Errorf("projectID required")
 	}
 
-	// The Atlas API organizes endpoints under an endpoint service per provider
-	// We need to list services first, then for each service, query the endpoint(s) as needed
-	var aggregate []admin.PrivateLinkEndpoint
-	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		// For now, iterate known providers to gather services
-		providers := []string{"AWS", "AZURE", "GCP"}
-		for _, provider := range providers {
-			services, _, err := api.PrivateEndpointServicesApi.ListPrivateEndpointServices(ctx, projectID, provider).Execute()
-			if err != nil {
-				// Ignore provider not enabled errors; continue others
-				if admin.IsErrorCode(err, "NOT_FOUND") || admin.IsErrorCode(err, "RESOURCE_NOT_FOUND") {
-					continue
-				}
-				return err
+	result := make(map[string][]admin.EndpointService)
+	providers := []string{"AWS", "AZURE", "GCP"}
+	
+	for _, provider := range providers {
+		services, err := s.ListPrivateEndpointServices(ctx, projectID, provider)
+		if err != nil {
+			// Ignore provider not enabled errors; continue with others
+			if admin.IsErrorCode(err, "NOT_FOUND") || admin.IsErrorCode(err, "RESOURCE_NOT_FOUND") {
+				continue
 			}
-			for _, svc := range services {
-				// Best effort: attempt to fetch a specific endpoint list if available
-				// The API doesn't expose a direct list endpoints under service; rely on Get for known ids is not possible here.
-				// So we append placeholder with service information as no list endpoint exists in this SDK.
-				_ = svc // keep reserved for future expansion
-			}
+			return nil, fmt.Errorf("failed to list services for provider %s: %w", provider, err)
 		}
+		if len(services) > 0 {
+			result[provider] = services
+		}
+	}
+	return result, nil
+}
+
+// GetPrivateEndpointService returns a specific private endpoint service by ID.
+func (s *VPCEndpointsService) GetPrivateEndpointService(ctx context.Context, projectID, cloudProvider, endpointServiceID string) (*admin.EndpointService, error) {
+	if projectID == "" || cloudProvider == "" || endpointServiceID == "" {
+		return nil, fmt.Errorf("projectID, cloudProvider, and endpointServiceID are required")
+	}
+
+	var service *admin.EndpointService
+	err := s.client.Do(ctx, func(api *admin.APIClient) error {
+		result, _, err := api.PrivateEndpointServicesApi.GetPrivateEndpointService(ctx, projectID, cloudProvider, endpointServiceID).Execute()
+		if err != nil {
+			return err
+		}
+		service = result
 		return nil
 	})
-	return aggregate, err
+	return service, err
 }
 
-// GetPrivateEndpoint returns a specific private endpoint by ID.
-func (s *VPCEndpointsService) GetPrivateEndpoint(ctx context.Context, projectID, endpointID string) (*admin.PrivateLinkEndpoint, error) {
-	if projectID == "" || endpointID == "" {
-		return nil, fmt.Errorf("projectID and endpointID are required")
+// CreatePrivateEndpointService creates a new private endpoint service.
+func (s *VPCEndpointsService) CreatePrivateEndpointService(ctx context.Context, projectID, cloudProvider string, serviceRequest admin.CloudProviderEndpointServiceRequest) (*admin.EndpointService, error) {
+	if projectID == "" || cloudProvider == "" {
+		return nil, fmt.Errorf("projectID and cloudProvider are required")
 	}
 
+	// Validate the service request
+	if err := s.validateEndpointServiceRequest(&serviceRequest); err != nil {
+		return nil, fmt.Errorf("service request validation failed: %w", err)
+	}
+
+	var service *admin.EndpointService
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		// We must supply cloud provider and endpoint service id; without those, we cannot query.
-		// Return a clear error to caller to provide full identifiers.
-		return fmt.Errorf("cloud provider and endpoint service id are required to get a private endpoint via SDK")
+		result, _, err := api.PrivateEndpointServicesApi.CreatePrivateEndpointService(ctx, projectID, &serviceRequest).Execute()
+		if err != nil {
+			return err
+		}
+		service = result
+		return nil
 	})
-	return nil, err
+	return service, err
 }
 
-// CreatePrivateEndpoint creates a new private endpoint service.
-func (s *VPCEndpointsService) CreatePrivateEndpoint(ctx context.Context, projectID string, endpoint *admin.PrivateLinkEndpoint) (*admin.PrivateLinkEndpoint, error) {
-	if projectID == "" || endpoint == nil {
-		return nil, fmt.Errorf("projectID and endpoint are required")
+// DeletePrivateEndpointService removes a private endpoint service.
+func (s *VPCEndpointsService) DeletePrivateEndpointService(ctx context.Context, projectID, cloudProvider, endpointServiceID string) error {
+	if projectID == "" || cloudProvider == "" || endpointServiceID == "" {
+		return fmt.Errorf("projectID, cloudProvider, and endpointServiceID are required")
 	}
 
-	// Validate the endpoint configuration
-	if err := s.validatePrivateEndpoint(endpoint); err != nil {
-		return nil, fmt.Errorf("endpoint validation failed: %w", err)
-	}
-
-	// Creating a Private Endpoint requires an existing Endpoint Service (per provider)
-	return nil, fmt.Errorf("creating private endpoints requires endpointServiceId and provider; use the endpoint service create first")
+	return s.client.Do(ctx, func(api *admin.APIClient) error {
+		_, err := api.PrivateEndpointServicesApi.DeletePrivateEndpointService(ctx, projectID, cloudProvider, endpointServiceID).Execute()
+		return err
+	})
 }
 
-// DeletePrivateEndpoint removes a private endpoint.
-func (s *VPCEndpointsService) DeletePrivateEndpoint(ctx context.Context, projectID, endpointID string) error {
-	if projectID == "" || endpointID == "" {
-		return fmt.Errorf("projectID and endpointID are required")
+// UpdatePrivateEndpointService updates an existing private endpoint service.
+// Note: Most VPC endpoint properties are immutable after creation, so this may be a no-op.
+func (s *VPCEndpointsService) UpdatePrivateEndpointService(ctx context.Context, projectID, cloudProvider, endpointServiceID string) (*admin.EndpointService, error) {
+	if projectID == "" || cloudProvider == "" || endpointServiceID == "" {
+		return nil, fmt.Errorf("projectID, cloudProvider, and endpointServiceID are required")
 	}
 
-	return fmt.Errorf("deleting private endpoints requires provider and endpointServiceId; not enough identifiers provided")
+	// Since VPC endpoint services are largely immutable after creation,
+	// we'll just return the current state of the service
+	// In a real implementation, you might support updating tags or other mutable properties
+	return s.GetPrivateEndpointService(ctx, projectID, cloudProvider, endpointServiceID)
 }
 
-// validatePrivateEndpoint validates the private endpoint configuration.
-func (s *VPCEndpointsService) validatePrivateEndpoint(endpoint *admin.PrivateLinkEndpoint) error {
-	// Basic validation - specific field validation will be added when
-	// the Atlas SDK structure is finalized
-	if endpoint == nil {
-		return fmt.Errorf("endpoint configuration is required")
+// validateEndpointServiceRequest validates the endpoint service request configuration.
+func (s *VPCEndpointsService) validateEndpointServiceRequest(request *admin.CloudProviderEndpointServiceRequest) error {
+	if request == nil {
+		return fmt.Errorf("service request is required")
 	}
 
-	// Additional validation logic will be implemented when the
-	// PrivateLinkEndpoint struct fields are available in the SDK
+	if request.GetProviderName() == "" {
+		return fmt.Errorf("provider name is required")
+	}
+
+	if request.GetRegion() == "" {
+		return fmt.Errorf("region is required")
+	}
+
+	// Validate provider name is one of the supported values
+	validProviders := map[string]bool{
+		"AWS":   true,
+		"AZURE": true,
+		"GCP":   true,
+	}
+
+	if !validProviders[request.GetProviderName()] {
+		return fmt.Errorf("invalid provider name: %s. Must be one of: AWS, AZURE, GCP", request.GetProviderName())
+	}
+
 	return nil
-}
-
-// GetConnectionString generates the connection string for a private endpoint.
-func (s *VPCEndpointsService) GetConnectionString(ctx context.Context, projectID, endpointID string) (string, error) {
-	if projectID == "" || endpointID == "" {
-		return "", fmt.Errorf("projectID and endpointID are required")
-	}
-
-	// Can't build connection string without complete endpoint info in current SDK
-	return "", fmt.Errorf("connection string cannot be generated without endpoint details")
-}
-
-// WaitForEndpointAvailable waits for a private endpoint to become available.
-func (s *VPCEndpointsService) WaitForEndpointAvailable(ctx context.Context, projectID, endpointID string) error {
-	if projectID == "" || endpointID == "" {
-		return fmt.Errorf("projectID and endpointID are required")
-	}
-
-	// Simple immediate check; for production implement polling with backoff
-	// SDK requires additional identifiers we don't currently have; skip real polling
-	return fmt.Errorf("endpoint status monitoring requires additional identifiers (provider, service id)")
 }

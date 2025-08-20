@@ -160,6 +160,80 @@ func (d *AtlasStateDiscovery) convertNetworkAccessToManifest(entry *admin.Networ
 	}
 }
 
+// convertSearchIndexToManifest converts an Atlas search index to our SearchIndexManifest type
+func (d *AtlasStateDiscovery) convertSearchIndexToManifest(index *admin.SearchIndexResponse) types.SearchIndexManifest {
+	// Create a unique identifier for the search index
+	indexName := index.GetName()
+	// Removed unsupported call to GetClusterName; SearchIndexResponse has no such method
+	databaseName := index.GetDatabase()
+	collectionName := index.GetCollectionName()
+	
+	// Use a combination of identifiers as the resource name (omit clusterName)
+	resourceName := fmt.Sprintf("%s-%s-%s", databaseName, collectionName, indexName)
+	
+	metadata := types.ResourceMetadata{
+		Name: resourceName,
+		Labels: map[string]string{
+			"atlas.mongodb.com/index-id":      index.GetIndexID(),
+			"atlas.mongodb.com/database":      databaseName,
+			"atlas.mongodb.com/collection":    collectionName,
+			"atlas.mongodb.com/index-name":    indexName,
+		},
+	}
+
+	// Simplify definition mapping to use pointer check
+	definition := make(map[string]interface{})
+	if defPtr, ok := index.GetLatestDefinitionOk(); ok && defPtr != nil {
+		definition["raw"] = defPtr
+	}
+
+	spec := types.SearchIndexSpec{
+		DatabaseName:   databaseName,
+		CollectionName: collectionName,
+		IndexName:      indexName,
+		IndexType:      index.GetType(),
+		Definition:     definition,
+	}
+
+	// Determine status based on index status
+	status := convertSearchIndexStatus(index.GetStatus())
+	message := fmt.Sprintf("Search index is %s", index.GetStatus())
+
+	return types.SearchIndexManifest{
+		APIVersion: types.APIVersionV1,
+		Kind:       types.KindSearchIndex,
+		Metadata:   metadata,
+		Spec:       spec,
+		Status: &types.ResourceStatusInfo{
+			Phase:      status,
+			Message:    message,
+			LastUpdate: time.Now().UTC().Format(time.RFC3339),
+		},
+	}
+}
+
+// convertSearchIndexStatus converts Atlas search index status to our status type
+func convertSearchIndexStatus(status string) types.ResourceStatus {
+	switch strings.ToUpper(status) {
+	case "STEADY":
+		return types.StatusReady
+	case "BUILDING":
+		return types.StatusCreating
+	case "UPDATING":
+		return types.StatusUpdating
+	case "DELETING":
+		return types.StatusDeleting
+	case "MIGRATING":
+		return types.StatusUpdating
+	case "PAUSED":
+		return types.StatusUnknown
+	case "FAILED":
+		return types.StatusError
+	default:
+		return types.StatusUnknown
+	}
+}
+
 // convertClusterStatus converts Atlas cluster state to our status type
 func convertClusterStatus(stateName string) types.ResourceStatus {
 	switch strings.ToUpper(stateName) {

@@ -46,6 +46,8 @@ func NewEnhancedExecutor(
 	usersService *atlas.DatabaseUsersService,
 	networkAccessService *atlas.NetworkAccessListsService,
 	projectsService *atlas.ProjectsService,
+	searchService *atlas.SearchService,
+	vpcEndpointsService *atlas.VPCEndpointsService,
 	databaseService *database.Service,
 	config EnhancedExecutorConfig,
 ) *EnhancedExecutor {
@@ -55,6 +57,8 @@ func NewEnhancedExecutor(
 		usersService:         usersService,
 		networkAccessService: networkAccessService,
 		projectsService:      projectsService,
+		searchService:        searchService,
+		vpcEndpointsService:  vpcEndpointsService,
 		databaseService:      databaseService,
 		retryManager:         NewRetryManager(config.BaseConfig.RetryConfig),
 		config:               config.BaseConfig,

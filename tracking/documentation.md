@@ -31,6 +31,46 @@ Any important decisions, blockers, or context for future developers.
 
 ---
 
+## [2025-01-27] Release Process Documentation Update
+
+**Status**: Completed  
+**Developer**: Assistant  
+**Related Issues**: User feedback about outdated release documentation  
+
+### Summary
+Updated release process documentation to accurately reflect the consolidated workflow implementation after the move from separate workflows (ci.yml, semantic-release.yml, release.yml) to a single consolidated release.yml workflow.
+
+### Tasks
+- [x] Analyze differences between documented process and actual workflow implementation
+- [x] Update workflow description to reflect consolidated approach
+- [x] Correct automatic release process documentation
+- [x] Update manual release process documentation  
+- [x] Fix troubleshooting section for single workflow architecture
+- [x] Update manual override instructions
+- [x] Add changelog entry for documentation correction
+
+### Files Modified
+- `docs/release-process.md` - Complete rewrite of workflow section to reflect consolidated release.yml implementation
+- `CHANGELOG.md` - Added entry in Unreleased section for documentation correction
+
+### Notes
+The original documentation described a multi-workflow approach:
+1. Separate CI workflow (ci.yml) for building artifacts
+2. Separate semantic-release workflow (semantic-release.yml) 
+3. Separate release workflow (release.yml) for attaching assets
+
+However, the actual implementation uses a single consolidated workflow (`release.yml`) that includes:
+1. Code quality & linting job
+2. Cross-platform testing job (Ubuntu, macOS, Windows)
+3. Multi-platform build job (Linux, macOS, Windows for multiple architectures)
+4. Checksum generation job
+5. Semantic release job (main branch only) with artifacts attached
+6. Conditional integration & E2E testing jobs
+
+The documentation now accurately reflects this consolidated approach and provides correct troubleshooting guidance for the single-workflow architecture.
+
+---
+
 ## [2025-01-27] Development Guide Creation
 
 **Status**: Completed  
