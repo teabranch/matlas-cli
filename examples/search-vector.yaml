@@ -1,0 +1,27 @@
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: search-vector-example
+  labels:
+    example: vector-search
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: SearchIndex
+    metadata:
+      name: movies-vector-index
+      labels:
+        type: vector-search
+        collection: movies
+    spec:
+      projectName: "your-project-id"
+      clusterName: "your-cluster-name"
+      databaseName: "sample_mflix"
+      collectionName: "movies"
+      indexName: "movies-vector-index"
+      indexType: "vectorSearch"
+      definition:
+        fields:
+          - type: "vector"
+            path: "plot_embedding"
+            numDimensions: 1536
+            similarity: "cosine"

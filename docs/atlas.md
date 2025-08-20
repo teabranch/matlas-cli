@@ -153,10 +153,150 @@ Use `matlas atlas network-containers <command> --help` for detailed flag informa
 
 **Note:** Cluster management is primarily handled through the [infrastructure workflows](/infra/). Use `matlas discover` and `matlas infra` commands for cluster operations.
 
+## Atlas Search
+
+Atlas Search provides full-text search capabilities for your MongoDB collections.
+
+### List Search Indexes
+
+```bash
+# List all search indexes in a cluster
+matlas atlas search list --project-id <project-id> --cluster <cluster-name>
+
+# List search indexes for a specific collection
+matlas atlas search list --project-id <project-id> --cluster <cluster-name> \
+  --database sample_mflix --collection movies
+```
+
+### Create Search Index
+
+```bash
+# Create a basic search index with dynamic mapping
+matlas atlas search create \
+  --project-id <project-id> \
+  --cluster <cluster-name> \
+  --database sample_mflix \
+  --collection movies \
+  --name default
+
+# Create a vector search index (for AI/ML use cases)
+matlas atlas search create \
+  --project-id <project-id> \
+  --cluster <cluster-name> \
+  --database sample_mflix \
+  --collection movies \
+  --name plot_vector_index \
+  --type vectorSearch
+```
+
+## VPC Endpoints
+
+VPC Endpoints provide secure, private connectivity to your Atlas clusters using AWS PrivateLink, Azure Private Link, or Google Cloud Private Service Connect.
+
+### List VPC Endpoint Services
+
+```bash
+# List all VPC endpoint services
+matlas atlas vpc-endpoints list --project-id <project-id>
+
+# List VPC endpoints for specific cloud provider
+matlas atlas vpc-endpoints list --project-id <project-id> --cloud-provider AWS
+```
+
+### Get VPC Endpoint Service Details
+
+```bash
+# Get details for a specific VPC endpoint service
+matlas atlas vpc-endpoints get \
+  --project-id <project-id> \
+  --cloud-provider AWS \
+  --endpoint-id <service-id>
+```
+
+### Create VPC Endpoint Service
+
+```bash
+# Create a VPC endpoint service for AWS
+matlas atlas vpc-endpoints create \
+  --project-id <project-id> \
+  --cloud-provider AWS \
+  --region us-east-1
+
+# Create a VPC endpoint service for Azure
+matlas atlas vpc-endpoints create \
+  --project-id <project-id> \
+  --cloud-provider AZURE \
+  --region eastus
+
+# Create a VPC endpoint service for GCP
+matlas atlas vpc-endpoints create \
+  --project-id <project-id> \
+  --cloud-provider GCP \
+  --region us-central1
+```
+
+### Update VPC Endpoint Service
+
+```bash
+# Update a VPC endpoint service (most properties are immutable)
+matlas atlas vpc-endpoints update \
+  --project-id <project-id> \
+  --cloud-provider AWS \
+  --endpoint-id <service-id>
+```
+
+### Delete VPC Endpoint Service
+
+```bash
+# Delete a VPC endpoint service
+matlas atlas vpc-endpoints delete \
+  --project-id <project-id> \
+  --cloud-provider AWS \
+  --endpoint-id <service-id>
+
+# Delete without confirmation prompt
+matlas atlas vpc-endpoints delete \
+  --project-id <project-id> \
+  --cloud-provider AWS \
+  --endpoint-id <service-id> \
+  --yes
+```
+
+### YAML Configuration
+
+VPC endpoints can also be managed declaratively via YAML:
+
+```yaml
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: vpc-endpoint-example
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: VPCEndpoint
+    metadata:
+      name: production-vpc-endpoint
+      labels:
+        environment: production
+        provider: aws
+    spec:
+      projectName: "your-project-id"
+      cloudProvider: "AWS"
+      region: "us-east-1"
+```
+
+Apply the configuration:
+```bash
+# Plan VPC endpoint changes
+matlas infra plan -f vpc-endpoint.yaml --preserve-existing
+
+# Apply VPC endpoint configuration
+matlas infra apply -f vpc-endpoint.yaml --preserve-existing --auto-approve
+```
+
 ## Feature availability
 
-**Warning:** The following features are not supported in the current build:
-- Search indexes: `matlas atlas search ...`
-- VPC endpoints: `matlas atlas vpc-endpoints ...`
- 
- Hidden commands exist for the unsupported groups to provide clear error messages and help text, but they are not visible in standard help output.
+**Updated:** The following features are now available:
+- ✅ Search indexes: `matlas atlas search list` - Full functionality
+- 🚧 Search indexes: `matlas atlas search create` - Basic implementation  
+- ✅ VPC endpoints: `matlas atlas vpc-endpoints ...` - Full functionality with CLI and YAML support

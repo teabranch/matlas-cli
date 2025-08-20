@@ -46,6 +46,9 @@ COMMANDS:
     projects    Run projects lifecycle live tests (creates real project)
     discovery   Run discovery lifecycle tests (comprehensive discovery feature testing)
                 Use --cluster-lifecycle flag to include cluster creation/deletion tests (costs money!)
+    search      Run Atlas Search lifecycle tests (CLI and YAML, preserves existing indexes)
+    search-e2e  Run Atlas Search End-to-End tests (creates and deletes real indexes)
+    vpc         Run VPC Endpoints lifecycle tests (CLI and YAML operations)
     applydoc    Run ApplyDocument format tests (comprehensive coverage)
     config      Run configuration command tests (validate, template generation, experimental commands)
     all         Run all tests (unit + integration + e2e)
@@ -75,6 +78,9 @@ EXAMPLES:
     $0 users                # Run live users lifecycle tests
     $0 network              # Run live network lifecycle tests
     $0 projects             # Run live projects lifecycle tests
+    $0 search               # Run Atlas Search lifecycle tests
+    $0 search-e2e           # Run Atlas Search E2E tests (creates/deletes indexes)
+    $0 vpc                  # Run VPC Endpoints lifecycle tests
     $0 all                  # Run all tests (no clusters)
     $0 comprehensive        # Run all tests including cluster and applydoc
     $0 all --coverage       # Run all tests with coverage
@@ -96,6 +102,11 @@ load_environment() {
 }
 
 build_matlas() {
+    if [[ -f "$PROJECT_ROOT/matlas" ]]; then
+        print_success "Using existing matlas binary at $PROJECT_ROOT/matlas"
+        return 0
+    fi
+    
     print_info "Building matlas binary at project root..."
     if (cd "$PROJECT_ROOT" && go build -o matlas .); then
         print_success "Built: $PROJECT_ROOT/matlas"
@@ -250,6 +261,43 @@ main() {
                 return 1
             fi
             ;;
+        search)
+            print_info "Running Atlas Search lifecycle tests..."
+            print_info "ℹ️  NOTE: Tests search index CLI and YAML functionality with existing cluster"
+            print_info "Tests: Search index list, create validation, YAML configuration, error handling"
+            print_success "✓ SAFE MODE: Tests preserve existing search indexes"
+            if "$SCRIPT_DIR/test/search-lifecycle.sh" "${args[@]}"; then
+                print_success "Atlas Search lifecycle tests passed"
+            else
+                print_error "Atlas Search lifecycle tests failed"
+                return 1
+            fi
+            ;;
+        search-e2e)
+            print_info "Running Atlas Search End-to-End tests..."
+            print_warning "⚠️  WARNING: Creates and deletes real Atlas Search indexes!"
+            print_info "ℹ️  NOTE: Tests complete search index lifecycle with existing cluster"
+            print_info "Tests: List baseline, create indexes, verify creation, get details, delete indexes, verify cleanup"
+            print_success "✓ SAFE MODE: Cluster state preserved, only search indexes affected"
+            if "$SCRIPT_DIR/test/search-e2e.sh" "${args[@]}"; then
+                print_success "Atlas Search E2E tests passed"
+            else
+                print_error "Atlas Search E2E tests failed"
+                return 1
+            fi
+            ;;
+        vpc)
+            print_info "Running VPC Endpoints lifecycle tests..."
+            print_info "ℹ️  NOTE: Tests VPC endpoint CLI operations and YAML configuration"
+            print_info "Tests: VPC endpoint create/list/update/delete, YAML apply/plan/destroy, multi-provider support"
+            print_success "✓ SAFE MODE: Uses --preserve-existing to protect existing VPC endpoints"
+            if "$SCRIPT_DIR/test/vpc-endpoints-lifecycle.sh" ${args[@]+"${args[@]}"}; then
+                print_success "VPC Endpoints lifecycle tests passed"
+            else
+                print_error "VPC Endpoints lifecycle tests failed"
+                return 1
+            fi
+            ;;
         comprehensive)
             local failed=0
             print_info "Running comprehensive test suite (all test types)..."
@@ -265,6 +313,9 @@ main() {
             "$SCRIPT_DIR/test/config-test.sh" "${args[@]}" || ((failed++))
             "$SCRIPT_DIR/test/discovery-lifecycle.sh" "${args[@]}" || ((failed++))
             "$SCRIPT_DIR/test/database-operations.sh" "${args[@]}" || ((failed++))
+            "$SCRIPT_DIR/test/search-lifecycle.sh" "${args[@]}" || ((failed++))
+            "$SCRIPT_DIR/test/search-e2e.sh" "${args[@]}" || ((failed++))
+            "$SCRIPT_DIR/test/vpc-endpoints-lifecycle.sh" "${args[@]}" || ((failed++))
             "$SCRIPT_DIR/test/cluster-lifecycle.sh" "${args[@]}" || ((failed++))
             
             if [[ $failed -eq 0 ]]; then

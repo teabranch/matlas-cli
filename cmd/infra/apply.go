@@ -211,6 +211,8 @@ type ServiceClients struct {
 	UsersService         *atlas.DatabaseUsersService
 	NetworkAccessService *atlas.NetworkAccessListsService
 	ProjectsService      *atlas.ProjectsService
+	SearchService        *atlas.SearchService
+	VPCEndpointsService  *atlas.VPCEndpointsService
 	DatabaseService      *database.Service
 }
 
@@ -226,6 +228,8 @@ func initializeServices(cfg *config.Config) (*ServiceClients, error) {
 	usersService := atlas.NewDatabaseUsersService(atlasClient)
 	networkAccessService := atlas.NewNetworkAccessListsService(atlasClient)
 	projectsService := atlas.NewProjectsService(atlasClient)
+	searchService := atlas.NewSearchService(atlasClient)
+	vpcEndpointsService := atlas.NewVPCEndpointsService(atlasClient)
 
 	// Initialize database service with standardized logger
 	logger := logging.Default()
@@ -236,6 +240,8 @@ func initializeServices(cfg *config.Config) (*ServiceClients, error) {
 		UsersService:         usersService,
 		NetworkAccessService: networkAccessService,
 		ProjectsService:      projectsService,
+		SearchService:        searchService,
+		VPCEndpointsService:  vpcEndpointsService,
 		DatabaseService:      databaseService,
 	}, nil
 }
@@ -294,6 +300,8 @@ func performApply(ctx context.Context, configs []*apply.LoadResult, services *Se
 		services.UsersService,
 		services.NetworkAccessService,
 		services.ProjectsService,
+		services.SearchService,
+		services.VPCEndpointsService,
 		services.DatabaseService,
 		enhancedCfg,
 	)
@@ -411,6 +419,49 @@ func getProjectID(configs []*apply.LoadResult, opts *ApplyOptions) string {
 						}
 					}
 				}
+				// Also check SearchIndex resources for project information
+				if resource.Kind == types.KindSearchIndex {
+					if spec, ok := resource.Spec.(map[string]interface{}); ok {
+						if projectName, ok := spec["projectName"].(string); ok && projectName != "" && projectName != "your-project-id" {
+							return projectName
+						}
+						if projectID, ok := spec["projectID"].(string); ok && projectID != "" && projectID != "your-project-id" {
+							return projectID
+						}
+					}
+				}
+				// Also check VPCEndpoint resources for project information
+				if resource.Kind == types.KindVPCEndpoint {
+					if spec, ok := resource.Spec.(map[string]interface{}); ok {
+						if projectName, ok := spec["projectName"].(string); ok && projectName != "" && projectName != "your-project-id" {
+							return projectName
+						}
+					}
+				}
+				// Also check DatabaseUser resources for project information
+				if resource.Kind == types.KindDatabaseUser {
+					if spec, ok := resource.Spec.(map[string]interface{}); ok {
+						if projectName, ok := spec["projectName"].(string); ok && projectName != "" && projectName != "your-project-id" {
+							return projectName
+						}
+					}
+				}
+				// Also check NetworkAccess resources for project information
+				if resource.Kind == types.KindNetworkAccess {
+					if spec, ok := resource.Spec.(map[string]interface{}); ok {
+						if projectName, ok := spec["projectName"].(string); ok && projectName != "" && projectName != "your-project-id" {
+							return projectName
+						}
+					}
+				}
+				// Also check Cluster resources for project information
+				if resource.Kind == types.KindCluster {
+					if spec, ok := resource.Spec.(map[string]interface{}); ok {
+						if projectName, ok := spec["projectName"].(string); ok && projectName != "" && projectName != "your-project-id" {
+							return projectName
+						}
+					}
+				}
 			}
 		}
 
@@ -503,6 +554,8 @@ func buildDesiredState(configs []*apply.LoadResult) (*apply.ProjectState, error)
 		DatabaseUsers: []types.DatabaseUserManifest{},
 		DatabaseRoles: []types.DatabaseRoleManifest{},
 		NetworkAccess: []types.NetworkAccessManifest{},
+		SearchIndexes: []types.SearchIndexManifest{},
+		VPCEndpoints:  []types.VPCEndpointManifest{},
 	}
 
 	for _, cfg := range configs {
@@ -696,6 +749,57 @@ func mergeApplyDocumentToState(state *apply.ProjectState, applyDoc *types.ApplyD
 				Spec:       networkSpec,
 			}
 			state.NetworkAccess = append(state.NetworkAccess, networkManifest)
+
+		case types.KindSearchIndex:
+			// Convert resource to SearchIndexManifest
+			// resource.Spec should be a SearchIndexSpec thanks to YAML unmarshaling
+			searchSpec, ok := resource.Spec.(types.SearchIndexSpec)
+			if !ok {
+				// Fallback to map-based conversion if needed
+				searchSpec = convertToSearchIndexSpec(resource.Spec)
+			}
+			searchManifest := types.SearchIndexManifest{
+				APIVersion: resource.APIVersion,
+				Kind:       resource.Kind,
+				Metadata:   resource.Metadata,
+				Spec:       searchSpec,
+			}
+			state.SearchIndexes = append(state.SearchIndexes, searchManifest)
+		case types.KindVPCEndpoint:
+			// Convert resource to VPCEndpointManifest
+			var spec types.VPCEndpointSpec
+			// Handle typed or untyped spec
+			if s, ok := resource.Spec.(types.VPCEndpointSpec); ok {
+				spec = s
+			} else if m, ok := resource.Spec.(map[string]interface{}); ok {
+				// Fallback conversion
+				if v, ok := m["projectName"].(string); ok {
+					spec.ProjectName = v
+				}
+				if v, ok := m["cloudProvider"].(string); ok {
+					spec.CloudProvider = v
+				}
+				if v, ok := m["region"].(string); ok {
+					spec.Region = v
+				}
+				if v, ok := m["endpointId"].(string); ok {
+					spec.EndpointID = v
+				}
+				if arr, ok := m["dependsOn"].([]interface{}); ok {
+					for _, d := range arr {
+						if ds, ok := d.(string); ok {
+							spec.DependsOn = append(spec.DependsOn, ds)
+						}
+					}
+				}
+			}
+			manifest := types.VPCEndpointManifest{
+				APIVersion: resource.APIVersion,
+				Kind:       resource.Kind,
+				Metadata:   resource.Metadata,
+				Spec:       spec,
+			}
+			state.VPCEndpoints = append(state.VPCEndpoints, manifest)
 		}
 	}
 	return nil
@@ -808,6 +912,36 @@ func convertToNetworkAccessSpec(spec interface{}) types.NetworkAccessSpec {
 		return networkSpec
 	}
 	return types.NetworkAccessSpec{}
+}
+
+func convertToSearchIndexSpec(spec interface{}) types.SearchIndexSpec {
+	if specMap, ok := spec.(map[string]interface{}); ok {
+		searchSpec := types.SearchIndexSpec{}
+		if projectName, ok := specMap["projectName"].(string); ok {
+			searchSpec.ProjectName = projectName
+		}
+		if clusterName, ok := specMap["clusterName"].(string); ok {
+			searchSpec.ClusterName = clusterName
+		}
+		if databaseName, ok := specMap["databaseName"].(string); ok {
+			searchSpec.DatabaseName = databaseName
+		}
+		if collectionName, ok := specMap["collectionName"].(string); ok {
+			searchSpec.CollectionName = collectionName
+		}
+		if indexName, ok := specMap["indexName"].(string); ok {
+			searchSpec.IndexName = indexName
+		}
+		if indexType, ok := specMap["indexType"].(string); ok {
+			searchSpec.IndexType = indexType
+		}
+		if defMap, ok := specMap["definition"].(map[string]interface{}); ok {
+			searchSpec.Definition = defMap
+		}
+		// Add more fields as needed
+		return searchSpec
+	}
+	return types.SearchIndexSpec{}
 }
 
 func showPlanAndGetApproval(plan *apply.Plan, opts *ApplyOptions) error {

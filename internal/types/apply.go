@@ -24,6 +24,8 @@ const (
 	KindDatabaseDirectUser ResourceKind = "DatabaseDirectUser"
 	KindDatabaseRole       ResourceKind = "DatabaseRole"
 	KindNetworkAccess      ResourceKind = "NetworkAccess"
+	KindSearchIndex        ResourceKind = "SearchIndex"
+	KindVPCEndpoint        ResourceKind = "VPCEndpoint"
 	KindApplyDocument      ResourceKind = "ApplyDocument"
 )
 
@@ -109,6 +111,45 @@ type ClusterSpec struct {
 	Encryption       *EncryptionConfig  `yaml:"encryption,omitempty" json:"encryption,omitempty"`
 	BiConnector      *BiConnectorConfig `yaml:"biConnector,omitempty" json:"biConnector,omitempty"`
 	Tags             map[string]string  `yaml:"tags,omitempty" json:"tags,omitempty"`
+}
+
+// SearchIndexManifest represents a search index resource manifest
+type SearchIndexManifest struct {
+	APIVersion APIVersion          `yaml:"apiVersion" json:"apiVersion"`
+	Kind       ResourceKind        `yaml:"kind" json:"kind"`
+	Metadata   ResourceMetadata    `yaml:"metadata" json:"metadata"`
+	Spec       SearchIndexSpec     `yaml:"spec" json:"spec"`
+	Status     *ResourceStatusInfo `yaml:"status,omitempty" json:"status,omitempty"`
+}
+
+// SearchIndexSpec represents the specification for a search index resource
+type SearchIndexSpec struct {
+	ProjectName    string                 `yaml:"projectName" json:"projectName"`
+	ClusterName    string                 `yaml:"clusterName" json:"clusterName"`
+	DatabaseName   string                 `yaml:"databaseName" json:"databaseName"`
+	CollectionName string                 `yaml:"collectionName" json:"collectionName"`
+	IndexName      string                 `yaml:"indexName" json:"indexName"`
+	IndexType      string                 `yaml:"indexType,omitempty" json:"indexType,omitempty"` // "search" or "vectorSearch"
+	Definition     map[string]interface{} `yaml:"definition" json:"definition"`
+	DependsOn      []string               `yaml:"dependsOn,omitempty" json:"dependsOn,omitempty"`
+}
+
+// VPCEndpointManifest represents a VPC endpoint resource manifest
+type VPCEndpointManifest struct {
+	APIVersion APIVersion          `yaml:"apiVersion" json:"apiVersion"`
+	Kind       ResourceKind        `yaml:"kind" json:"kind"`
+	Metadata   ResourceMetadata    `yaml:"metadata" json:"metadata"`
+	Spec       VPCEndpointSpec     `yaml:"spec" json:"spec"`
+	Status     *ResourceStatusInfo `yaml:"status,omitempty" json:"status,omitempty"`
+}
+
+// VPCEndpointSpec represents the specification for a VPC endpoint resource
+type VPCEndpointSpec struct {
+	ProjectName   string   `yaml:"projectName" json:"projectName"`
+	CloudProvider string   `yaml:"cloudProvider" json:"cloudProvider"` // AWS, AZURE, GCP
+	Region        string   `yaml:"region" json:"region"`
+	EndpointID    string   `yaml:"endpointId,omitempty" json:"endpointId,omitempty"`
+	DependsOn     []string `yaml:"dependsOn,omitempty" json:"dependsOn,omitempty"`
 }
 
 // DatabaseUserManifest represents a database user resource manifest
@@ -309,7 +350,7 @@ func ValidateAPIVersion(version APIVersion) error {
 // ValidateResourceKind validates the resource kind
 func ValidateResourceKind(kind ResourceKind) error {
 	switch kind {
-	case KindProject, KindCluster, KindDatabaseUser, KindDatabaseDirectUser, KindDatabaseRole, KindNetworkAccess, KindApplyDocument:
+	case KindProject, KindCluster, KindDatabaseUser, KindDatabaseDirectUser, KindDatabaseRole, KindNetworkAccess, KindApplyDocument, KindSearchIndex, KindVPCEndpoint:
 		return nil
 	default:
 		return fmt.Errorf("unsupported resource kind: %s", kind)

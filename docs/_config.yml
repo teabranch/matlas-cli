@@ -45,6 +45,8 @@ navigation:
     url: /database/
   - title: Infrastructure
     url: /infra/
+  - title: YAML Kinds
+    url: /yaml-kinds/
   - title: Configuration
     url: /config/
   - title: Development Guide

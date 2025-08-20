@@ -29,6 +29,38 @@ Any important decisions, blockers, or context for future developers.
 ---
 ```
 
+## [2025-01-27] Release Workflow Build Failures Fix
+
+**Status**: Completed  
+**Developer**: Assistant  
+**Related Issues**: Tar cache restore failures, Windows build conflicts, 45MB unused artifacts, linting cache conflicts  
+
+### Summary
+Fixed multiple critical issues in the consolidated release.yml workflow causing failures on main branch pushes: cache restore tar failures, Windows build file conflicts, unnecessary 45MB artifact uploads, and linting job cache conflicts.
+
+### Tasks
+- [x] Analyzed workflow failure reports: tar exit code 2, "Cannot open: File exists" Windows errors
+- [x] Fixed cache restore issue by adding restore-keys fallback for partial cache hits
+- [x] Fixed Windows build conflicts by using unique dist directories per build matrix entry
+- [x] Eliminated 45MB release-artifacts upload by having semantic-release download individual artifacts directly
+- [x] Fixed linting job "Cannot open: File exists" error caused by conflicting cache mechanisms
+- [x] Added vendor directory cleanup before go mod vendor operations
+- [x] Disabled golangci-lint-action caching to prevent conflicts with setup-go cache
+- [x] Verified YAML syntax and workflow structure integrity
+
+### Files Modified
+- `.github/workflows/release.yml` - Fixed cache configuration, build directory conflicts, artifact handling, and linting cache conflicts
+
+### Notes
+- Cache restore-keys prevent tar extraction failures when partial cache hits occur
+- Unique build directories (dist-{goos}-{goarch}) prevent file conflicts between matrix builds
+- Direct artifact download in semantic-release eliminates redundant 45MB upload
+- Vendor directory cleanup (rm -rf vendor/) prevents conflicts with cached modules
+- Disabled golangci-lint caching (skip-pkg-cache: true, skip-build-cache: true) to use only setup-go cache
+- All changes maintain backward compatibility with existing semantic-release configuration
+
+---
+
 ## [2025-01-27] CI/Release Workflow Coordination Fix
 
 **Status**: Completed  

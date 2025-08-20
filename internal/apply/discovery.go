@@ -27,8 +27,13 @@ type StateDiscovery interface {
 	// DiscoverNetworkAccess fetches all network access entries in a project
 	DiscoverNetworkAccess(ctx context.Context, projectID string) ([]types.NetworkAccessManifest, error)
 
+	// DiscoverSearchIndexes fetches all search indexes in a project
+	DiscoverSearchIndexes(ctx context.Context, projectID string) ([]types.SearchIndexManifest, error)
+
 	// DiscoverProjectSettings fetches project-level configuration
 	DiscoverProjectSettings(ctx context.Context, projectID string) (*types.ProjectManifest, error)
+	// DiscoverVPCEndpoints fetches all VPC endpoint services in a project
+	DiscoverVPCEndpoints(ctx context.Context, projectID string) ([]types.VPCEndpointManifest, error)
 }
 
 // ProjectState represents the complete discovered state of an Atlas project
@@ -38,6 +43,8 @@ type ProjectState struct {
 	DatabaseUsers []types.DatabaseUserManifest  `json:"databaseUsers"`
 	DatabaseRoles []types.DatabaseRoleManifest  `json:"databaseRoles"`
 	NetworkAccess []types.NetworkAccessManifest `json:"networkAccess"`
+	SearchIndexes []types.SearchIndexManifest   `json:"searchIndexes"`
+	VPCEndpoints  []types.VPCEndpointManifest   `json:"vpcEndpoints"`
 	Fingerprint   string                        `json:"fingerprint"`
 	DiscoveredAt  time.Time                     `json:"discoveredAt"`
 }
@@ -49,6 +56,8 @@ type AtlasStateDiscovery struct {
 	clustersService  *atlas.ClustersService
 	usersService     *atlas.DatabaseUsersService
 	networkService   *atlas.NetworkAccessListsService
+	searchService    *atlas.SearchService
+	vpcService       *atlas.VPCEndpointsService
 	rateLimiter      *RateLimiter
 	maxConcurrentOps int
 }
@@ -61,6 +70,8 @@ func NewAtlasStateDiscovery(client *atlasclient.Client) *AtlasStateDiscovery {
 		clustersService:  atlas.NewClustersService(client),
 		usersService:     atlas.NewDatabaseUsersService(client),
 		networkService:   atlas.NewNetworkAccessListsService(client),
+		searchService:    atlas.NewSearchService(client),
+		vpcService:       atlas.NewVPCEndpointsService(client),
 		rateLimiter:      NewRateLimiter(10, time.Second), // 10 requests per second
 		maxConcurrentOps: 5,                               // Maximum 5 concurrent API calls
 	}
@@ -92,6 +103,8 @@ func (d *AtlasStateDiscovery) DiscoverProject(ctx context.Context, projectID str
 	clustersCh := make(chan result, 1)
 	usersCh := make(chan result, 1)
 	networkCh := make(chan result, 1)
+	searchCh := make(chan result, 1)
+	vpceCh := make(chan result, 1)
 
 	// Discover project settings first
 	wg.Add(1)
@@ -124,6 +137,36 @@ func (d *AtlasStateDiscovery) DiscoverProject(ctx context.Context, projectID str
 
 		network, err := d.DiscoverNetworkAccess(ctx, projectID)
 		networkCh <- result{data: network, err: err}
+	}()
+
+	// Discover search indexes
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		semaphore <- struct{}{}
+		defer func() { <-semaphore }()
+
+		search, err := d.DiscoverSearchIndexes(ctx, projectID)
+		searchCh <- result{data: search, err: err}
+	}()
+
+	// Discover VPC endpoints
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		semaphore <- struct{}{}
+		defer func() { <-semaphore }()
+		// Fetch VPC endpoint services
+		servicesMap, err := d.vpcService.ListAllPrivateEndpointServices(ctx, projectID)
+		var manifests []types.VPCEndpointManifest
+		for provider, list := range servicesMap {
+			for _, svc := range list {
+				spec := types.VPCEndpointSpec{ProjectName: projectID, CloudProvider: provider, Region: svc.GetRegionName(), EndpointID: svc.GetId()}
+				manifest := types.VPCEndpointManifest{APIVersion: types.APIVersionV1, Kind: types.KindVPCEndpoint, Metadata: types.ResourceMetadata{Name: svc.GetEndpointServiceName()}, Spec: spec}
+				manifests = append(manifests, manifest)
+			}
+		}
+		vpceCh <- result{data: manifests, err: err}
 	}()
 
 	// Wait for project discovery to complete first
@@ -162,6 +205,8 @@ func (d *AtlasStateDiscovery) DiscoverProject(ctx context.Context, projectID str
 	close(clustersCh)
 	close(usersCh)
 	close(networkCh)
+	close(searchCh)
+	close(vpceCh)
 
 	// Clusters
 	clustersResult := <-clustersCh
@@ -185,6 +230,22 @@ func (d *AtlasStateDiscovery) DiscoverProject(ctx context.Context, projectID str
 		errors = append(errors, fmt.Errorf("failed to discover network access: %w", networkResult.err))
 	} else if networkResult.data != nil {
 		projectState.NetworkAccess = networkResult.data.([]types.NetworkAccessManifest)
+	}
+
+	// Search indexes
+	searchResult := <-searchCh
+	if searchResult.err != nil {
+		errors = append(errors, fmt.Errorf("failed to discover search indexes: %w", searchResult.err))
+	} else if searchResult.data != nil {
+		projectState.SearchIndexes = searchResult.data.([]types.SearchIndexManifest)
+	}
+
+	// VPC endpoints
+	vpceResult := <-vpceCh
+	if vpceResult.err != nil {
+		errors = append(errors, fmt.Errorf("failed to discover VPC endpoints: %w", vpceResult.err))
+	} else if vpceResult.data != nil {
+		projectState.VPCEndpoints = vpceResult.data.([]types.VPCEndpointManifest)
 	}
 
 	// Return aggregated errors if any
@@ -337,6 +398,58 @@ func (d *AtlasStateDiscovery) DiscoverNetworkAccess(ctx context.Context, project
 	return manifests, nil
 }
 
+// DiscoverSearchIndexes fetches all search indexes in a project
+func (d *AtlasStateDiscovery) DiscoverSearchIndexes(ctx context.Context, projectID string) ([]types.SearchIndexManifest, error) {
+	if err := d.rateLimiter.Wait(ctx); err != nil {
+		return nil, fmt.Errorf("rate limit exceeded: %w", err)
+	}
+
+	indexes, err := d.searchService.ListAllIndexes(ctx, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch search indexes: %w", err)
+	}
+
+	manifests := make([]types.SearchIndexManifest, 0, len(indexes))
+	for _, index := range indexes {
+		manifest := d.convertSearchIndexToManifest(&index)
+		manifests = append(manifests, manifest)
+	}
+
+	return manifests, nil
+}
+
+// DiscoverVPCEndpoints fetches all VPC endpoint services in a project
+func (d *AtlasStateDiscovery) DiscoverVPCEndpoints(ctx context.Context, projectID string) ([]types.VPCEndpointManifest, error) {
+	// Rate limit
+	if err := d.rateLimiter.Wait(ctx); err != nil {
+		return nil, fmt.Errorf("rate limit exceeded: %w", err)
+	}
+	// Use vpcService to list all endpoint services
+	servicesMap, err := d.vpcService.ListAllPrivateEndpointServices(ctx, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list VPC endpoint services: %w", err)
+	}
+	var manifests []types.VPCEndpointManifest
+	for provider, list := range servicesMap {
+		for _, svc := range list {
+			spec := types.VPCEndpointSpec{
+				ProjectName:   projectID,
+				CloudProvider: provider,
+				Region:        svc.GetRegionName(),
+				EndpointID:    svc.GetId(),
+			}
+			manifest := types.VPCEndpointManifest{
+				APIVersion: types.APIVersionV1,
+				Kind:       types.KindVPCEndpoint,
+				Metadata:   types.ResourceMetadata{Name: svc.GetEndpointServiceName()},
+				Spec:       spec,
+			}
+			manifests = append(manifests, manifest)
+		}
+	}
+	return manifests, nil
+}
+
 // GenerateStateFingerprint generates a SHA256 hash of the project state for change detection
 func GenerateStateFingerprint(state *ProjectState) (string, error) {
 	// Create a copy of the state without the fingerprint and timestamp for consistent hashing
@@ -345,11 +458,13 @@ func GenerateStateFingerprint(state *ProjectState) (string, error) {
 		Clusters      []types.ClusterManifest       `json:"clusters"`
 		DatabaseUsers []types.DatabaseUserManifest  `json:"databaseUsers"`
 		NetworkAccess []types.NetworkAccessManifest `json:"networkAccess"`
+		SearchIndexes []types.SearchIndexManifest   `json:"searchIndexes"`
 	}{
 		Project:       state.Project,
 		Clusters:      state.Clusters,
 		DatabaseUsers: state.DatabaseUsers,
 		NetworkAccess: state.NetworkAccess,
+		SearchIndexes: state.SearchIndexes,
 	}
 
 	data, err := json.Marshal(hashableState)

@@ -1,0 +1,24 @@
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: search-basic-test-example
+  labels:
+    example: search-index
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: SearchIndex
+    metadata:
+      name: movies-search-index-test
+      labels:
+        type: basic-search
+        collection: movies
+    spec:
+      projectName: "68961f3e6a4bb94d55e6404c"
+      clusterName: "TestCluster"
+      databaseName: "sample_mflix"
+      collectionName: "movies"
+      indexName: "movies-search-index-test"
+      indexType: "search"
+      definition:
+        mappings:
+          dynamic: true

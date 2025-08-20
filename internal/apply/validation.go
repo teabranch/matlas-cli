@@ -484,6 +484,10 @@ func validateResourceContent(manifest *types.ResourceManifest, basePath string, 
 		validateNetworkAccessManifest(manifest, basePath, result, opts)
 	case types.KindProject:
 		validateProjectManifest(manifest, basePath, result, opts)
+	case types.KindSearchIndex:
+		validateSearchIndexManifest(manifest, basePath, result, opts)
+	case types.KindVPCEndpoint:
+		validateVPCEndpointManifest(manifest, basePath, result, opts)
 	default:
 		// For unknown resource types, log a warning but don't fail validation
 		addWarning(result, basePath+".kind", "kind", string(manifest.Kind),
@@ -1557,4 +1561,166 @@ func convertMapToStruct(input map[string]interface{}, output interface{}) error 
 	}
 
 	return nil
+}
+
+// validateSearchIndexManifest validates a SearchIndex resource manifest
+func validateSearchIndexManifest(manifest *types.ResourceManifest, basePath string, result *ValidationResult, opts *ValidatorOptions) {
+	spec, ok := manifest.Spec.(types.SearchIndexSpec)
+	if !ok {
+		// Try to convert from map[string]interface{}
+		if specMap, ok := manifest.Spec.(map[string]interface{}); ok {
+			spec = convertToSearchIndexSpec(specMap)
+		} else {
+			addError(result, basePath+".spec", "spec", "",
+				"search index spec must be an object", "INVALID_SPEC_TYPE")
+			return
+		}
+	}
+
+	// Validate required fields
+	if spec.ProjectName == "" {
+		addError(result, basePath+".spec.projectName", "projectName", "",
+			"project name is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	if spec.ClusterName == "" {
+		addError(result, basePath+".spec.clusterName", "clusterName", "",
+			"cluster name is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	if spec.DatabaseName == "" {
+		addError(result, basePath+".spec.databaseName", "databaseName", "",
+			"database name is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	if spec.CollectionName == "" {
+		addError(result, basePath+".spec.collectionName", "collectionName", "",
+			"collection name is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	if spec.IndexName == "" {
+		addError(result, basePath+".spec.indexName", "indexName", "",
+			"index name is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	// Validate index type if provided
+	if spec.IndexType != "" && spec.IndexType != "search" && spec.IndexType != "vectorSearch" {
+		addError(result, basePath+".spec.indexType", "indexType", spec.IndexType,
+			"index type must be 'search' or 'vectorSearch'", "INVALID_INDEX_TYPE")
+	}
+
+	// Validate definition is provided
+	if spec.Definition == nil {
+		addError(result, basePath+".spec.definition", "definition", "",
+			"index definition is required", "REQUIRED_FIELD_MISSING")
+	}
+}
+
+// validateVPCEndpointManifest validates a VPCEndpoint resource manifest
+func validateVPCEndpointManifest(manifest *types.ResourceManifest, basePath string, result *ValidationResult, opts *ValidatorOptions) {
+	spec, ok := manifest.Spec.(types.VPCEndpointSpec)
+	if !ok {
+		// Try to convert from map[string]interface{}
+		if specMap, ok := manifest.Spec.(map[string]interface{}); ok {
+			spec = convertToVPCEndpointSpec(specMap)
+		} else {
+			addError(result, basePath+".spec", "spec", "",
+				"VPC endpoint spec must be an object", "INVALID_SPEC_TYPE")
+			return
+		}
+	}
+
+	// Validate required fields
+	if spec.ProjectName == "" {
+		addError(result, basePath+".spec.projectName", "projectName", "",
+			"project name is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	if spec.CloudProvider == "" {
+		addError(result, basePath+".spec.cloudProvider", "cloudProvider", "",
+			"cloud provider is required", "REQUIRED_FIELD_MISSING")
+	} else {
+		// Validate cloud provider is supported
+		validProviders := map[string]bool{
+			"AWS":   true,
+			"AZURE": true,
+			"GCP":   true,
+		}
+		if !validProviders[spec.CloudProvider] {
+			addError(result, basePath+".spec.cloudProvider", "cloudProvider", spec.CloudProvider,
+				"cloud provider must be one of: AWS, AZURE, GCP", "INVALID_CLOUD_PROVIDER")
+		}
+	}
+
+	if spec.Region == "" {
+		addError(result, basePath+".spec.region", "region", "",
+			"region is required", "REQUIRED_FIELD_MISSING")
+	}
+}
+
+// convertToSearchIndexSpec converts a map to SearchIndexSpec
+func convertToSearchIndexSpec(specMap map[string]interface{}) types.SearchIndexSpec {
+	spec := types.SearchIndexSpec{}
+
+	if val, ok := specMap["projectName"].(string); ok {
+		spec.ProjectName = val
+	}
+	if val, ok := specMap["clusterName"].(string); ok {
+		spec.ClusterName = val
+	}
+	if val, ok := specMap["databaseName"].(string); ok {
+		spec.DatabaseName = val
+	}
+	if val, ok := specMap["collectionName"].(string); ok {
+		spec.CollectionName = val
+	}
+	if val, ok := specMap["indexName"].(string); ok {
+		spec.IndexName = val
+	}
+	if val, ok := specMap["indexType"].(string); ok {
+		spec.IndexType = val
+	}
+	if val, ok := specMap["definition"]; ok {
+		if definitionMap, ok := val.(map[string]interface{}); ok {
+			spec.Definition = definitionMap
+		}
+	}
+	if val, ok := specMap["dependsOn"].([]interface{}); ok {
+		spec.DependsOn = make([]string, len(val))
+		for i, dep := range val {
+			if depStr, ok := dep.(string); ok {
+				spec.DependsOn[i] = depStr
+			}
+		}
+	}
+
+	return spec
+}
+
+// convertToVPCEndpointSpec converts a map to VPCEndpointSpec
+func convertToVPCEndpointSpec(specMap map[string]interface{}) types.VPCEndpointSpec {
+	spec := types.VPCEndpointSpec{}
+
+	if val, ok := specMap["projectName"].(string); ok {
+		spec.ProjectName = val
+	}
+	if val, ok := specMap["cloudProvider"].(string); ok {
+		spec.CloudProvider = val
+	}
+	if val, ok := specMap["region"].(string); ok {
+		spec.Region = val
+	}
+	if val, ok := specMap["endpointId"].(string); ok {
+		spec.EndpointID = val
+	}
+	if val, ok := specMap["dependsOn"].([]interface{}); ok {
+		spec.DependsOn = make([]string, len(val))
+		for i, dep := range val {
+			if depStr, ok := dep.(string); ok {
+				spec.DependsOn[i] = depStr
+			}
+		}
+	}
+
+	return spec
 }

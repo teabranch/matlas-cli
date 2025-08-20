@@ -21,7 +21,31 @@
 
 ## [Unreleased]
 
+### Added
+- New `atlas search` command group for Atlas Search index management
+  - `matlas atlas search list` - List search indexes in cluster or collection
+  - `matlas atlas search create` - Create new search indexes (basic implementation)
+  - Support for both full-text search and vector search indexes
+- New YAML kinds: `SearchIndex` and `VPCEndpoint` for ApplyDocument support
+- Comprehensive examples for search and VPC endpoint configurations
+- Multi-cloud provider support for VPC endpoints (AWS, Azure, GCP)
+
 ### Fixed
+- **VPC Endpoints YAML Project ID Resolution**: Fixed critical project ID parsing error where VPCEndpoint YAML configurations weren't being processed for project resolution, causing all YAML operations to fail with "project '' not found in organization" error
+- **VPC Endpoints Multi-Provider Deletion**: Fixed cloud provider mismatch where all deletion operations were hardcoded to use AWS provider, causing GCP and Azure endpoints to fail deletion and creating resource leaks
+- **VPC Endpoints Test Verification Logic**: Fixed verification logic that searched for non-existent YAML metadata names in Atlas API responses, replacing with actual endpoint count and cloud provider validation
+- Enhanced project ID parsing support for DatabaseUser, NetworkAccess, and Cluster resources in YAML configurations
+- Improved VPC endpoints test infrastructure with proper timing mechanisms for Atlas backend processing delays
+- Added robust resource cleanup procedures with dynamic cloud provider extraction
+
+### Changed
+- Updated documentation with Atlas Search and VPC endpoint examples
+- Added support for Atlas Search APIs in SDK v20250312005
+- VPC endpoints testing infrastructure now uses Atlas API-compatible verification methods
+- Enhanced test scripts with comprehensive multi-provider cleanup and verification logic
+
+### Fixed
+- Updated release process documentation to accurately reflect the consolidated workflow implementation
 - Fixed semantic-release not detecting conventional commits by consolidating workflows
 - Completely redesigned release process following current best practices
 - Consolidated CI/CD, testing, building, and releasing into single workflow

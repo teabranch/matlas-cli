@@ -1,0 +1,18 @@
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: vpc-endpoint-example
+  labels:
+    example: vpc-endpoint
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: VPCEndpoint
+    metadata:
+      name: production-vpc-endpoint
+      labels:
+        environment: production
+        provider: aws
+    spec:
+      projectName: "your-project-id"
+      cloudProvider: "AWS"
+      region: "us-east-1"

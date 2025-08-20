@@ -135,6 +135,14 @@ func (d *DiffEngine) ComputeProjectDiff(desired *ProjectState, current *ProjectS
 		return nil, fmt.Errorf("failed to compute database roles diff: %w", err)
 	}
 
+	if err := d.computeSearchIndexesDiff(desired, current, diff); err != nil {
+		return nil, fmt.Errorf("failed to compute search indexes diff: %w", err)
+	}
+	// Compute diffs for VPC Endpoints
+	if err := d.computeVPCEndpointsDiff(desired, current, diff); err != nil {
+		return nil, fmt.Errorf("failed to compute VPC endpoints diff: %w", err)
+	}
+
 	// Compute summary
 	diff.Summary = d.computeSummary(diff.Operations)
 
@@ -322,6 +330,80 @@ func (d *DiffEngine) computeNetworkAccessDiff(desired *ProjectState, current *Pr
 	return nil
 }
 
+// computeSearchIndexesDiff computes diffs for search indexes
+func (d *DiffEngine) computeSearchIndexesDiff(desired *ProjectState, current *ProjectState, diff *Diff) error {
+	desiredIndexes := make(map[string]*types.SearchIndexManifest)
+	currentIndexes := make(map[string]*types.SearchIndexManifest)
+
+	if desired != nil {
+		for i := range desired.SearchIndexes {
+			index := &desired.SearchIndexes[i]
+			// Use a composite key: clusterName/databaseName/collectionName/indexName
+			key := fmt.Sprintf("%s/%s/%s/%s", index.Spec.ClusterName, index.Spec.DatabaseName, index.Spec.CollectionName, index.Spec.IndexName)
+			desiredIndexes[key] = index
+		}
+	}
+
+	if current != nil {
+		for i := range current.SearchIndexes {
+			index := &current.SearchIndexes[i]
+			key := fmt.Sprintf("%s/%s/%s/%s", index.Spec.ClusterName, index.Spec.DatabaseName, index.Spec.CollectionName, index.Spec.IndexName)
+			currentIndexes[key] = index
+		}
+	}
+
+	// Find all unique index keys
+	allKeys := make(map[string]bool)
+	for key := range desiredIndexes {
+		allKeys[key] = true
+	}
+	for key := range currentIndexes {
+		allKeys[key] = true
+	}
+
+	// Compute diff for each search index
+	for key := range allKeys {
+		desired := desiredIndexes[key]
+		current := currentIndexes[key]
+
+		var resourceName string
+		if desired != nil {
+			resourceName = desired.Metadata.Name
+		} else if current != nil {
+			resourceName = current.Metadata.Name
+		}
+
+		op := d.computeResourceDiff(types.KindSearchIndex, resourceName, desired, current)
+		if op != nil {
+			diff.Operations = append(diff.Operations, *op)
+		}
+	}
+
+	return nil
+}
+
+// computeVPCEndpointsDiff computes diffs for VPC endpoint resources
+func (d *DiffEngine) computeVPCEndpointsDiff(desired *ProjectState, current *ProjectState, diff *Diff) error {
+	// Build maps keyed by resource name
+	desiredMap := make(map[string]interface{})
+	currentMap := make(map[string]interface{})
+	if desired != nil {
+		for i := range desired.VPCEndpoints {
+			ep := &desired.VPCEndpoints[i]
+			desiredMap[ep.Metadata.Name] = ep
+		}
+	}
+	if current != nil {
+		for i := range current.VPCEndpoints {
+			ep := &current.VPCEndpoints[i]
+			currentMap[ep.Metadata.Name] = ep
+		}
+	}
+	// Delegate to generic diff builder
+	d.computeDiffFromNamedMaps(types.KindVPCEndpoint, desiredMap, currentMap, diff)
+	return nil
+}
+
 // computeDiffFromNamedMaps computes diffs given name-indexed desired and current maps
 func (d *DiffEngine) computeDiffFromNamedMaps(resourceType types.ResourceKind, desiredMap, currentMap map[string]interface{}, diff *Diff) {
 	// Find all unique names
@@ -370,6 +452,10 @@ func (d *DiffEngine) computeResourceDiff(resourceType types.ResourceKind, resour
 			if v == nil {
 				desired = nil
 			}
+		case *types.SearchIndexManifest:
+			if v == nil {
+				desired = nil
+			}
 		}
 	}
 
@@ -392,6 +478,10 @@ func (d *DiffEngine) computeResourceDiff(resourceType types.ResourceKind, resour
 				current = nil
 			}
 		case *types.DatabaseRoleManifest:
+			if v == nil {
+				current = nil
+			}
+		case *types.SearchIndexManifest:
 			if v == nil {
 				current = nil
 			}
@@ -508,6 +598,13 @@ func (d *DiffEngine) normalizeForComparison(resource interface{}) interface{} {
 		normalized.Status = nil
 		return normalized
 	case *types.DatabaseRoleManifest:
+		if v == nil {
+			return nil
+		}
+		normalized := *v
+		normalized.Status = nil
+		return normalized
+	case *types.SearchIndexManifest:
 		if v == nil {
 			return nil
 		}
@@ -870,6 +967,11 @@ func (d *DiffEngine) assessCreateImpact(op *Operation, impact *OperationImpact) 
 	case types.KindNetworkAccess:
 		impact.EstimatedDuration = time.Second * 10
 		impact.RiskLevel = RiskLevelLow
+
+	case types.KindSearchIndex:
+		impact.EstimatedDuration = time.Minute * 2 // Search indexes can take time to build
+		impact.RiskLevel = RiskLevelLow
+		impact.Warnings = append(impact.Warnings, "Search index creation may take several minutes for large collections")
 	}
 }
 
@@ -891,6 +993,11 @@ func (d *DiffEngine) assessUpdateImpact(op *Operation, impact *OperationImpact) 
 	case types.KindNetworkAccess:
 		impact.EstimatedDuration = time.Second * 15
 		impact.RiskLevel = RiskLevelLow
+
+	case types.KindSearchIndex:
+		impact.EstimatedDuration = time.Minute * 3 // Search index updates may require rebuild
+		impact.RiskLevel = RiskLevelMedium
+		impact.Warnings = append(impact.Warnings, "Search index updates may cause temporary query disruption")
 	}
 }
 
@@ -922,6 +1029,12 @@ func (d *DiffEngine) assessDeleteImpact(op *Operation, impact *OperationImpact) 
 		impact.EstimatedDuration = time.Second * 10
 		impact.RiskLevel = RiskLevelMedium
 		impact.Warnings = append(impact.Warnings, "Network access removal may block connections")
+
+	case types.KindSearchIndex:
+		impact.IsDestructive = true
+		impact.EstimatedDuration = time.Minute * 1
+		impact.RiskLevel = RiskLevelMedium
+		impact.Warnings = append(impact.Warnings, "Search index deletion will permanently remove search capabilities")
 	}
 }
 

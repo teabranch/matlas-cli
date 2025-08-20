@@ -392,3 +392,13 @@ func (c *CachedStateDiscovery) DiscoverNetworkAccess(ctx context.Context, projec
 func (c *CachedStateDiscovery) DiscoverProjectSettings(ctx context.Context, projectID string) (*types.ProjectManifest, error) {
 	return c.discovery.DiscoverProjectSettings(ctx, projectID)
 }
+
+// DiscoverSearchIndexes implements StateDiscovery
+func (c *CachedStateDiscovery) DiscoverSearchIndexes(ctx context.Context, projectID string) ([]types.SearchIndexManifest, error) {
+	return c.discovery.DiscoverSearchIndexes(ctx, projectID)
+}
+
+// DiscoverVPCEndpoints implements StateDiscovery
+func (c *CachedStateDiscovery) DiscoverVPCEndpoints(ctx context.Context, projectID string) ([]types.VPCEndpointManifest, error) {
+	return c.discovery.DiscoverVPCEndpoints(ctx, projectID)
+}

@@ -14,7 +14,7 @@ permissions:
 
 env:
   GO_VERSION: '1.24.5'
-  GOLANGCI_LINT_VERSION: 'v2.3.1'
+  GOLANGCI_LINT_VERSION: 'v2.4.0'
 
 jobs:
   # ==============================================================================
@@ -44,19 +44,31 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
+      - name: Clean Go Module Cache (prevent lint issues)
+        run: go clean -modcache || true
+
       - name: Download Dependencies
         run: go mod download
 
       - name: Sync vendor (ensure consistent vendoring for linter)
+        shell: bash
         run: |
+          # Clean any existing vendor directory to prevent conflicts
+          if [ -d "vendor" ]; then
+            rm -rf vendor/
+          fi
           go mod tidy
           go mod vendor
+          echo "✅ Vendor directory synced successfully"
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           args: --no-config --enable-only=errcheck,gosec,ineffassign --timeout=5m
+          skip-pkg-cache: false
+          skip-build-cache: false
+          only-new-issues: false
 
       - name: Check Code Formatting
         run: |
@@ -100,13 +112,19 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
 
-      - name: Sync vendor
-        run: |
-          go mod tidy
-          go mod vendor
-
       - name: Download Dependencies
         run: go mod download
+
+      - name: Sync vendor
+        shell: bash
+        run: |
+          # Clean any existing vendor directory to prevent conflicts
+          if [ -d "vendor" ]; then
+            rm -rf vendor/
+          fi
+          go mod tidy
+          go mod vendor
+          echo "✅ Vendor directory synced for ${{ matrix.os }}"
 
       - name: Create Test Temp Directory
         shell: bash
@@ -180,6 +198,8 @@ jobs:
             ~/go/pkg/mod
             ~/.cache/go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - name: Build Binary
         env:
@@ -191,18 +211,20 @@ jobs:
           COMMIT=$(git rev-parse --short HEAD)
           BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           
-          # Create dist directory
-          mkdir -p dist
+          # Create unique dist directory for this build
+          DIST_DIR="dist-${{ matrix.goos }}-${{ matrix.goarch }}"
+          rm -rf "${DIST_DIR}"
+          mkdir -p "${DIST_DIR}"
           
           # Build binary
           BINARY_NAME="matlas${{ matrix.ext }}"
           go build \
             -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.buildTime=${BUILD_TIME}" \
-            -o "dist/${BINARY_NAME}" \
+            -o "${DIST_DIR}/${BINARY_NAME}" \
             .
           
           # Create release archive
-          cd dist
+          cd "${DIST_DIR}"
           if [ "${{ matrix.goos }}" = "windows" ]; then
             zip "matlas_${{ matrix.goos }}_${{ matrix.goarch }}.zip" "${BINARY_NAME}"
           else
@@ -216,12 +238,12 @@ jobs:
         with:
           name: matlas-${{ matrix.os }}-${{ matrix.arch }}
           path: |
-            dist/*.zip
-            dist/*.tar.gz
+            dist-${{ matrix.goos }}-${{ matrix.goarch }}/*.zip
+            dist-${{ matrix.goos }}-${{ matrix.goarch }}/*.tar.gz
           retention-days: 90
 
-  create-checksums:
-    name: 📋 Create Checksums
+  prepare-release-assets:
+    name: 📋 Prepare Release Assets
     runs-on: ubuntu-latest
     needs: build
     steps:
@@ -243,13 +265,6 @@ jobs:
           echo "Generated checksums:"
           cat checksums.txt
 
-      - name: Upload consolidated artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-artifacts
-          path: dist/
-          retention-days: 90
-
   # ==============================================================================
   # Semantic Release
   # ==============================================================================
@@ -258,7 +273,7 @@ jobs:
     name: 🚀 Semantic Release
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [create-checksums]
+    needs: [prepare-release-assets]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     outputs:
       new_release_published: ${{ steps.semantic.outputs.new_release_published }}
@@ -271,11 +286,19 @@ jobs:
           # Use a Personal Access Token to trigger other workflows if needed
           token: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
-      - name: Download consolidated artifacts
+      - name: Download all artifacts to recreate dist/
         uses: actions/download-artifact@v4
         with:
-          name: release-artifacts
-          path: dist/
+          path: artifacts/
+      
+      - name: Recreate dist directory for semantic-release
+        run: |
+          mkdir -p dist
+          find artifacts/ -name "*.zip" -exec cp {} dist/ \;
+          find artifacts/ -name "*.tar.gz" -exec cp {} dist/ \;
+          # Generate checksums
+          cd dist
+          sha256sum *.zip *.tar.gz > checksums.txt || shasum -a 256 *.zip *.tar.gz > checksums.txt
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
