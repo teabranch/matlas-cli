@@ -64,9 +64,15 @@ func newGetCmd() *cobra.Command {
 	cmd.Flags().StringVar(&projectID, "project-id", "", "Project ID (can be set via ATLAS_PROJECT_ID env var)")
 	cmd.Flags().StringVar(&cloudProvider, "cloud-provider", "", "Cloud provider (AWS, AZURE, GCP)")
 	cmd.Flags().StringVar(&endpointID, "endpoint-id", "", "VPC endpoint service ID")
-	cmd.MarkFlagRequired("project-id")
-	cmd.MarkFlagRequired("cloud-provider")
-	cmd.MarkFlagRequired("endpoint-id")
+	if err := cmd.MarkFlagRequired("project-id"); err != nil {
+		panic(fmt.Errorf("failed to mark project-id flag as required: %w", err))
+	}
+	if err := cmd.MarkFlagRequired("cloud-provider"); err != nil {
+		panic(fmt.Errorf("failed to mark cloud-provider flag as required: %w", err))
+	}
+	if err := cmd.MarkFlagRequired("endpoint-id"); err != nil {
+		panic(fmt.Errorf("failed to mark endpoint-id flag as required: %w", err))
+	}
 	return cmd
 }
 
@@ -83,9 +89,15 @@ func newCreateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&projectID, "project-id", "", "Project ID (can be set via ATLAS_PROJECT_ID env var)")
 	cmd.Flags().StringVar(&cloudProvider, "cloud-provider", "", "Cloud provider (AWS, AZURE, GCP)")
 	cmd.Flags().StringVar(&region, "region", "", "Cloud provider region")
-	cmd.MarkFlagRequired("project-id")
-	cmd.MarkFlagRequired("cloud-provider")
-	cmd.MarkFlagRequired("region")
+	if err := cmd.MarkFlagRequired("project-id"); err != nil {
+		panic(fmt.Errorf("failed to mark project-id flag as required: %w", err))
+	}
+	if err := cmd.MarkFlagRequired("cloud-provider"); err != nil {
+		panic(fmt.Errorf("failed to mark cloud-provider flag as required: %w", err))
+	}
+	if err := cmd.MarkFlagRequired("region"); err != nil {
+		panic(fmt.Errorf("failed to mark region flag as required: %w", err))
+	}
 	return cmd
 }
 
@@ -103,9 +115,15 @@ func newUpdateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&projectID, "project-id", "", "Project ID (can be set via ATLAS_PROJECT_ID env var)")
 	cmd.Flags().StringVar(&cloudProvider, "cloud-provider", "", "Cloud provider (AWS, AZURE, GCP)")
 	cmd.Flags().StringVar(&endpointID, "endpoint-id", "", "VPC endpoint service ID")
-	cmd.MarkFlagRequired("project-id")
-	cmd.MarkFlagRequired("cloud-provider")
-	cmd.MarkFlagRequired("endpoint-id")
+	if err := cmd.MarkFlagRequired("project-id"); err != nil {
+		panic(fmt.Errorf("failed to mark project-id flag as required: %w", err))
+	}
+	if err := cmd.MarkFlagRequired("cloud-provider"); err != nil {
+		panic(fmt.Errorf("failed to mark cloud-provider flag as required: %w", err))
+	}
+	if err := cmd.MarkFlagRequired("endpoint-id"); err != nil {
+		panic(fmt.Errorf("failed to mark endpoint-id flag as required: %w", err))
+	}
 	return cmd
 }
 
@@ -125,9 +143,15 @@ func newDeleteCmd() *cobra.Command {
 	cmd.Flags().StringVar(&cloudProvider, "cloud-provider", "", "Cloud provider (AWS, AZURE, GCP)")
 	cmd.Flags().StringVar(&endpointID, "endpoint-id", "", "VPC endpoint service ID")
 	cmd.Flags().BoolVar(&yes, "yes", false, "Skip confirmation prompt")
-	cmd.MarkFlagRequired("project-id")
-	cmd.MarkFlagRequired("cloud-provider")
-	cmd.MarkFlagRequired("endpoint-id")
+	if err := cmd.MarkFlagRequired("project-id"); err != nil {
+		panic(fmt.Errorf("failed to mark project-id flag as required: %w", err))
+	}
+	if err := cmd.MarkFlagRequired("cloud-provider"); err != nil {
+		panic(fmt.Errorf("failed to mark cloud-provider flag as required: %w", err))
+	}
+	if err := cmd.MarkFlagRequired("endpoint-id"); err != nil {
+		panic(fmt.Errorf("failed to mark endpoint-id flag as required: %w", err))
+	}
 	return cmd
 }
 

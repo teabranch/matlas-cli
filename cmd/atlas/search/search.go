@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -339,12 +341,16 @@ func runGetSearchIndex(cmd *cobra.Command, projectID, clusterName, indexID, inde
 			return fmt.Errorf("search index %q not found", indexName)
 		}
 		res, err = searchService.GetSearchIndex(ctx, projectID, clusterName, foundID)
+		if err != nil {
+			progress.StopSpinnerWithError("Failed to get search index details")
+			return cli.WrapWithSuggestion(err, "Check your project ID, cluster name, and index identifier")
+		}
 	} else {
 		res, err = searchService.GetSearchIndex(ctx, projectID, clusterName, indexID)
-	}
-	if err != nil {
-		progress.StopSpinnerWithError("Failed to get search index details")
-		return cli.WrapWithSuggestion(err, "Check your project ID, cluster name, and index identifier")
+		if err != nil {
+			progress.StopSpinnerWithError("Failed to get search index details")
+			return cli.WrapWithSuggestion(err, "Check your project ID, cluster name, and index identifier")
+		}
 	}
 	progress.StopSpinner(fmt.Sprintf("Fetched details for index %s", res.GetName()))
 	// Format and display result
@@ -404,8 +410,12 @@ func runCreateSearchIndex(cmd *cobra.Command, projectID, clusterName, databaseNa
 	// Prepare index definition
 	var indexDefinition *admin.BaseSearchIndexCreateRequestDefinition
 	if indexFile != "" {
-		// Load definition from file
-		definitionData, err := os.ReadFile(indexFile)
+		// Load definition from file - validate file path to prevent directory traversal
+		if strings.Contains(indexFile, "..") {
+			progress.StopSpinnerWithError("Invalid file path")
+			return fmt.Errorf("invalid file path: %s", indexFile)
+		}
+		definitionData, err := os.ReadFile(filepath.Clean(indexFile))
 		if err != nil {
 			progress.StopSpinnerWithError("Failed to read index definition file")
 			return fmt.Errorf("failed to read index file %s: %w", indexFile, err)

@@ -14,7 +14,7 @@ permissions:
 
 env:
   GO_VERSION: '1.24.5'
-  GOLANGCI_LINT_VERSION: 'v2.3.1'
+  GOLANGCI_LINT_VERSION: 'v2.4.0'
 
 jobs:
   # ==============================================================================
@@ -44,23 +44,31 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
+      - name: Clean Go Module Cache (prevent lint issues)
+        run: go clean -modcache || true
+
       - name: Download Dependencies
         run: go mod download
 
       - name: Sync vendor (ensure consistent vendoring for linter)
+        shell: bash
         run: |
           # Clean any existing vendor directory to prevent conflicts
-          rm -rf vendor/
+          if [ -d "vendor" ]; then
+            rm -rf vendor/
+          fi
           go mod tidy
           go mod vendor
+          echo "✅ Vendor directory synced successfully"
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           args: --no-config --enable-only=errcheck,gosec,ineffassign --timeout=5m
-          skip-pkg-cache: true
-          skip-build-cache: true
+          skip-pkg-cache: false
+          skip-build-cache: false
+          only-new-issues: false
 
       - name: Check Code Formatting
         run: |
@@ -104,15 +112,19 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
 
-      - name: Sync vendor
-        run: |
-          # Clean any existing vendor directory to prevent conflicts
-          rm -rf vendor/
-          go mod tidy
-          go mod vendor
-
       - name: Download Dependencies
         run: go mod download
+
+      - name: Sync vendor
+        shell: bash
+        run: |
+          # Clean any existing vendor directory to prevent conflicts
+          if [ -d "vendor" ]; then
+            rm -rf vendor/
+          fi
+          go mod tidy
+          go mod vendor
+          echo "✅ Vendor directory synced for ${{ matrix.os }}"
 
       - name: Create Test Temp Directory
         shell: bash
