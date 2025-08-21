@@ -1,7 +1,10 @@
 ---
-layout: page
+layout: default
 title: Development Guide
-permalink: /development/
+nav_order: 3
+parent: Reference
+description: Development guide for contributing to matlas CLI
+permalink: /reference/development/
 ---
 
 # Development Guide

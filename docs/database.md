@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: Database Commands
+nav_order: 4
+has_children: false
 description: Work directly with MongoDB databases, collections, users, roles, and indexes through Atlas clusters or direct connections.
 permalink: /database/
 ---

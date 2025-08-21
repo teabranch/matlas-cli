@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: Infrastructure Workflows
+nav_order: 6
+has_children: false
 description: Terraform-inspired workflows for managing MongoDB Atlas infrastructure as code.
 permalink: /infra/
 ---

@@ -1,6 +1,7 @@
 ---
-layout: page
+layout: default
 title: Authentication & Configuration
+nav_order: 2
 description: Configure matlas to authenticate with MongoDB Atlas and set default behaviors.
 permalink: /auth/
 ---

@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: Discovery
+nav_order: 5
+has_children: false
 description: Discover and export existing MongoDB Atlas resources for infrastructure-as-code workflows.
 permalink: /discovery/
 ---

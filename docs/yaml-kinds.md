@@ -1,9 +1,15 @@
 ---
-layout: page
-title: YAML Kinds Reference
-description: Complete reference for all supported YAML kinds in matlas configuration files.
-permalink: /yaml-kinds/
+layout: default
+title: Reference
+nav_order: 7
+has_children: true
+description: Reference documentation for YAML kinds, configuration, and development.
+permalink: /reference/
 ---
+
+# Reference Documentation
+
+Complete reference materials for matlas CLI including YAML kinds, configuration options, and development guides.
 
 # YAML Kinds Reference
 

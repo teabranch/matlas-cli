@@ -1,7 +1,10 @@
 ---
-layout: page
+layout: default
 title: Release Process
-permalink: /release-process/
+nav_order: 4
+parent: Reference
+description: Automated release process for matlas CLI
+permalink: /reference/release-process/
 ---
 
 # Release Process

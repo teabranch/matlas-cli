@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: Atlas Commands
+nav_order: 3
+has_children: false
 description: Manage MongoDB Atlas infrastructure including projects, users, clusters, and networking.
 permalink: /atlas/
 ---

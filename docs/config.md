@@ -1,8 +1,10 @@
 ---
-layout: page
-title: Configuration Command
+layout: default
+title: Configuration
+nav_order: 2
+parent: Reference
 description: Manage matlas CLI configuration files and templates.
-permalink: /config/
+permalink: /reference/config/
 ---
 
 # Configuration Command

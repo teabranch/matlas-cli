@@ -1,7 +1,7 @@
 source "https://rubygems.org"
 
 gem "jekyll", "~> 4.3"
-gem "minima"
+gem "just-the-docs", "~> 0.8.2"
 gem "webrick", "~> 1.7"
 gem "jekyll-sass-converter"
 gem "jekyll-sitemap"
