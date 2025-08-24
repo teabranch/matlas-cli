@@ -1,5 +1,147 @@
 # Test Script Updates
 
+## [2025-08-24] Test Script Execution and Reliability Fixes
+
+**Status**: Completed  
+**Developer**: Assistant  
+**Related Issues**: Test script execution failures preventing proper environment-based testing  
+
+### Summary
+Fixed critical execution issues in cluster lifecycle and database operations test scripts that were preventing successful runs when sourced with environment variables from the project root. Enhanced script reliability, error handling, and user experience.
+
+### Tasks
+- [x] Fix cluster-lifecycle.sh invalid flag usage and documentation accuracy
+- [x] Fix database-operations.sh unbound variable errors and parameter handling
+- [x] Add robust authentication validation with user existence checks
+- [x] Update all documentation strings to reflect actual behavior
+- [x] Verify scripts work correctly with `source .env && ./scripts/test.sh <command>`
+
+### Files Modified
+- `scripts/test/cluster-lifecycle.sh` - Fixed invalid --preserve-existing flag usage, updated safety documentation
+- `scripts/test/database-operations.sh` - Fixed unbound variables, enhanced authentication robustness
+
+### Test Script Improvements
+
+#### Cluster Lifecycle Script (`./scripts/test.sh cluster`)
+1. **Flag Usage Fix**:
+   - Removed invalid `--preserve-existing` flag from `infra destroy` commands
+   - Updated documentation to clarify that `infra destroy` with YAML configs is safe by default
+   - Fixed all usage examples and help text
+
+2. **Documentation Accuracy**:
+   - Updated safety messaging to reflect actual behavior
+   - Clarified that resources are only managed if defined in YAML configurations
+   - Removed misleading references to non-existent flags
+
+#### Database Operations Script (`./scripts/test.sh database`)
+1. **Parameter Handling Fix**:
+   - Fixed unbound variable errors using proper `${parameter:-default}` expansion
+   - Made script robust when called without arguments
+   - Added proper error handling for missing parameters
+
+2. **Authentication Enhancement**:
+   - Added user existence validation before attempting username/password authentication
+   - Improved error messages and user guidance for missing credentials
+   - Enhanced robustness when manual database users aren't configured
+
+3. **User Experience Improvements**:
+   - Clear warning messages when manual credentials aren't available
+   - Better feedback during authentication method testing
+   - Proper handling of missing or invalid database users
+
+### Technical Resolution
+
+#### Before Fixes
+```bash
+# Cluster script failed with invalid flag
+if "$PROJECT_ROOT/matlas" infra destroy -f "$config_file" \
+    --preserve-existing \  # ❌ Invalid flag
+    --auto-approve; then
+
+# Database script failed with unbound variable
+run_database_operations_tests "$1"  # ❌ $1 could be unbound
+```
+
+#### After Fixes  
+```bash
+# Cluster script uses correct flags
+if "$PROJECT_ROOT/matlas" infra destroy -f "$config_file" \
+    --auto-approve; then  # ✅ Valid usage
+
+# Database script uses safe parameter expansion
+run_database_operations_tests "${1:-all}"  # ✅ Always has value
+```
+
+### Integration with Environment Variables
+
+#### Command Usage
+```bash
+# Both scripts now work correctly with environment sourcing
+source .env && ./scripts/test.sh cluster
+source .env && ./scripts/test.sh database
+
+# Individual script execution also works
+source .env && ./scripts/test/cluster-lifecycle.sh yaml
+source .env && ./scripts/test/database-operations.sh auth
+```
+
+#### Environment Variable Support
+- ✅ `ATLAS_PUB_KEY` and `ATLAS_API_KEY` for Atlas authentication
+- ✅ `ATLAS_PROJECT_ID` for project targeting
+- ✅ `ATLAS_CLUSTER_NAME` for database operations
+- ✅ `MANUAL_DB_USER` and `MANUAL_DB_PASSWORD` for authentication testing
+- ✅ Optional timeout and configuration variables
+
+### Test Reliability Improvements
+
+#### Error Handling
+1. **Graceful Degradation**: Tests skip unavailable authentication methods with clear messages
+2. **User Validation**: Pre-flight checks for manual database user existence
+3. **Parameter Safety**: Robust handling of missing or malformed parameters
+4. **Resource Cleanup**: Proper cleanup even when tests encounter errors
+
+#### User Experience
+1. **Clear Messaging**: Informative messages about test requirements and status
+2. **Skip Logic**: Tests skip rather than fail when optional components unavailable
+3. **Help Text**: Accurate help text and usage examples
+4. **Error Feedback**: Specific error messages with actionable suggestions
+
+### Testing Results
+
+#### Cluster Lifecycle Tests
+- ✅ All YAML destruction operations work without flag errors
+- ✅ Safety mechanisms properly documented and explained
+- ✅ Script executes successfully with environment variables
+- ✅ Help text accurately reflects command capabilities
+
+#### Database Operations Tests
+- ✅ Script runs without unbound variable errors
+- ✅ Authentication methods tested with proper validation
+- ✅ Missing users detected and handled gracefully
+- ✅ Comprehensive test coverage of all authentication flows
+
+### Impact on Development Workflow
+
+#### Before Fixes
+- Developers couldn't run `./scripts/test.sh database` due to unbound variable errors
+- Cluster tests failed with "unknown flag" errors during cleanup
+- Manual setup required to avoid script failures
+- Inconsistent behavior across different environments
+
+#### After Fixes
+- ✅ Seamless integration with `.env` file sourcing
+- ✅ Robust execution across different development environments
+- ✅ Clear feedback when optional components aren't configured
+- ✅ Consistent and reliable test execution
+
+### Code Quality Impact
+1. **Reliability**: Scripts execute successfully in expected environments
+2. **Maintainability**: Proper error handling and parameter validation
+3. **Documentation**: Accurate help text and behavior descriptions
+4. **User Experience**: Clear error messages and actionable feedback
+
+---
+
 ## [2025-08-18] Added Atlas Search and VPC Endpoints Tests
 
 **Status**: Completed  

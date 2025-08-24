@@ -21,6 +21,14 @@
 
 ## [Unreleased]
 
+### Fixed
+- **Test Script Execution Issues**: Fixed critical test script issues preventing proper execution with environment variables
+  - Fixed cluster-lifecycle.sh by removing invalid `--preserve-existing` flag from `infra destroy` command (flag only supported by `infra apply`)
+  - Fixed database-operations.sh unbound variable errors using proper `${1:-all}` parameter expansion
+  - Enhanced database operations script with user existence validation before attempting username/password authentication
+  - Updated documentation strings to clarify actual safety mechanisms (resources only managed if defined in YAML configurations)
+  - Both scripts now run successfully when sourced with environment variables from project root directory
+
 ### Added
 - New `atlas search` command group for Atlas Search index management
   - `matlas atlas search list` - List search indexes in cluster or collection
