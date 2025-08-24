@@ -148,12 +148,22 @@ test_all_authentication_methods() {
     
     # Test 2: --username/--password authentication (if available)
     if [[ -n "$TEST_DATABASE_USER" && -n "$TEST_DATABASE_PASSWORD" ]]; then
+        print_info "Found manual database credentials - testing username/password authentication"
         print_subheader "Test 2: Database creation with --username/--password"
         local test_db2="${test_db_base}-userpass"
         
         print_info "Testing database creation with user credentials: $TEST_DATABASE_USER"
         
-        if "$PROJECT_ROOT/matlas" database create "$test_db2" \
+        # First verify the database user exists and has permissions
+        print_info "Verifying manual database user exists and has permissions..."
+        if ! "$PROJECT_ROOT/matlas" atlas users list --project-id "$ATLAS_PROJECT_ID" 2>/dev/null | grep -q "$TEST_DATABASE_USER"; then
+            print_warning "Manual database user '$TEST_DATABASE_USER' not found in Atlas project"
+            print_info "Skipping username/password authentication test"
+            print_info "To test this method, create a database user in Atlas with readWriteAnyDatabase permissions"
+        else
+            print_success "Manual database user found in Atlas project"
+            
+            if "$PROJECT_ROOT/matlas" database create "$test_db2" \
         --cluster "$TEST_CLUSTER_NAME" \
         --project-id "$ATLAS_PROJECT_ID" \
             --collection "$test_collection" \
@@ -175,9 +185,10 @@ test_all_authentication_methods() {
             else
                 print_warning "Database not immediately visible (propagation delay expected)"
             fi
-        else
-            print_error "Failed to create database with --username/--password"
-            ((auth_failures++))
+            else
+                print_error "Failed to create database with --username/--password"
+                ((auth_failures++))
+            fi
         fi
     else
         print_info "Skipping --username/--password test (no manual credentials provided)"
@@ -964,14 +975,14 @@ show_usage() {
 main() {
     case "${1:-all}" in
         "auth"|"failures"|"databases"|"collections"|"indexes"|"yaml"|"workflow"|"comprehensive"|"all")
-            run_database_operations_tests "$1"
+            run_database_operations_tests "${1:-all}"
             ;;
         "-h"|"--help"|"help")
             show_usage
             exit 0
             ;;
         *)
-            echo "Unknown command: $1"
+            echo "Unknown command: ${1:-}"
             echo
             show_usage
             exit 1

@@ -309,7 +309,7 @@ test_yaml_cluster_lifecycle() {
     local config_file="$TEST_REPORTS_DIR/yaml-cluster-config.yaml"
     
     print_info "Testing YAML cluster lifecycle with cluster: $cluster_name"
-    print_success "✓ SAFE MODE: Using --preserve-existing to protect existing clusters"
+    print_success "✓ SAFE MODE: Only managing resources defined in YAML configurations"
     
     # Get project name for proper YAML configuration
     local project_name
@@ -470,11 +470,10 @@ EOF
     sleep 3
     
     print_info "Destroying cluster and users..."
-    print_info "Using --preserve-existing to protect any existing clusters"
+    print_info "Only destroying resources defined in YAML configuration (existing clusters protected)"
     
     if "$PROJECT_ROOT/matlas" infra destroy -f "$config_file" \
         --project-id "$ATLAS_PROJECT_ID" \
-        --preserve-existing \
         --auto-approve; then
         
         print_success "Infrastructure destroy initiated"
@@ -1263,7 +1262,7 @@ run_cluster_lifecycle_tests() {
     
     print_header "MongoDB Atlas Cluster Lifecycle Tests"
     print_warning "⚠️  WARNING: These tests create real Atlas clusters and may incur costs!"
-    print_success "✓ SAFE MODE: Tests now use --preserve-existing to protect existing clusters"
+    print_success "✓ SAFE MODE: Tests only manage resources defined in configurations"
     print_info "Tests only manage resources they create - existing resources are preserved"
     echo
     
@@ -1337,7 +1336,7 @@ show_usage() {
     echo
     echo "Commands:"
     echo "  cli              Run CLI-based cluster lifecycle tests only"
-    echo "  yaml             Run YAML-based cluster lifecycle tests (now SAFE with --preserve-existing)"
+    echo "  yaml             Run YAML-based cluster lifecycle tests (SAFE - only manages defined resources)"
     echo "  yaml-existing    Run YAML test with existing clusters (safe individual resources)"
     echo "  yaml-multi       Run YAML multi-cluster test (clean project scenario)"
     echo "  yaml-partial     Run YAML partial removal test (add 2, remove 1)"
@@ -1360,14 +1359,14 @@ show_usage() {
     echo "  ATLAS_ORG_ID        Atlas organization ID"
     echo
     echo "Examples:"
-    echo "  $0                     # Run basic safe tests (CLI + YAML with --preserve-existing)"
+    echo "  $0                     # Run basic safe tests (CLI + YAML - only manages defined resources)"
     echo "  $0 comprehensive       # Run all test scenarios (recommended)"
     echo "  $0 yaml-existing       # Test YAML with existing clusters (safe)"
     echo "  $0 yaml-multi          # Test YAML multi-cluster management"
     echo "  $0 yaml-partial        # Test YAML partial removal"
     echo "  $0 cli                 # Test CLI approach only"
     echo ""
-    echo "SAFETY: All YAML tests now use --preserve-existing to protect existing resources"
+    echo "SAFETY: All tests only manage resources they define - existing resources are protected"
 }
 
 # Main execution
