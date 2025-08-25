@@ -31,7 +31,7 @@ resources:
           databaseName: myapp
 
   # =====================================
-  # DATABASE LEVEL - Connection-based management
+  # ATLAS CUSTOM ROLES - Atlas-managed custom roles
   # =====================================
   
   # Custom database role with granular privileges
@@ -40,15 +40,14 @@ resources:
     metadata:
       name: app-data-role
       labels:
-        management-level: database
+        management-level: atlas
         purpose: granular-permissions
+      annotations:
+        use-case: "Custom role for Atlas users"
+        management: "Atlas-managed custom role"
     spec:
       roleName: appDataRole
       databaseName: myapp
-      connectionConfig:
-        cluster: my-cluster
-        projectId: "${ATLAS_PROJECT_ID}"
-        useTempUser: true
       privileges:
         # Collection-level privileges
         - actions: ["find", "insert", "update"]
@@ -71,24 +70,23 @@ resources:
         - roleName: read
           databaseName: logs
 
-  # Database user with custom role
+  # Atlas user with custom role (correct Atlas pattern)
   - apiVersion: matlas.mongodb.com/v1
-    kind: DatabaseDirectUser
+    kind: DatabaseUser
     metadata:
-      name: app-database-user
+      name: app-user-with-custom-role
       labels:
-        management-level: database
+        management-level: atlas
         purpose: application-specific
+      annotations:
+        use-case: "Atlas user assigned custom database role"
+        management: "Atlas API with custom role assignment"
     spec:
-      connectionConfig:
-        cluster: my-cluster
-        projectId: "${ATLAS_PROJECT_ID}"
-        useTempUser: true
-        tempUserRole: "userAdminAnyDatabase@admin"
-      username: app-db-user
-      database: myapp
+      projectName: "My Project"
+      username: app-user-custom
+      authDatabase: admin
       password: "${DB_USER_PASSWORD}"
-      # Can use custom roles created above
+      # Uses custom role created above - this is the correct Atlas pattern
       roles:
         - roleName: appDataRole
           databaseName: myapp
@@ -125,14 +123,10 @@ resources:
       name: reporting-role
       annotations:
         use-case: "Specific reporting permissions"
-        management: "Direct MongoDB - custom privileges"
+        management: "Atlas-managed custom role"
     spec:
       roleName: reportingRole
       databaseName: analytics
-      connectionConfig:
-        cluster: my-cluster
-        projectId: "${ATLAS_PROJECT_ID}"
-        useTempUser: true
       privileges:
         # Read-only access to specific collections
         - actions: ["find", "listIndexes"]

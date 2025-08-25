@@ -37,7 +37,6 @@ func TestResourceKind_Constants(t *testing.T) {
 		{"Project", KindProject, "Project"},
 		{"Cluster", KindCluster, "Cluster"},
 		{"DatabaseUser", KindDatabaseUser, "DatabaseUser"},
-		{"DatabaseDirectUser", KindDatabaseDirectUser, "DatabaseDirectUser"},
 		{"DatabaseRole", KindDatabaseRole, "DatabaseRole"},
 		{"NetworkAccess", KindNetworkAccess, "NetworkAccess"},
 		{"ApplyDocument", KindApplyDocument, "ApplyDocument"},
@@ -320,73 +319,6 @@ func TestDatabaseUserManifest_YAMLMarshaling(t *testing.T) {
 	}
 }
 
-func TestDatabaseDirectUserManifest_YAMLMarshaling(t *testing.T) {
-	user := DatabaseDirectUserManifest{
-		APIVersion: APIVersionV1,
-		Kind:       KindDatabaseDirectUser,
-		Metadata: ResourceMetadata{
-			Name: "app-direct-user",
-		},
-		Spec: DatabaseDirectUserSpec{
-			ConnectionConfig: ConnectionConfigSpec{
-				Cluster:      "app-cluster",
-				ProjectID:    "project123",
-				UseTempUser:  true,
-				TempUserRole: "userAdminAnyDatabase@admin",
-			},
-			Username: "app-database-user",
-			Password: "SecurePassword123!",
-			Database: "application",
-			Roles: []DatabaseRoleConfig{
-				{
-					RoleName:     "readWrite",
-					DatabaseName: "application",
-				},
-				{
-					RoleName:       "read",
-					DatabaseName:   "logs",
-					CollectionName: "app-events",
-				},
-			},
-		},
-	}
-
-	// Test YAML marshaling
-	yamlData, err := yaml.Marshal(user)
-	if err != nil {
-		t.Fatalf("YAML marshal failed: %v", err)
-	}
-
-	// Test YAML unmarshaling
-	var unmarshaled DatabaseDirectUserManifest
-	err = yaml.Unmarshal(yamlData, &unmarshaled)
-	if err != nil {
-		t.Fatalf("YAML unmarshal failed: %v", err)
-	}
-
-	// Verify fields
-	if unmarshaled.Spec.Username != user.Spec.Username {
-		t.Errorf("Spec.Username = %s, want %s", unmarshaled.Spec.Username, user.Spec.Username)
-	}
-	if unmarshaled.Spec.Database != user.Spec.Database {
-		t.Errorf("Spec.Database = %s, want %s", unmarshaled.Spec.Database, user.Spec.Database)
-	}
-	if unmarshaled.Spec.ConnectionConfig.Cluster != user.Spec.ConnectionConfig.Cluster {
-		t.Errorf("Spec.ConnectionConfig.Cluster = %s, want %s", unmarshaled.Spec.ConnectionConfig.Cluster, user.Spec.ConnectionConfig.Cluster)
-	}
-	if unmarshaled.Spec.ConnectionConfig.ProjectID != user.Spec.ConnectionConfig.ProjectID {
-		t.Errorf("Spec.ConnectionConfig.ProjectID = %s, want %s", unmarshaled.Spec.ConnectionConfig.ProjectID, user.Spec.ConnectionConfig.ProjectID)
-	}
-	if unmarshaled.Spec.ConnectionConfig.UseTempUser != user.Spec.ConnectionConfig.UseTempUser {
-		t.Errorf("Spec.ConnectionConfig.UseTempUser = %v, want %v", unmarshaled.Spec.ConnectionConfig.UseTempUser, user.Spec.ConnectionConfig.UseTempUser)
-	}
-	if len(unmarshaled.Spec.Roles) != 2 {
-		t.Errorf("Spec.Roles length = %d, want 2", len(unmarshaled.Spec.Roles))
-	}
-	if unmarshaled.Spec.Roles[1].CollectionName != "app-events" {
-		t.Errorf("Spec.Roles[1].CollectionName = %s, want app-events", unmarshaled.Spec.Roles[1].CollectionName)
-	}
-}
 
 func TestNetworkAccessManifest_YAMLMarshaling(t *testing.T) {
 	networkAccess := NetworkAccessManifest{
@@ -643,7 +575,6 @@ func TestValidateResourceKind(t *testing.T) {
 		{"Valid Project", KindProject, false},
 		{"Valid Cluster", KindCluster, false},
 		{"Valid DatabaseUser", KindDatabaseUser, false},
-		{"Valid DatabaseDirectUser", KindDatabaseDirectUser, false},
 		{"Valid DatabaseRole", KindDatabaseRole, false},
 		{"Valid NetworkAccess", KindNetworkAccess, false},
 		{"Valid ApplyDocument", KindApplyDocument, false},

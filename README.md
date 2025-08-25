@@ -34,6 +34,8 @@ We love how Terraform plans changes before applying, and how kubectl lets you de
 | Feature | Description |
 |---------|-------------|
 | 🌐 **Atlas** | List/get/create/update/delete projects, clusters, users, network access, peering, and network containers |
+| 🔍 **Atlas Search** | Create and manage Atlas Search indexes for full-text and vector search capabilities |
+| 🔗 **VPC Endpoints** | Configure VPC endpoints and Private Link connections for secure Atlas connectivity |
 | 🗄️ **Databases** | List/create/delete databases, collections, and indexes — either via connection string or Atlas cluster reference |
 | 👥 **Database Users** | Create/list/update/delete database-specific users with custom roles — via connection string or Atlas cluster reference |
 | 📋 **Infra** | Discover current state, plan/diff/apply/destroy via declarative YAML |
@@ -271,6 +273,17 @@ matlas atlas users create --project-id <id> --username testuser --show-password 
 
 # List network access rules
 matlas atlas network list --project-id <id>
+
+# List Atlas Search indexes
+matlas atlas search list --project-id <id> --cluster <name>
+
+# Create a basic search index
+matlas atlas search create --project-id <id> --cluster <name> \
+  --database <db> --collection <coll> --name <index-name> --type search
+
+# Create VPC endpoint
+matlas atlas vpc-endpoints create --project-id <id> --provider AWS \
+  --region us-east-1 --service-name com.amazonaws.vpce.us-east-1.vpce-svc-123
 ```
 
 ### 🗄️ Database Operations
@@ -334,7 +347,10 @@ matlas infra destroy --discovery-only --project-id <id>  # Discovery only
 Matlas looks for credentials in this order:
 1. Command flags/YAML config
 2. Environment variables (`ATLAS_API_KEY`, `ATLAS_PUB_KEY`)
-3. macOS Keychain (fallback)
+3. Platform-specific secure storage:
+   - **macOS**: Keychain (`security` command)
+   - **Windows**: Credential Manager (PowerShell)
+   - **Linux**: secret-service (`secret-tool` or GNOME Keyring)
 
 ## 🐚 Shell Completion
 Enable auto-completion for your shell:
@@ -385,8 +401,7 @@ cp features/TEMPLATE.md features/$(date +%F)-<short-slug>.md
 ```
 
 ## ⚠️ Current Limitations
-- 🔍 **Atlas Search**: Commands exist but return unsupported errors
-- 🔗 **VPC Endpoints**: Hidden in current build
+- 🔧 **Advanced Configuration**: Some complex cluster configurations (ReplicationSpecs, AutoScaling) require manual Atlas console setup
 
 ## 📄 License
 **MIT License** - see [`LICENSE`](LICENSE) for details.

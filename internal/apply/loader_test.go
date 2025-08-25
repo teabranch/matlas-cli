@@ -635,17 +635,34 @@ func TestConfigurationLoader_CacheCleanup(t *testing.T) {
 	// Add an entry that will expire quickly
 	cl.cache.set("test", "content", &SubstitutionResult{Content: "result"})
 
+	// Verify entry was added
+	initialStats := cl.GetCacheStats()
+	if initialStats["entries"].(int) != 1 {
+		t.Error("Expected 1 entry to be added to cache")
+	}
+
 	// Start cleanup with short interval
-	stop := cl.StartCacheCleanup(15 * time.Millisecond)
+	stop := cl.StartCacheCleanup(5 * time.Millisecond)
 	defer close(stop)
 
-	// Wait for cleanup to run
-	time.Sleep(30 * time.Millisecond)
+	// Wait for entry to expire and cleanup to run multiple times
+	// Use a more generous timeout to avoid flaky tests
+	timeout := time.After(100 * time.Millisecond)
+	ticker := time.NewTicker(5 * time.Millisecond)
+	defer ticker.Stop()
 
-	// Entry should be cleaned up
-	stats := cl.GetCacheStats()
-	if stats["entries"].(int) != 0 {
-		t.Error("Expired entries should be cleaned up")
+	for {
+		select {
+		case <-timeout:
+			t.Error("Timed out waiting for cache cleanup")
+			return
+		case <-ticker.C:
+			stats := cl.GetCacheStats()
+			if stats["entries"].(int) == 0 {
+				// Success - cache was cleaned up
+				return
+			}
+		}
 	}
 }
 

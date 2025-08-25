@@ -837,10 +837,258 @@ func convertToClusterSpec(spec interface{}) types.ClusterSpec {
 		if clusterType, ok := specMap["clusterType"].(string); ok {
 			clusterSpec.ClusterType = clusterType
 		}
-		// TODO: Add conversion for complex fields like ReplicationSpecs, AutoScaling, etc.
+		
+		// Convert complex fields
+		if replicationSpecs, ok := specMap["replicationSpecs"].([]interface{}); ok {
+			clusterSpec.ReplicationSpecs = convertToReplicationSpecs(replicationSpecs)
+		}
+		if autoScaling, ok := specMap["autoScaling"]; ok {
+			clusterSpec.AutoScaling = convertToAutoScalingConfig(autoScaling)
+		}
+		if encryption, ok := specMap["encryption"]; ok {
+			clusterSpec.Encryption = convertToEncryptionConfig(encryption)
+		}
+		if biConnector, ok := specMap["biConnector"]; ok {
+			clusterSpec.BiConnector = convertToBiConnectorConfig(biConnector)
+		}
+		if tags, ok := specMap["tags"].(map[string]interface{}); ok {
+			clusterSpec.Tags = convertToStringMap(tags)
+		}
+		
 		return clusterSpec
 	}
 	return types.ClusterSpec{}
+}
+
+// Helper functions for converting complex cluster configuration fields
+
+func convertToReplicationSpecs(replicationSpecs []interface{}) []types.ReplicationSpec {
+	var specs []types.ReplicationSpec
+	for _, spec := range replicationSpecs {
+		if specMap, ok := spec.(map[string]interface{}); ok {
+			repSpec := types.ReplicationSpec{}
+			if id, ok := specMap["id"].(string); ok {
+				repSpec.ID = id
+			}
+			if numShards, ok := specMap["numShards"].(float64); ok {
+				shards := int(numShards)
+				repSpec.NumShards = &shards
+			}
+			if zoneName, ok := specMap["zoneName"].(string); ok {
+				repSpec.ZoneName = zoneName
+			}
+			if regionConfigs, ok := specMap["regionConfigs"].([]interface{}); ok {
+				repSpec.RegionConfigs = convertToRegionConfigs(regionConfigs)
+			}
+			specs = append(specs, repSpec)
+		}
+	}
+	return specs
+}
+
+func convertToRegionConfigs(regionConfigs []interface{}) []types.RegionConfig {
+	var configs []types.RegionConfig
+	for _, config := range regionConfigs {
+		if configMap, ok := config.(map[string]interface{}); ok {
+			regionConfig := types.RegionConfig{}
+			if regionName, ok := configMap["regionName"].(string); ok {
+				regionConfig.RegionName = regionName
+			}
+			if priority, ok := configMap["priority"].(float64); ok {
+				prio := int(priority)
+				regionConfig.Priority = &prio
+			}
+			if analyticsNodes, ok := configMap["analyticsNodes"].(float64); ok {
+				nodes := int(analyticsNodes)
+				regionConfig.AnalyticsNodes = &nodes
+			}
+			if electableNodes, ok := configMap["electableNodes"].(float64); ok {
+				nodes := int(electableNodes)
+				regionConfig.ElectableNodes = &nodes
+			}
+			if readOnlyNodes, ok := configMap["readOnlyNodes"].(float64); ok {
+				nodes := int(readOnlyNodes)
+				regionConfig.ReadOnlyNodes = &nodes
+			}
+			configs = append(configs, regionConfig)
+		}
+	}
+	return configs
+}
+
+func convertToAutoScalingConfig(autoScaling interface{}) *types.AutoScalingConfig {
+	if autoScalingMap, ok := autoScaling.(map[string]interface{}); ok {
+		config := &types.AutoScalingConfig{}
+		if diskGB, ok := autoScalingMap["diskGB"]; ok {
+			config.DiskGB = convertToAutoScalingLimits(diskGB)
+		}
+		if compute, ok := autoScalingMap["compute"]; ok {
+			config.Compute = convertToComputeAutoScaling(compute)
+		}
+		return config
+	}
+	return nil
+}
+
+func convertToAutoScalingLimits(diskGB interface{}) *types.AutoScalingLimits {
+	if limitsMap, ok := diskGB.(map[string]interface{}); ok {
+		limits := &types.AutoScalingLimits{}
+		if enabled, ok := limitsMap["enabled"].(bool); ok {
+			limits.Enabled = &enabled
+		}
+		if minimumGB, ok := limitsMap["minimumGB"].(float64); ok {
+			min := int(minimumGB)
+			limits.MinimumGB = &min
+		}
+		if maximumGB, ok := limitsMap["maximumGB"].(float64); ok {
+			max := int(maximumGB)
+			limits.MaximumGB = &max
+		}
+		return limits
+	}
+	return nil
+}
+
+func convertToComputeAutoScaling(compute interface{}) *types.ComputeAutoScaling {
+	if computeMap, ok := compute.(map[string]interface{}); ok {
+		config := &types.ComputeAutoScaling{}
+		if enabled, ok := computeMap["enabled"].(bool); ok {
+			config.Enabled = &enabled
+		}
+		if scaleDownEnabled, ok := computeMap["scaleDownEnabled"].(bool); ok {
+			config.ScaleDownEnabled = &scaleDownEnabled
+		}
+		if minInstanceSize, ok := computeMap["minInstanceSize"].(string); ok {
+			config.MinInstanceSize = minInstanceSize
+		}
+		if maxInstanceSize, ok := computeMap["maxInstanceSize"].(string); ok {
+			config.MaxInstanceSize = maxInstanceSize
+		}
+		return config
+	}
+	return nil
+}
+
+func convertToEncryptionConfig(encryption interface{}) *types.EncryptionConfig {
+	if encryptionMap, ok := encryption.(map[string]interface{}); ok {
+		config := &types.EncryptionConfig{}
+		if provider, ok := encryptionMap["encryptionAtRestProvider"].(string); ok {
+			config.EncryptionAtRestProvider = provider
+		}
+		if awsKms, ok := encryptionMap["awsKms"]; ok {
+			config.AWSKMSConfig = convertToAWSKMSConfig(awsKms)
+		}
+		if azureKeyVault, ok := encryptionMap["azureKeyVault"]; ok {
+			config.AzureKeyVaultConfig = convertToAzureKeyVaultConfig(azureKeyVault)
+		}
+		if googleCloudKms, ok := encryptionMap["googleCloudKms"]; ok {
+			config.GoogleCloudKMSConfig = convertToGoogleCloudKMSConfig(googleCloudKms)
+		}
+		return config
+	}
+	return nil
+}
+
+func convertToAWSKMSConfig(awsKms interface{}) *types.AWSKMSConfig {
+	if kmsMap, ok := awsKms.(map[string]interface{}); ok {
+		config := &types.AWSKMSConfig{}
+		if enabled, ok := kmsMap["enabled"].(bool); ok {
+			config.Enabled = &enabled
+		}
+		if accessKeyID, ok := kmsMap["accessKeyId"].(string); ok {
+			config.AccessKeyID = accessKeyID
+		}
+		if secretAccessKey, ok := kmsMap["secretAccessKey"].(string); ok {
+			config.SecretAccessKey = secretAccessKey
+		}
+		if customerMasterKeyID, ok := kmsMap["customerMasterKeyId"].(string); ok {
+			config.CustomerMasterKeyID = customerMasterKeyID
+		}
+		if region, ok := kmsMap["region"].(string); ok {
+			config.Region = region
+		}
+		if roleID, ok := kmsMap["roleId"].(string); ok {
+			config.RoleID = roleID
+		}
+		return config
+	}
+	return nil
+}
+
+func convertToAzureKeyVaultConfig(azureKeyVault interface{}) *types.AzureKeyVaultConfig {
+	if vaultMap, ok := azureKeyVault.(map[string]interface{}); ok {
+		config := &types.AzureKeyVaultConfig{}
+		if enabled, ok := vaultMap["enabled"].(bool); ok {
+			config.Enabled = &enabled
+		}
+		if clientID, ok := vaultMap["clientId"].(string); ok {
+			config.ClientID = clientID
+		}
+		if azureEnvironment, ok := vaultMap["azureEnvironment"].(string); ok {
+			config.AzureEnvironment = azureEnvironment
+		}
+		if subscriptionID, ok := vaultMap["subscriptionId"].(string); ok {
+			config.SubscriptionID = subscriptionID
+		}
+		if resourceGroupName, ok := vaultMap["resourceGroupName"].(string); ok {
+			config.ResourceGroupName = resourceGroupName
+		}
+		if keyVaultName, ok := vaultMap["keyVaultName"].(string); ok {
+			config.KeyVaultName = keyVaultName
+		}
+		if keyIdentifier, ok := vaultMap["keyIdentifier"].(string); ok {
+			config.KeyIdentifier = keyIdentifier
+		}
+		if secret, ok := vaultMap["secret"].(string); ok {
+			config.Secret = secret
+		}
+		if tenantID, ok := vaultMap["tenantId"].(string); ok {
+			config.TenantID = tenantID
+		}
+		return config
+	}
+	return nil
+}
+
+func convertToGoogleCloudKMSConfig(googleCloudKms interface{}) *types.GoogleCloudKMSConfig {
+	if kmsMap, ok := googleCloudKms.(map[string]interface{}); ok {
+		config := &types.GoogleCloudKMSConfig{}
+		if enabled, ok := kmsMap["enabled"].(bool); ok {
+			config.Enabled = &enabled
+		}
+		if serviceAccountKey, ok := kmsMap["serviceAccountKey"].(string); ok {
+			config.ServiceAccountKey = serviceAccountKey
+		}
+		if keyVersionResourceID, ok := kmsMap["keyVersionResourceId"].(string); ok {
+			config.KeyVersionResourceID = keyVersionResourceID
+		}
+		return config
+	}
+	return nil
+}
+
+func convertToBiConnectorConfig(biConnector interface{}) *types.BiConnectorConfig {
+	if biMap, ok := biConnector.(map[string]interface{}); ok {
+		config := &types.BiConnectorConfig{}
+		if enabled, ok := biMap["enabled"].(bool); ok {
+			config.Enabled = &enabled
+		}
+		if readPreference, ok := biMap["readPreference"].(string); ok {
+			config.ReadPreference = readPreference
+		}
+		return config
+	}
+	return nil
+}
+
+func convertToStringMap(tags map[string]interface{}) map[string]string {
+	stringMap := make(map[string]string)
+	for key, value := range tags {
+		if strValue, ok := value.(string); ok {
+			stringMap[key] = strValue
+		}
+	}
+	return stringMap
 }
 
 func convertToDatabaseUserSpec(spec interface{}) types.DatabaseUserSpec {

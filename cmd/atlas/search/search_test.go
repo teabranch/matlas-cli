@@ -4,21 +4,46 @@ import (
 	"testing"
 )
 
-// Ensure the command is hidden and returns a consistent unsupported message when executed without required flags.
-func TestNewSearchCmd_HiddenAndSubcommands(t *testing.T) {
+// Ensure the command is visible and has all expected subcommands available.
+func TestNewSearchCmd_VisibleAndSubcommands(t *testing.T) {
 	cmd := NewSearchCmd()
 	if cmd == nil {
 		t.Fatalf("expected command, got nil")
 	}
-	if !cmd.Hidden {
-		t.Fatalf("expected search command to be hidden")
+	if cmd.Hidden {
+		t.Fatalf("expected search command to be visible, but it was hidden")
 	}
-	// Ensure common subcommands are present
+	
+	// Verify command properties
+	if cmd.Use != "search" {
+		t.Errorf("expected Use to be 'search', got '%s'", cmd.Use)
+	}
+	if cmd.Short == "" {
+		t.Error("expected Short description to be non-empty")
+	}
+	if cmd.Long == "" {
+		t.Error("expected Long description to be non-empty")
+	}
+	
+	// Verify aliases are present
+	expectedAliases := []string{"search-index", "search-indexes"}
+	if len(cmd.Aliases) != len(expectedAliases) {
+		t.Errorf("expected %d aliases, got %d", len(expectedAliases), len(cmd.Aliases))
+	}
+	
+	// Ensure all expected subcommands are present
 	found := map[string]bool{}
 	for _, c := range cmd.Commands() {
 		found[c.Use] = true
 	}
-	if !found["list"] || !found["get"] || !found["create"] || !found["update"] || !found["delete"] {
-		t.Fatalf("expected standard subcommands to be present, got: %+v", found)
+	expectedCommands := []string{"list", "get", "create", "update", "delete"}
+	for _, expectedCmd := range expectedCommands {
+		if !found[expectedCmd] {
+			t.Errorf("expected subcommand '%s' to be present", expectedCmd)
+		}
+	}
+	
+	if len(found) != len(expectedCommands) {
+		t.Errorf("expected exactly %d subcommands, got %d: %+v", len(expectedCommands), len(found), found)
 	}
 }

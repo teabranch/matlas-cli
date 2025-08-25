@@ -21,8 +21,18 @@ This reference covers all supported YAML kinds in matlas configuration files. Ea
 
 matlas supports two main configuration approaches:
 
-1. **Standalone kinds** - Individual resource files (e.g., `Project`)
-2. **ApplyDocument** - Multi-resource containers for complex configurations
+1. **ApplyDocument** - Multi-resource containers for complex configurations (**RECOMMENDED**)
+2. **Standalone kinds** - Individual resource files for simple use cases
+
+### Recommended Approach: ApplyDocument
+
+**ApplyDocument is the preferred method** for most infrastructure scenarios because it provides:
+- **Dependency management**: Automatic resource ordering and validation
+- **Atomic operations**: All-or-nothing deployments with rollback
+- **Cross-resource validation**: Ensures references between resources are valid
+- **Bulk operations**: Deploy entire infrastructure stacks in one command
+
+Use **standalone kinds** only for simple, single-resource scenarios or when integrating with existing workflows.
 
 ### API Versions
 
@@ -90,14 +100,15 @@ resources:
 
 ### Example
 
-See {{ '/examples/discovery-basic.yaml' | relative_url }} for a complete example.
+See the [Discovery Examples]({{ '/examples/discovery/' | relative_url }}) for complete examples.
 
 ---
 
 ## Project
 
 **Purpose**: MongoDB Atlas project configuration  
-**Use case**: Project-centric infrastructure management
+**Use case**: Project-centric infrastructure management  
+**Usage**: Can be used standalone or within ApplyDocument
 
 ### Structure
 
@@ -137,14 +148,15 @@ spec:
 
 ### Example
 
-See {{ '/examples/project-format.yaml' | relative_url }} for a complete example.
+See the [Infrastructure Patterns]({{ '/examples/infrastructure/' | relative_url }}) for project-format examples.
 
 ---
 
 ## Cluster
 
 **Purpose**: MongoDB cluster configuration  
-**Use case**: Database infrastructure provisioning
+**Use case**: Database infrastructure provisioning  
+**Usage**: Typically used within ApplyDocument for dependency management
 
 ### Basic Structure
 
@@ -215,16 +227,18 @@ spec:
 
 ### Examples
 
-- {{ '/examples/cluster-basic.yaml' | relative_url }} - Basic cluster
-- {{ '/examples/cluster-comprehensive.yaml' | relative_url }} - Production cluster with all features
-- {{ '/examples/cluster-multiregion.yaml' | relative_url }} - Multi-region configuration
+See the [Cluster Examples]({{ '/examples/clusters/' | relative_url }}) for:
+- Basic development clusters
+- Production clusters with autoscaling
+- Multi-region configurations
 
 ---
 
 ## DatabaseUser
 
 **Purpose**: Atlas-managed database user configuration  
-**Use case**: Centralized user management via Atlas API
+**Use case**: Centralized user management via Atlas API  
+**Usage**: Recommended for use within ApplyDocument for role dependency validation
 
 ### Basic Structure
 
@@ -305,77 +319,17 @@ spec:
 
 ### Examples
 
-- {{ '/examples/users-basic.yaml' | relative_url }} - Basic users
-- {{ '/examples/users-scoped.yaml' | relative_url }} - Cluster-scoped users
-- {{ '/examples/user-password-management.yaml' | relative_url }} - Password management
+See the [User Management Examples]({{ '/examples/users/' | relative_url }}) for:
+- Basic user creation patterns
+- Cluster-scoped user access
+- Password management workflows
 
----
-
-## DatabaseDirectUser
-
-**Purpose**: Direct database connection user management  
-**Use case**: Database-level operations requiring direct connection
-
-### Structure
-
-```yaml
-apiVersion: matlas.mongodb.com/v1
-kind: DatabaseDirectUser
-metadata:
-  name: direct-user
-spec:
-  connectionConfig:
-    cluster: "production-cluster"
-    projectId: "507f1f77bcf86cd799439011"
-    # OR use connection string directly:
-    # connectionString: "mongodb+srv://..."
-    useTempUser: true
-    tempUserRole: dbAdmin
-  username: direct-user
-  password: "${DIRECT_USER_PASSWORD}"
-  database: myapp
-  roles:
-    - roleName: readWrite
-      databaseName: myapp
-```
-
-### Connection Methods
-
-1. **Atlas cluster reference**:
-   ```yaml
-   connectionConfig:
-     cluster: "my-cluster"
-     projectId: "507f1f77bcf86cd799439011"
-   ```
-
-2. **Direct connection string**:
-   ```yaml
-   connectionConfig:
-     connectionString: "mongodb+srv://user:pass@cluster.mongodb.net/"
-   ```
-
-3. **Temporary user authentication**:
-   ```yaml
-   connectionConfig:
-     cluster: "my-cluster"
-     useTempUser: true
-     tempUserRole: dbAdmin
-   ```
-
-### Required Fields
-
-- `spec.connectionConfig`: Connection configuration
-- `spec.username`: Database username
-- `spec.password`: User password
-- `spec.database`: Target database
-- `spec.roles`: Database roles
-
----
 
 ## DatabaseRole
 
 **Purpose**: Custom database role definition  
-**Use case**: Granular permission management
+**Use case**: Granular permission management  
+**Usage**: Best used within ApplyDocument with DatabaseUser resources for proper dependency ordering
 
 ### Basic Structure
 
@@ -450,15 +404,18 @@ inheritedRoles:
 
 ### Examples
 
-- {{ '/examples/custom-roles-example.yaml' | relative_url }} - Basic custom roles
-- {{ '/examples/custom-roles-comprehensive.yaml' | relative_url }} - Advanced role permissions
+See the [Custom Roles Examples]({{ '/examples/roles/' | relative_url }}) for:
+- Basic custom role definitions
+- Advanced permission patterns
+- Role inheritance examples
 
 ---
 
 ## NetworkAccess
 
 **Purpose**: Network access rule configuration  
-**Use case**: IP allowlisting and security
+**Use case**: IP allowlisting and security  
+**Usage**: Can be standalone for simple rules, or within ApplyDocument for coordinated infrastructure
 
 ### IP Address Access
 
@@ -512,28 +469,18 @@ spec:
 
 ### Examples
 
-- {{ '/examples/network-access.yaml' | relative_url }} - Basic network access
-- {{ '/examples/network-variants.yaml' | relative_url }} - All access types
+See the [Network Access Examples]({{ '/examples/network/' | relative_url }}) for:
+- Basic IP and CIDR configurations
+- AWS security group integration
+- Temporary access patterns
 
 ---
 
 ## Usage Patterns
 
-### Single Resource Files
+### ApplyDocument for Infrastructure Management (RECOMMENDED)
 
-For simple configurations, use individual kind files:
-
-```bash
-# Apply a single cluster
-matlas infra apply -f cluster.yaml
-
-# Apply multiple files
-matlas infra apply -f users.yaml -f network.yaml
-```
-
-### ApplyDocument for Complex Infrastructure
-
-For comprehensive infrastructure, use ApplyDocument:
+**ApplyDocument is the recommended approach** for most infrastructure scenarios. Use it for comprehensive infrastructure management:
 
 ```bash
 # Apply complete infrastructure
@@ -545,6 +492,20 @@ matlas infra plan -f infrastructure.yaml
 # Show current state
 matlas infra show -f infrastructure.yaml
 ```
+
+### Single Resource Files (Simple Use Cases)
+
+For simple, single-resource scenarios or legacy integrations, you can use individual kind files:
+
+```bash
+# Apply a single cluster (only for simple scenarios)
+matlas infra apply -f cluster.yaml
+
+# Apply multiple individual files (less efficient than ApplyDocument)
+matlas infra apply -f users.yaml -f network.yaml
+```
+
+**Note**: Individual resource files lack dependency management and cross-resource validation. ApplyDocument is recommended for production use.
 
 ### Environment Variables
 
@@ -589,6 +550,8 @@ Resources are applied in dependency order:
 7. **Test configurations** with `matlas infra plan` before applying
 
 ### Common Patterns
+
+All patterns below are recommended for use within **ApplyDocument** for proper dependency management and validation.
 
 **Service account setup**:
 ```yaml
@@ -636,14 +599,15 @@ spec:
 - {{ '/atlas/' | relative_url }} - Atlas resource management
 - {{ '/database/' | relative_url }} - Database operations
 - {{ '/auth/' | relative_url }} - Authentication and configuration
-- [Examples directory]({{ '/examples/README.html' | relative_url }}) - Working examples for all kinds
+- [Examples]({{ '/examples/' | relative_url }}) - Working examples for all kinds
 
 ---
 
 ## SearchIndex
 
 **Purpose**: Atlas Search index configuration  
-**Use case**: Full-text search and vector search capabilities
+**Use case**: Full-text search and vector search capabilities  
+**Usage**: Recommended within ApplyDocument to ensure cluster dependencies are met
 
 ### Basic Search Index
 
@@ -702,15 +666,17 @@ spec:
 
 ### Examples
 
-- {{ '/examples/search-basic.yaml' | relative_url }} - Basic text search index
-- {{ '/examples/search-vector.yaml' | relative_url }} - Vector search for AI applications
+See the [Examples]({{ '/examples/' | relative_url }}) for:
+- Basic text search index configurations
+- Vector search for AI applications
 
 ---
 
 ## VPCEndpoint
 
 **Purpose**: VPC endpoint service configuration  
-**Use case**: Private network connectivity to Atlas clusters
+**Use case**: Private network connectivity to Atlas clusters  
+**Usage**: Typically used within ApplyDocument with cluster and network resources
 
 ### Basic Structure
 
@@ -743,10 +709,10 @@ spec:
 
 ### Examples
 
-- {{ '/examples/vpc-endpoint-basic.yaml' | relative_url }} - Basic VPC endpoint setup
+See the [Examples]({{ '/examples/' | relative_url }}) for VPC endpoint setup patterns.
 
 **Note**: VPC endpoint implementation creates the Atlas-side service. You'll need to configure the corresponding endpoint in your cloud provider.
 
 ---
 
-For working examples of each kind, see the `examples/` directory in the repository.
+For working examples of each kind, see the [Examples]({{ '/examples/' | relative_url }}) section with comprehensive YAML configurations and usage patterns.

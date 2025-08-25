@@ -42,10 +42,13 @@ COMMANDS:
     cluster-safe Run ultra-safe cluster tests (explicit --preserve-existing, separate script)
     database    Run database operations tests (requires existing cluster, tests DB/collections/indexes)
     users       Run users lifecycle live tests (creates real users)
+    roles       Run database roles lifecycle live tests (creates real custom roles)
     network     Run network access lifecycle live tests
     projects    Run projects lifecycle live tests (creates real project)
+    search-cli  Run Atlas Search CLI command tests (creates real search indexes)
     discovery   Run discovery lifecycle tests (comprehensive discovery feature testing)
                 Use --cluster-lifecycle flag to include cluster creation/deletion tests (costs money!)
+    lifecycle   Run lifecycle validation tests (SAFE - no Atlas API calls, validates Search/VPC YAML)
     search      Run Atlas Search lifecycle tests (CLI and YAML, preserves existing indexes)
     search-e2e  Run Atlas Search End-to-End tests (creates and deletes real indexes)
     vpc         Run VPC Endpoints lifecycle tests (CLI and YAML operations)
@@ -70,14 +73,17 @@ EXAMPLES:
     $0 database             # Run database operations tests
     $0 discovery            # Run discovery lifecycle tests
     $0 discovery --cluster-lifecycle  # Run discovery tests with cluster creation (costs money!)
+    $0 lifecycle            # Run lifecycle validation tests (SAFE)
     $0 applydoc             # Run ApplyDocument format tests
     $0 config               # Run configuration command tests
     $0 config --verbose     # Run config tests with verbose output
     $0 e2e                  # Run e2e tests (users/network only)
     $0 e2e --include-clusters  # Run e2e tests with real clusters
     $0 users                # Run live users lifecycle tests
+    $0 roles                # Run live database roles lifecycle tests
     $0 network              # Run live network lifecycle tests
     $0 projects             # Run live projects lifecycle tests
+    $0 search-cli           # Run Atlas Search CLI command tests
     $0 search               # Run Atlas Search lifecycle tests
     $0 search-e2e           # Run Atlas Search E2E tests (creates/deletes indexes)
     $0 vpc                  # Run VPC Endpoints lifecycle tests
@@ -221,6 +227,18 @@ main() {
                 return 1
             fi
             ;;
+        roles)
+            print_info "Running database roles lifecycle tests (live)..."
+            print_warning "⚠️  WARNING: Creates real Atlas custom database roles!"
+            print_success "✓ SAFE MODE: Uses --preserve-existing and isolated test databases"
+            print_info "ℹ️  Creates roles only in test-specific databases with unique names"
+            if "$SCRIPT_DIR/test/database-roles-lifecycle.sh" "${args[@]}"; then
+                print_success "Database roles lifecycle tests passed"
+            else
+                print_error "Database roles lifecycle tests failed"
+                return 1
+            fi
+            ;;
         network)
             print_info "Running network lifecycle tests (live)..."
             print_info "ℹ️  NOTE: Only manages network access rules - does NOT affect clusters"
@@ -241,6 +259,18 @@ main() {
                 return 1
             fi
             ;;
+        search-cli)
+            print_info "Running Atlas Search CLI command tests (live)..."
+            print_warning "⚠️  WARNING: Creates real Atlas search indexes for CLI testing!"
+            print_success "✓ SAFE MODE: Uses test-specific names and comprehensive cleanup"
+            print_info "ℹ️  Tests all Atlas Search CLI commands (list, create, get, update, delete)"
+            if "$SCRIPT_DIR/test/atlas-search-cli.sh" "${args[@]}"; then
+                print_success "Atlas Search CLI tests passed"
+            else
+                print_error "Atlas Search CLI tests failed"
+                return 1
+            fi
+            ;;
         applydoc)
             print_info "Running ApplyDocument format tests..."
             print_info "Testing comprehensive ApplyDocument YAML format coverage"
@@ -248,6 +278,18 @@ main() {
                 print_success "ApplyDocument format tests passed"
             else
                 print_error "ApplyDocument format tests failed"
+                return 1
+            fi
+            ;;
+        lifecycle)
+            print_info "Running lifecycle validation tests..."
+            print_info "ℹ️  NOTE: VALIDATION-ONLY tests - no Atlas API calls are made"
+            print_info "Tests: Search/VPC YAML validation, schema compliance, multi-resource documents"
+            print_success "✓ COMPLETELY SAFE: No real Atlas resources created or destroyed"
+            if "$SCRIPT_DIR/test/lifecycle-validation.sh" "${args[@]}"; then
+                print_success "Lifecycle validation tests passed"
+            else
+                print_error "Lifecycle validation tests failed"
                 return 1
             fi
             ;;
@@ -308,9 +350,10 @@ main() {
             print_warning "⚠️  Including ApplyDocument, discovery, config, and cluster tests - CLUSTER TESTS CREATE/DELETE REAL CLUSTERS!"
             print_success "✓ SAFE MODE: Cluster tests use --preserve-existing to protect existing clusters"
             print_info "ℹ️  Database and discovery tests require existing cluster but do NOT create/delete clusters"
-            print_info "ℹ️  Config tests are safe and do not require external resources"
+            print_info "ℹ️  Config and lifecycle validation tests are safe and do not require external resources"
             "$SCRIPT_DIR/test/applydocument-test.sh" "${args[@]}" || ((failed++))
             "$SCRIPT_DIR/test/config-test.sh" "${args[@]}" || ((failed++))
+            "$SCRIPT_DIR/test/lifecycle-validation.sh" "${args[@]}" || ((failed++))
             "$SCRIPT_DIR/test/discovery-lifecycle.sh" "${args[@]}" || ((failed++))
             "$SCRIPT_DIR/test/database-operations.sh" "${args[@]}" || ((failed++))
             "$SCRIPT_DIR/test/search-lifecycle.sh" "${args[@]}" || ((failed++))

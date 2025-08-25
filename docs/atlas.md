@@ -191,6 +191,34 @@ matlas atlas search create \
   --type vectorSearch
 ```
 
+### Get Search Index Details
+
+```bash
+# Get search index details by name
+matlas atlas search get --project-id <project-id> --cluster <cluster-name> --name default
+
+# Get search index details by ID
+matlas atlas search get --project-id <project-id> --cluster <cluster-name> --index-id <index-id>
+```
+
+### Update Search Index
+
+```bash
+# Update search index from definition file
+matlas atlas search update --project-id <project-id> --cluster <cluster-name> \
+  --index-id <index-id> --index-file updated-definition.json
+```
+
+### Delete Search Index
+
+```bash
+# Delete search index by name (with confirmation)
+matlas atlas search delete --project-id <project-id> --cluster <cluster-name> --name default
+
+# Delete search index by name (skip confirmation)
+matlas atlas search delete --project-id <project-id> --cluster <cluster-name> --name default --force
+```
+
 ## VPC Endpoints
 
 VPC Endpoints provide secure, private connectivity to your Atlas clusters using AWS PrivateLink, Azure Private Link, or Google Cloud Private Service Connect.
@@ -299,6 +327,5 @@ matlas infra apply -f vpc-endpoint.yaml --preserve-existing --auto-approve
 ## Feature availability
 
 **Updated:** The following features are now available:
-- ✅ Search indexes: `matlas atlas search list` - Full functionality
-- 🚧 Search indexes: `matlas atlas search create` - Basic implementation  
-- ✅ VPC endpoints: `matlas atlas vpc-endpoints ...` - Full functionality with CLI and YAML support
+- ✅ **Atlas Search**: All commands (`list`, `create`, `get`, `update`, `delete`) - Full functionality with CLI and YAML support
+- ✅ **VPC Endpoints**: All commands (`list`, `create`, `get`, `update`, `delete`) - Full functionality with CLI and YAML support

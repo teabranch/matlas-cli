@@ -26,7 +26,6 @@ func NewSearchCmd() *cobra.Command {
 		Short:   "Manage Atlas Search indexes",
 		Long:    "Atlas Search index management commands for full-text and vector search capabilities.",
 		Aliases: []string{"search-index", "search-indexes"},
-		Hidden:  true, // Hide command as it's still in development
 	}
 
 	// Keep subcommands registered but keep parent hidden; each command returns a clear, consistent message.
@@ -125,7 +124,7 @@ func newCreateCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "create",
-		Short: "Create an Atlas Search index (unsupported)",
+		Short: "Create an Atlas Search index",
 		Long: `Create a new Atlas Search index for full-text search or vector search.
 
 This command creates a new MongoDB Atlas Search index on a collection.
@@ -169,7 +168,7 @@ func newUpdateCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "update",
-		Short: "Update an Atlas Search index (unsupported)",
+		Short: "Update an Atlas Search index",
 		Long: `Update an existing Atlas Search index configuration.
 
 This command updates the configuration of an existing MongoDB Atlas Search index.

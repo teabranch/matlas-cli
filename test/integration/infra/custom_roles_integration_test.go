@@ -1,5 +1,6 @@
-// Disabled due to API changes in apply package
-// TODO: Update this test to use the new API
+// DEPRECATED: This test has been replaced with validation-only tests
+// See test/integration/yaml/database_role_validation_test.go for YAML validation tests
+// This test was creating real Atlas resources which violates our testing safety policy
 //go:build disabled
 // +build disabled
 

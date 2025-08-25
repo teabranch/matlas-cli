@@ -52,6 +52,13 @@ permalink: /
     <p class="feature-description">Terraform-inspired infrastructure-as-code workflows: discover, plan, diff, apply, destroy.</p>
     <a href="{{ '/infra/' | relative_url }}" class="btn btn-outline">Learn more</a>
   </div>
+  
+  <div class="card feature">
+    <div class="feature-icon">📚</div>
+    <h3 class="feature-title">Examples & Patterns</h3>
+    <p class="feature-description">Comprehensive YAML examples and usage patterns for all resource types and infrastructure scenarios.</p>
+    <a href="{{ '/examples/' | relative_url }}" class="btn btn-outline">View examples</a>
+  </div>
 </div>
 
 ---
@@ -106,4 +113,18 @@ matlas infra diff -f project.yaml
 
 # 4. Apply changes
 matlas infra apply -f project.yaml
+
+# 5. Explore examples for more patterns
+matlas examples --help
 ```
+
+### 📚 Ready-to-use Examples
+
+Jump-start your infrastructure with our comprehensive [examples collection]({{ '/examples/' | relative_url }}):
+
+- **[Discovery Examples]({{ '/examples/discovery/' | relative_url }})** - Convert existing Atlas resources to code
+- **[Cluster Examples]({{ '/examples/clusters/' | relative_url }})** - Development to production cluster configurations  
+- **[User Management]({{ '/examples/users/' | relative_url }})** - Database users and authentication patterns
+- **[Custom Roles]({{ '/examples/roles/' | relative_url }})** - Granular permission management
+- **[Network Access]({{ '/examples/network/' | relative_url }})** - IP allowlisting and security rules
+- **[Infrastructure Patterns]({{ '/examples/infrastructure/' | relative_url }})** - Complete infrastructure workflows

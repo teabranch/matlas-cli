@@ -9,6 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"go.mongodb.org/atlas-sdk/v20250312005/admin"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/teabranch/matlas-cli/cmd/database/collections"
 	"github.com/teabranch/matlas-cli/cmd/database/roles"
@@ -773,17 +775,34 @@ func maskConnectionString(connectionString string) string {
 
 // testConnection attempts a quick connection test to verify user authentication
 func testConnection(ctx context.Context, connectionString string) bool {
-	// For now, return false to disable connection testing and rely on the delay
-	// TODO: Implement proper MongoDB connection testing using the MongoDB driver
-	// This would require importing go.mongodb.org/mongo-driver and doing a proper ping test
-	//
-	// A proper implementation would:
-	// 1. Create a MongoDB client with the connection string
-	// 2. Attempt to ping the database with a short timeout
-	// 3. Return true if authentication succeeds, false otherwise
-	//
-	// For now, we'll rely on the exponential backoff delay instead of connection testing
-	return false
+	// Set a short timeout for connection testing
+	testCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	// Create MongoDB client options
+	clientOptions := options.Client().ApplyURI(connectionString)
+	
+	// Set connection timeout and server selection timeout
+	clientOptions.SetConnectTimeout(5 * time.Second)
+	clientOptions.SetServerSelectionTimeout(5 * time.Second)
+	
+	// Create MongoDB client
+	client, err := mongo.Connect(testCtx, clientOptions)
+	if err != nil {
+		logging.Debug("MongoDB connection failed during client creation: %v", err)
+		return false
+	}
+	defer client.Disconnect(testCtx)
+
+	// Attempt to ping the database to verify connection and authentication
+	err = client.Ping(testCtx, nil)
+	if err != nil {
+		logging.Debug("MongoDB connection test failed during ping: %v", err)
+		return false
+	}
+
+	logging.Debug("MongoDB connection test successful")
+	return true
 }
 
 // mustMarkFlagRequired marks a flag as required and panics if it cannot be marked

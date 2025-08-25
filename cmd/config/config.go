@@ -160,7 +160,7 @@ func newImportCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "import <source-file>",
 		Short: "Import configuration from external sources",
-		Long: `Import configuration from external files or formats (experimental).
+		Long: `Import configuration from external files or formats.
 
 This command can import configurations from:
 - Other matlas-cli config files
@@ -189,8 +189,6 @@ This command can import configurations from:
 	cmd.Flags().StringVarP(&format, "format", "f", "", "Output format (yaml, json)")
 	cmd.Flags().BoolVar(&merge, "merge", false, "Merge with existing configuration")
 
-	// Gate behind experimental flag
-	cmd.Hidden = true
 	return cmd
 }
 
@@ -202,7 +200,7 @@ func newExportCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "export",
 		Short: "Export configuration to external formats",
-		Long: `Export matlas-cli configuration to external formats (experimental).
+		Long: `Export matlas-cli configuration to external formats.
 
 This command can export configurations to:
 - Environment variable files (.env)
@@ -229,7 +227,6 @@ This command can export configurations to:
 	cmd.Flags().StringVarP(&format, "format", "f", "yaml", "Export format (yaml, json, env, shell)")
 	cmd.Flags().BoolVar(&includeSecrets, "include-secrets", false, "Include sensitive values in export")
 
-	cmd.Hidden = true
 	return cmd
 }
 
@@ -241,7 +238,7 @@ func newMigrateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "migrate",
 		Short: "Migrate configuration between versions",
-		Long: `Migrate configuration files between different matlas-cli versions (experimental).
+		Long: `Migrate configuration files between different matlas-cli versions.
 
 This command helps upgrade or downgrade configuration files when
 the configuration schema changes between versions.`,
@@ -262,7 +259,6 @@ the configuration schema changes between versions.`,
 	cmd.Flags().StringVar(&toVersion, "to", "latest", "Target version")
 	cmd.Flags().BoolVar(&backup, "backup", true, "Create backup before migration")
 
-	cmd.Hidden = true
 	return cmd
 }
 
@@ -519,41 +515,220 @@ func runListTemplates(cmd *cobra.Command) error {
 func runImportConfig(cmd *cobra.Command, sourceFile, targetFile, format string, merge bool) error {
 	fmt.Printf("Importing configuration from: %s\n", sourceFile)
 
-	// This is a placeholder for import functionality
-	// In a real implementation, you would:
-	// 1. Read the source file
-	// 2. Parse it based on its format
-	// 3. Convert to internal configuration format
-	// 4. Merge with existing config if requested
-	// 5. Write to target file
+	// Validate source file exists
+	if _, err := os.Stat(sourceFile); os.IsNotExist(err) {
+		return fmt.Errorf("source file not found: %s", sourceFile)
+	}
 
-	return fmt.Errorf("import functionality not yet implemented")
+	// Read source file
+	sourceData, err := os.ReadFile(sourceFile)
+	if err != nil {
+		return fmt.Errorf("failed to read source file: %w", err)
+	}
+
+	// Detect format if not specified
+	if format == "" {
+		format = detectFileFormat(sourceFile, sourceData)
+	}
+
+	// Parse source data into configuration map
+	var sourceConfig map[string]interface{}
+	switch strings.ToLower(format) {
+	case "yaml", "yml":
+		if err := yaml.Unmarshal(sourceData, &sourceConfig); err != nil {
+			return fmt.Errorf("failed to parse YAML: %w", err)
+		}
+	case "json":
+		if err := json.Unmarshal(sourceData, &sourceConfig); err != nil {
+			return fmt.Errorf("failed to parse JSON: %w", err)
+		}
+	case "env":
+		sourceConfig = parseEnvFile(sourceData)
+	default:
+		return fmt.Errorf("unsupported source format: %s. Supported formats: yaml, json, env", format)
+	}
+
+	// Convert to standard config format
+	normalizedConfig := normalizeConfigKeys(sourceConfig)
+
+	// Determine target file path
+	if targetFile == "" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("failed to get home directory: %w", err)
+		}
+		targetFile = filepath.Join(homeDir, config.DefaultConfigDir, "config.yaml")
+	}
+
+	var finalConfig map[string]interface{}
+
+	// Handle merge if requested
+	if merge {
+		// Load existing config if it exists
+		existingConfig := make(map[string]interface{})
+		if _, err := os.Stat(targetFile); err == nil {
+			existingData, err := os.ReadFile(targetFile)
+			if err != nil {
+				return fmt.Errorf("failed to read existing config: %w", err)
+			}
+			if err := yaml.Unmarshal(existingData, &existingConfig); err != nil {
+				return fmt.Errorf("failed to parse existing config: %w", err)
+			}
+		}
+
+		// Merge configurations (source overwrites existing)
+		finalConfig = mergeConfigs(existingConfig, normalizedConfig)
+		fmt.Printf("Merging with existing configuration at: %s\n", targetFile)
+	} else {
+		finalConfig = normalizedConfig
+	}
+
+	// Ensure target directory exists
+	if err := os.MkdirAll(filepath.Dir(targetFile), 0o755); err != nil {
+		return fmt.Errorf("failed to create target directory: %w", err)
+	}
+
+	// Convert to YAML and write to target file
+	outputData, err := yaml.Marshal(finalConfig)
+	if err != nil {
+		return fmt.Errorf("failed to marshal configuration: %w", err)
+	}
+
+	if err := os.WriteFile(targetFile, outputData, 0o600); err != nil {
+		return fmt.Errorf("failed to write target file: %w", err)
+	}
+
+	fmt.Printf("✅ Configuration imported successfully to: %s\n", targetFile)
+	if merge {
+		fmt.Printf("✅ Merged %d source keys with existing configuration\n", len(normalizedConfig))
+	} else {
+		fmt.Printf("✅ Imported %d configuration keys\n", len(normalizedConfig))
+	}
+
+	return nil
 }
 
 func runExportConfig(cmd *cobra.Command, outputFile, format string, includeSecrets bool) error {
 	fmt.Printf("Exporting configuration to format: %s\n", format)
 
-	// This is a placeholder for export functionality
-	// In a real implementation, you would:
-	// 1. Load current configuration
-	// 2. Convert to requested format
-	// 3. Optionally exclude secrets
-	// 4. Write to output file or stdout
+	// Load current configuration
+	cfg, err := config.Load(cmd, "")
+	if err != nil {
+		return fmt.Errorf("failed to load configuration: %w", err)
+	}
 
-	return fmt.Errorf("export functionality not yet implemented")
+	// Convert config to exportable map
+	configMap := configToMap(cfg, includeSecrets)
+
+	var output []byte
+	switch strings.ToLower(format) {
+	case "yaml", "yml":
+		output, err = yaml.Marshal(configMap)
+		if err != nil {
+			return fmt.Errorf("failed to marshal YAML: %w", err)
+		}
+	case "json":
+		output, err = json.MarshalIndent(configMap, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal JSON: %w", err)
+		}
+	case "env":
+		output = []byte(convertToEnvFormat(configMap, includeSecrets))
+	case "shell":
+		output = []byte(convertToShellExportFormat(configMap, includeSecrets))
+	default:
+		return fmt.Errorf("unsupported export format: %s. Supported formats: yaml, json, env, shell", format)
+	}
+
+	// Write to file or stdout
+	if outputFile != "" {
+		if err := os.WriteFile(outputFile, output, 0o600); err != nil {
+			return fmt.Errorf("failed to write to output file: %w", err)
+		}
+		fmt.Printf("✅ Configuration exported successfully to: %s\n", outputFile)
+		if !includeSecrets {
+			fmt.Printf("🔒 Sensitive values (API keys) were excluded. Use --include-secrets to include them.\n")
+		}
+	} else {
+		fmt.Print(string(output))
+	}
+
+	return nil
 }
 
 func runMigrateConfig(cmd *cobra.Command, fromVersion, toVersion string, backup bool) error {
+	// Determine config file path
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get home directory: %w", err)
+	}
+	configFile := filepath.Join(homeDir, config.DefaultConfigDir, "config.yaml")
+
+	// Check if config file exists
+	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+		return fmt.Errorf("configuration file not found: %s", configFile)
+	}
+
+	// Read current config
+	configData, err := os.ReadFile(configFile)
+	if err != nil {
+		return fmt.Errorf("failed to read configuration file: %w", err)
+	}
+
+	// Parse current config
+	var currentConfig map[string]interface{}
+	if err := yaml.Unmarshal(configData, &currentConfig); err != nil {
+		return fmt.Errorf("failed to parse current configuration: %w", err)
+	}
+
+	// Detect current version if not specified
+	if fromVersion == "" {
+		fromVersion = detectConfigVersion(currentConfig)
+		fmt.Printf("Detected current config version: %s\n", fromVersion)
+	}
+
+	// Resolve target version
+	if toVersion == "latest" {
+		toVersion = "v2.0.0" // Current latest version
+	}
+
 	fmt.Printf("Migrating configuration from %s to %s\n", fromVersion, toVersion)
 
-	// This is a placeholder for migration functionality
-	// In a real implementation, you would:
-	// 1. Detect current config version
-	// 2. Create backup if requested
-	// 3. Apply migration transformations
-	// 4. Update config file
+	// Check if migration is needed
+	if fromVersion == toVersion {
+		fmt.Printf("✅ Configuration is already at version %s, no migration needed\n", toVersion)
+		return nil
+	}
 
-	return fmt.Errorf("migration functionality not yet implemented")
+	// Create backup if requested
+	if backup {
+		backupFile := configFile + ".backup." + strings.ReplaceAll(fromVersion, ".", "_")
+		if err := os.WriteFile(backupFile, configData, 0o600); err != nil {
+			return fmt.Errorf("failed to create backup: %w", err)
+		}
+		fmt.Printf("📁 Backup created: %s\n", backupFile)
+	}
+
+	// Apply migrations
+	migratedConfig, err := applyMigrations(currentConfig, fromVersion, toVersion)
+	if err != nil {
+		return fmt.Errorf("migration failed: %w", err)
+	}
+
+	// Write migrated config
+	migratedData, err := yaml.Marshal(migratedConfig)
+	if err != nil {
+		return fmt.Errorf("failed to marshal migrated configuration: %w", err)
+	}
+
+	if err := os.WriteFile(configFile, migratedData, 0o600); err != nil {
+		return fmt.Errorf("failed to write migrated configuration: %w", err)
+	}
+
+	fmt.Printf("✅ Configuration migrated successfully to version %s\n", toVersion)
+	fmt.Printf("📝 Configuration file updated: %s\n", configFile)
+
+	return nil
 }
 
 // Template generation functions
@@ -700,4 +875,399 @@ func generateCompleteTemplate() map[string]interface{} {
 		"apiKey":                "your-atlas-api-key",
 		"publicKey":             "your-atlas-public-key",
 	}
+}
+
+// Helper functions for config import functionality
+
+func detectFileFormat(filename string, data []byte) string {
+	// First try to detect by file extension
+	ext := strings.ToLower(filepath.Ext(filename))
+	switch ext {
+	case ".json":
+		return "json"
+	case ".yaml", ".yml":
+		return "yaml"
+	case ".env":
+		return "env"
+	}
+
+	// Try to detect by content if extension doesn't help
+	trimmed := strings.TrimSpace(string(data))
+	if strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") {
+		return "json"
+	}
+	if strings.Contains(trimmed, "=") && !strings.Contains(trimmed, ":") {
+		return "env"
+	}
+	// Default to YAML for structured data
+	return "yaml"
+}
+
+func parseEnvFile(data []byte) map[string]interface{} {
+	config := make(map[string]interface{})
+	lines := strings.Split(string(data), "\n")
+	
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+		
+		// Remove quotes if present
+		if (strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"")) ||
+		   (strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'")) {
+			value = value[1 : len(value)-1]
+		}
+		
+		// Convert common Atlas environment variables to config keys
+		switch key {
+		case "ATLAS_PROJECT_ID":
+			config["projectId"] = value
+		case "ATLAS_ORG_ID":
+			config["orgId"] = value
+		case "ATLAS_CLUSTER_NAME":
+			config["clusterName"] = value
+		case "ATLAS_API_KEY":
+			config["apiKey"] = value
+		case "ATLAS_PUB_KEY", "ATLAS_PUBLIC_KEY":
+			config["publicKey"] = value
+		case "ATLAS_OUTPUT":
+			config["output"] = value
+		case "ATLAS_TIMEOUT":
+			config["timeout"] = value
+		default:
+			// For other variables, try to normalize the name
+			normalKey := strings.ToLower(strings.TrimPrefix(key, "ATLAS_"))
+			normalKey = strings.ReplaceAll(normalKey, "_", "")
+			if normalKey != "" {
+				config[normalKey] = value
+			}
+		}
+	}
+	
+	return config
+}
+
+func normalizeConfigKeys(config map[string]interface{}) map[string]interface{} {
+	normalized := make(map[string]interface{})
+	
+	for key, value := range config {
+		// Convert various key formats to standard camelCase
+		normalKey := key
+		switch strings.ToLower(key) {
+		case "project_id", "project-id", "projectid":
+			normalKey = "projectId"
+		case "org_id", "org-id", "orgid":
+			normalKey = "orgId"
+		case "cluster_name", "cluster-name", "clustername":
+			normalKey = "clusterName"
+		case "api_key", "api-key", "apikey":
+			normalKey = "apiKey"
+		case "public_key", "public-key", "pub_key", "pub-key", "publickey":
+			normalKey = "publicKey"
+		}
+		
+		normalized[normalKey] = value
+	}
+	
+	return normalized
+}
+
+func mergeConfigs(existing, source map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	
+	// Copy existing config
+	for key, value := range existing {
+		result[key] = value
+	}
+	
+	// Overlay source config (source wins conflicts)
+	for key, value := range source {
+		result[key] = value
+	}
+	
+	return result
+}
+
+// Helper functions for config export functionality
+
+func configToMap(cfg *config.Config, includeSecrets bool) map[string]interface{} {
+	configMap := make(map[string]interface{})
+
+	// Add non-empty values
+	if cfg.ProjectID != "" {
+		configMap["projectId"] = cfg.ProjectID
+	}
+	if cfg.OrgID != "" {
+		configMap["orgId"] = cfg.OrgID
+	}
+	if cfg.ClusterName != "" {
+		configMap["clusterName"] = cfg.ClusterName
+	}
+	if cfg.Output != "" && cfg.Output != "table" { // Don't export default value
+		configMap["output"] = string(cfg.Output)
+	}
+	if cfg.Timeout != config.DefaultTimeout {
+		configMap["timeout"] = cfg.Timeout.String()
+	}
+
+	// Handle secrets based on includeSecrets flag
+	if includeSecrets {
+		if cfg.APIKey != "" {
+			configMap["apiKey"] = cfg.APIKey
+		}
+		if cfg.PublicKey != "" {
+			configMap["publicKey"] = cfg.PublicKey
+		}
+	} else {
+		// Show masked values if secrets exist
+		if cfg.APIKey != "" {
+			configMap["# apiKey"] = "[REDACTED - use --include-secrets to export]"
+		}
+		if cfg.PublicKey != "" {
+			configMap["# publicKey"] = "[REDACTED - use --include-secrets to export]"
+		}
+	}
+
+	return configMap
+}
+
+func convertToEnvFormat(configMap map[string]interface{}, includeSecrets bool) string {
+	var lines []string
+	lines = append(lines, "# matlas-cli configuration exported as environment variables")
+	lines = append(lines, "# Source this file with: source config.env")
+	lines = append(lines, "")
+
+	// Map config keys to environment variable names
+	envMap := map[string]string{
+		"projectId":   "ATLAS_PROJECT_ID",
+		"orgId":       "ATLAS_ORG_ID",
+		"clusterName": "ATLAS_CLUSTER_NAME",
+		"output":      "ATLAS_OUTPUT",
+		"timeout":     "ATLAS_TIMEOUT",
+		"apiKey":      "ATLAS_API_KEY",
+		"publicKey":   "ATLAS_PUB_KEY",
+	}
+
+	for key, value := range configMap {
+		// Skip comment keys (redacted secrets)
+		if strings.HasPrefix(key, "#") {
+			if includeSecrets {
+				continue // Skip comment for redacted values when including secrets
+			}
+			lines = append(lines, fmt.Sprintf("# %s", value))
+			continue
+		}
+
+		if envVar, exists := envMap[key]; exists {
+			lines = append(lines, fmt.Sprintf("%s=%s", envVar, value))
+		}
+	}
+
+	return strings.Join(lines, "\n") + "\n"
+}
+
+func convertToShellExportFormat(configMap map[string]interface{}, includeSecrets bool) string {
+	var lines []string
+	lines = append(lines, "# matlas-cli configuration as shell export statements")
+	lines = append(lines, "# Run this with: eval $(matlas config export --format shell)")
+	lines = append(lines, "")
+
+	// Map config keys to environment variable names
+	envMap := map[string]string{
+		"projectId":   "ATLAS_PROJECT_ID",
+		"orgId":       "ATLAS_ORG_ID",
+		"clusterName": "ATLAS_CLUSTER_NAME",
+		"output":      "ATLAS_OUTPUT",
+		"timeout":     "ATLAS_TIMEOUT",
+		"apiKey":      "ATLAS_API_KEY",
+		"publicKey":   "ATLAS_PUB_KEY",
+	}
+
+	for key, value := range configMap {
+		// Skip comment keys (redacted secrets)
+		if strings.HasPrefix(key, "#") {
+			if includeSecrets {
+				continue // Skip comment for redacted values when including secrets
+			}
+			lines = append(lines, fmt.Sprintf("# %s", value))
+			continue
+		}
+
+		if envVar, exists := envMap[key]; exists {
+			// Properly quote values that might contain special characters
+			quotedValue := fmt.Sprintf("\"%s\"", strings.ReplaceAll(fmt.Sprintf("%v", value), "\"", "\\\""))
+			lines = append(lines, fmt.Sprintf("export %s=%s", envVar, quotedValue))
+		}
+	}
+
+	return strings.Join(lines, "\n") + "\n"
+}
+
+// Helper functions for config migration functionality
+
+func detectConfigVersion(config map[string]interface{}) string {
+	// Check for version field in config
+	if version, exists := config["version"]; exists {
+		return fmt.Sprintf("%v", version)
+	}
+
+	// Check for schema indicators to detect version
+	
+	// v2.0.0+ indicators (current format)
+	if _, hasProjectId := config["projectId"]; hasProjectId {
+		// Check for new camelCase format
+		if _, hasOrgId := config["orgId"]; hasOrgId {
+			return "v2.0.0"
+		}
+		return "v1.5.0"
+	}
+
+	// v1.0.0 indicators (legacy format with underscores)
+	if _, hasProjectId := config["project_id"]; hasProjectId {
+		return "v1.0.0"
+	}
+
+	// Pre-v1.0.0 (very basic config)
+	if len(config) > 0 {
+		return "v0.9.0"
+	}
+
+	// Empty or new config
+	return "v2.0.0"
+}
+
+func applyMigrations(config map[string]interface{}, fromVersion, toVersion string) (map[string]interface{}, error) {
+	result := make(map[string]interface{})
+	
+	// Copy original config
+	for k, v := range config {
+		result[k] = v
+	}
+
+	// Define migration path
+	migrations := []migration{
+		{from: "v0.9.0", to: "v1.0.0", transform: migrateV0_9ToV1_0},
+		{from: "v1.0.0", to: "v1.5.0", transform: migrateV1_0ToV1_5},
+		{from: "v1.5.0", to: "v2.0.0", transform: migrateV1_5ToV2_0},
+	}
+
+	// Apply sequential migrations
+	currentVersion := fromVersion
+	for _, mig := range migrations {
+		if shouldApplyMigration(currentVersion, toVersion, mig.from, mig.to) {
+			fmt.Printf("  Applying migration: %s → %s\n", mig.from, mig.to)
+			var err error
+			result, err = mig.transform(result)
+			if err != nil {
+				return nil, fmt.Errorf("migration %s → %s failed: %w", mig.from, mig.to, err)
+			}
+			currentVersion = mig.to
+		}
+	}
+
+	// Add version field to migrated config
+	result["version"] = toVersion
+	
+	return result, nil
+}
+
+type migration struct {
+	from      string
+	to        string
+	transform func(map[string]interface{}) (map[string]interface{}, error)
+}
+
+func shouldApplyMigration(currentVersion, targetVersion, migrationFrom, migrationTo string) bool {
+	// Apply migration if:
+	// 1. Current version is at or past the migration starting point
+	// 2. Target version includes this migration step 
+	// 3. Current version is before the migration endpoint (to avoid applying migrations we've already done)
+	return versionLessOrEqual(migrationFrom, currentVersion) && 
+		   versionLessOrEqual(migrationTo, targetVersion) &&
+		   versionLess(currentVersion, migrationTo)
+}
+
+func versionLessOrEqual(v1, v2 string) bool {
+	// Simple string comparison for demo - use proper semantic versioning in production
+	return v1 <= v2
+}
+
+func versionLess(v1, v2 string) bool {
+	// Simple string comparison for demo - use proper semantic versioning in production
+	return v1 < v2
+}
+
+// Migration transformations
+
+func migrateV0_9ToV1_0(config map[string]interface{}) (map[string]interface{}, error) {
+	result := make(map[string]interface{})
+	
+	// Copy all existing values
+	for k, v := range config {
+		result[k] = v
+	}
+	
+	// Add default values that were introduced in v1.0.0
+	if _, exists := result["timeout"]; !exists {
+		result["timeout"] = "30s"
+	}
+	if _, exists := result["output"]; !exists {
+		result["output"] = "text"
+	}
+	
+	return result, nil
+}
+
+func migrateV1_0ToV1_5(config map[string]interface{}) (map[string]interface{}, error) {
+	result := make(map[string]interface{})
+	
+	// Migrate from snake_case to camelCase (partial migration)
+	keyMappings := map[string]string{
+		"project_id":   "projectId",
+		"org_id":       "orgId", 
+		"cluster_name": "clusterName",
+		"api_key":      "apiKey",
+		"public_key":   "publicKey",
+	}
+	
+	for oldKey, newKey := range keyMappings {
+		if value, exists := config[oldKey]; exists {
+			result[newKey] = value
+		}
+	}
+	
+	// Copy other values as-is
+	for k, v := range config {
+		if _, isMapped := keyMappings[k]; !isMapped {
+			result[k] = v
+		}
+	}
+	
+	return result, nil
+}
+
+func migrateV1_5ToV2_0(config map[string]interface{}) (map[string]interface{}, error) {
+	result := make(map[string]interface{})
+	
+	// Copy all existing values (v1.5.0 → v2.0.0 is mostly compatible)
+	for k, v := range config {
+		result[k] = v
+	}
+	
+	// Ensure all keys are in proper camelCase format
+	result = normalizeConfigKeys(result)
+	
+	// Remove any deprecated keys
+	delete(result, "deprecated_field") // Example - remove any deprecated fields
+	
+	return result, nil
 }

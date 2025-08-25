@@ -1,4 +1,5 @@
 ---
+globs: scripts/*
 alwaysApply: false
 ---
 ## Live Tests Policy (CLI + YAML)
