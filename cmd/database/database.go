@@ -792,7 +792,11 @@ func testConnection(ctx context.Context, connectionString string) bool {
 		logging.Debug("MongoDB connection failed during client creation: %v", err)
 		return false
 	}
-	defer client.Disconnect(testCtx)
+	defer func() {
+		if err := client.Disconnect(testCtx); err != nil {
+			logging.Debug("Warning: failed to disconnect MongoDB client: %v", err)
+		}
+	}()
 
 	// Attempt to ping the database to verify connection and authentication
 	err = client.Ping(testCtx, nil)

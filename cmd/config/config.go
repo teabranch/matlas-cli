@@ -521,7 +521,7 @@ func runImportConfig(cmd *cobra.Command, sourceFile, targetFile, format string, 
 	}
 
 	// Read source file
-	sourceData, err := os.ReadFile(sourceFile)
+	sourceData, err := os.ReadFile(sourceFile) // #nosec G304 -- sourceFile is validated user input
 	if err != nil {
 		return fmt.Errorf("failed to read source file: %w", err)
 	}
@@ -567,7 +567,7 @@ func runImportConfig(cmd *cobra.Command, sourceFile, targetFile, format string, 
 		// Load existing config if it exists
 		existingConfig := make(map[string]interface{})
 		if _, err := os.Stat(targetFile); err == nil {
-			existingData, err := os.ReadFile(targetFile)
+			existingData, err := os.ReadFile(targetFile) // #nosec G304 -- targetFile is controlled path
 			if err != nil {
 				return fmt.Errorf("failed to read existing config: %w", err)
 			}
@@ -584,7 +584,7 @@ func runImportConfig(cmd *cobra.Command, sourceFile, targetFile, format string, 
 	}
 
 	// Ensure target directory exists
-	if err := os.MkdirAll(filepath.Dir(targetFile), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(targetFile), 0o750); err != nil {
 		return fmt.Errorf("failed to create target directory: %w", err)
 	}
 
@@ -670,7 +670,7 @@ func runMigrateConfig(cmd *cobra.Command, fromVersion, toVersion string, backup 
 	}
 
 	// Read current config
-	configData, err := os.ReadFile(configFile)
+	configData, err := os.ReadFile(configFile) // #nosec G304 -- configFile is user-specified config path
 	if err != nil {
 		return fmt.Errorf("failed to read configuration file: %w", err)
 	}

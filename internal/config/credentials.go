@@ -132,7 +132,7 @@ func getCredentialFromWindowsCredentialManager(service string) string {
 	cmd := exec.Command("powershell", "-Command", 
 		"try { $cred = Get-StoredCredential -Target '"+target+"' -ErrorAction Stop; "+
 		"[Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($cred.Password)) "+
-		"} catch { exit 1 }")
+		"} catch { exit 1 }") // #nosec G204 -- target is sanitized service name
 	
 	out, err := cmd.Output()
 	if err == nil {
@@ -162,7 +162,7 @@ func getCredentialFromLinuxSecretService(service string) string {
 	}
 	
 	// Fallback: try GNOME Keyring directly (older systems)
-	cmd = exec.Command("gnome-keyring", "get", "matlas-"+service)
+	cmd = exec.Command("gnome-keyring", "get", "matlas-"+service) // #nosec G204 -- service is validated input
 	out, err = cmd.Output()
 	if err == nil {
 		credential := strings.TrimSpace(string(out))

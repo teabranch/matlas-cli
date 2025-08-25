@@ -605,7 +605,11 @@ func TestConfigImportIntegration(t *testing.T) {
 	// Create temporary directory for test files
 	tempDir, err := os.MkdirTemp("", "config-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("Warning: failed to clean up temp directory: %v", err)
+		}
+	}()
 
 	t.Run("Import from ENV file", func(t *testing.T) {
 		// Create source env file
@@ -621,7 +625,7 @@ ATLAS_API_KEY=secret-key-123`
 
 		// Test import functionality (we can't run the full command easily in unit tests,
 		// but we can test the core logic)
-		sourceData, err := os.ReadFile(sourceFile)
+		sourceData, err := os.ReadFile(sourceFile) // #nosec G304 -- sourceFile is test-controlled path
 		require.NoError(t, err)
 
 		format := detectFileFormat(sourceFile, sourceData)
