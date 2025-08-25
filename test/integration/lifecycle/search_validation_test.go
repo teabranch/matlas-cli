@@ -39,10 +39,10 @@ func TestSearchLifecycleValidation(t *testing.T) {
 func testSearchIndexValidation(t *testing.T, indexType string) {
 	timestamp := time.Now().Unix()
 	tmpDir := t.TempDir()
-	
+
 	var yamlContent string
 	var indexName string
-	
+
 	switch indexType {
 	case "basic":
 		indexName = fmt.Sprintf("test-search-%d", timestamp)
@@ -100,7 +100,7 @@ resources:
             numDimensions: 1536
             similarity: "cosine"`, timestamp, indexName, indexName)
 	}
-	
+
 	configFile := filepath.Join(tmpDir, fmt.Sprintf("search-%s.yaml", indexType))
 	err := os.WriteFile(configFile, []byte(yamlContent), 0644)
 	require.NoError(t, err, "Should write test YAML file")
@@ -110,14 +110,14 @@ resources:
 	result, err := loader.LoadApplyDocument(configFile)
 	require.NoError(t, err, "Should load YAML as ApplyDocument")
 	require.NotNil(t, result, "LoadResult should not be nil")
-	
+
 	document, ok := result.Config.(*types.ApplyDocument)
 	require.True(t, ok, "Should be ApplyDocument type")
-	
+
 	// Verify document structure
 	assert.Equal(t, types.KindApplyDocument, document.Kind, "Should be ApplyDocument")
 	assert.Len(t, document.Resources, 1, "Should have 1 resource")
-	
+
 	// Find SearchIndex resource using field access
 	searchIndexFound := false
 	for _, resource := range document.Resources {
@@ -129,10 +129,10 @@ resources:
 		}
 	}
 	assert.True(t, searchIndexFound, "Should find SearchIndex resource")
-	
+
 	// Validate through apply validator (without making API calls)
 	validationResult := apply.ValidateApplyDocument(document, apply.DefaultValidatorOptions())
-	
+
 	// Log validation results for debugging
 	if len(validationResult.Warnings) > 0 {
 		t.Logf("Validation warnings for %s search index:", indexType)
@@ -146,7 +146,7 @@ resources:
 			t.Logf("  - %s: %s", err.Path, err.Message)
 		}
 	}
-	
+
 	// Should pass validation
 	assert.Empty(t, validationResult.Errors, "%s search index should pass validation", indexType)
 }
@@ -154,7 +154,7 @@ resources:
 func testMultiResourceSearchValidation(t *testing.T) {
 	timestamp := time.Now().Unix()
 	tmpDir := t.TempDir()
-	
+
 	yamlContent := fmt.Sprintf(`apiVersion: matlas.mongodb.com/v1
 kind: ApplyDocument
 metadata:
@@ -204,7 +204,7 @@ resources:
               analyzer: "lucene.standard"
             date:
               type: "date"`, timestamp, timestamp, timestamp, timestamp, timestamp)
-	
+
 	configFile := filepath.Join(tmpDir, "search-multi.yaml")
 	err := os.WriteFile(configFile, []byte(yamlContent), 0644)
 	require.NoError(t, err, "Should write test YAML file")
@@ -214,14 +214,14 @@ resources:
 	result, err := loader.LoadApplyDocument(configFile)
 	require.NoError(t, err, "Should load multi-resource YAML as ApplyDocument")
 	require.NotNil(t, result, "LoadResult should not be nil")
-	
+
 	document, ok := result.Config.(*types.ApplyDocument)
 	require.True(t, ok, "Should be ApplyDocument type")
-	
+
 	// Verify document structure
 	assert.Equal(t, types.KindApplyDocument, document.Kind, "Should be ApplyDocument")
 	assert.Len(t, document.Resources, 2, "Should have 2 resources")
-	
+
 	// Count SearchIndex resources
 	var searchIndexCount int
 	for _, resource := range document.Resources {
@@ -230,10 +230,10 @@ resources:
 		}
 	}
 	assert.Equal(t, 2, searchIndexCount, "Should have 2 SearchIndex resources")
-	
+
 	// Validate through apply validator
 	validationResult := apply.ValidateApplyDocument(document, apply.DefaultValidatorOptions())
-	
+
 	// Should pass validation
 	assert.Empty(t, validationResult.Errors, "Multi-resource search document should pass validation")
 }

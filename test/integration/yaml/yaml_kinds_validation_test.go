@@ -34,7 +34,7 @@ func TestYAMLKindsValidation(t *testing.T) {
 
 	// Keep track of which kinds we've seen
 	kindsFound := make(map[types.ResourceKind][]string)
-	
+
 	for _, yamlFile := range yamlFiles {
 		t.Run(filepath.Base(yamlFile), func(t *testing.T) {
 			// Load the YAML file
@@ -48,7 +48,7 @@ func TestYAMLKindsValidation(t *testing.T) {
 			assert.NotEmpty(t, config.Metadata.Name, "Metadata name should be present")
 
 			// Validate API version format
-			assert.True(t, strings.HasPrefix(config.APIVersion, "matlas.mongodb.com/"), 
+			assert.True(t, strings.HasPrefix(config.APIVersion, "matlas.mongodb.com/"),
 				"API version should start with matlas.mongodb.com/")
 
 			// Record which kind this is
@@ -69,7 +69,7 @@ func TestYAMLKindsValidation(t *testing.T) {
 			// Run full validation through the validator
 			validator := apply.NewValidator()
 			result := validator.ValidateConfiguration(config)
-			
+
 			// Log any validation warnings for inspection
 			if len(result.Warnings) > 0 {
 				t.Logf("Validation warnings for %s:", yamlFile)
@@ -103,9 +103,9 @@ func TestYAMLKindsValidation(t *testing.T) {
 		}
 
 		for _, expectedKind := range expectedKinds {
-			assert.Contains(t, kindsFound, expectedKind, 
+			assert.Contains(t, kindsFound, expectedKind,
 				"Should have at least one example for kind: %s", expectedKind)
-			
+
 			if files, ok := kindsFound[expectedKind]; ok {
 				t.Logf("Found %d examples for kind %s: %v", len(files), expectedKind, files)
 			}
@@ -117,7 +117,7 @@ func TestYAMLKindsValidation(t *testing.T) {
 func validateProjectKind(t *testing.T, config *types.ApplyConfig, yamlFile string) {
 	assert.NotEmpty(t, config.Spec.Name, "Project should have a name: %s", yamlFile)
 	assert.NotEmpty(t, config.Spec.OrganizationID, "Project should have organizationId: %s", yamlFile)
-	
+
 	// Validate embedded resources if present
 	if len(config.Spec.Clusters) > 0 {
 		for i, cluster := range config.Spec.Clusters {
@@ -138,9 +138,9 @@ func validateApplyDocumentKind(t *testing.T, config *types.ApplyConfig, yamlFile
 	// For ApplyDocument, we need to load it differently
 	document, err := apply.LoadApplyDocument(yamlFile)
 	require.NoError(t, err, "Should be able to load ApplyDocument: %s", yamlFile)
-	
+
 	assert.NotEmpty(t, document.Resources, "ApplyDocument should have resources: %s", yamlFile)
-	
+
 	// Track kinds found in this document
 	for _, resource := range document.Resources {
 		switch r := resource.(type) {
@@ -182,7 +182,7 @@ func validateGenericKind(t *testing.T, config *types.ApplyConfig, yamlFile strin
 // TestYAMLSchemaCompliance tests that all YAML files match their documented schemas
 func TestYAMLSchemaCompliance(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping schema compliance test in short mode") 
+		t.Skip("Skipping schema compliance test in short mode")
 	}
 
 	projectRoot := getProjectRoot(t)
@@ -195,23 +195,23 @@ func TestYAMLSchemaCompliance(t *testing.T) {
 		validate func(t *testing.T, yamlFile string)
 	}{
 		{
-			name:    "SearchIndex examples have required fields",
-			pattern: "*search*.yaml",
+			name:     "SearchIndex examples have required fields",
+			pattern:  "*search*.yaml",
 			validate: validateSearchIndexSchema,
 		},
 		{
-			name:    "VPCEndpoint examples have required fields",
-			pattern: "*vpc*.yaml",
+			name:     "VPCEndpoint examples have required fields",
+			pattern:  "*vpc*.yaml",
 			validate: validateVPCEndpointSchema,
 		},
 		{
-			name:    "Cluster examples have required fields",
-			pattern: "*cluster*.yaml",
+			name:     "Cluster examples have required fields",
+			pattern:  "*cluster*.yaml",
 			validate: validateClusterSchema,
 		},
 		{
-			name:    "DatabaseRole examples have required fields", 
-			pattern: "*role*.yaml",
+			name:     "DatabaseRole examples have required fields",
+			pattern:  "*role*.yaml",
 			validate: validateDatabaseRoleSchema,
 		},
 	}
@@ -221,7 +221,7 @@ func TestYAMLSchemaCompliance(t *testing.T) {
 			pattern := filepath.Join(examplesDir, tc.pattern)
 			matches, err := filepath.Glob(pattern)
 			require.NoError(t, err, "Should be able to glob pattern: %s", pattern)
-			
+
 			if len(matches) == 0 {
 				t.Skipf("No files found matching pattern: %s", pattern)
 				return
@@ -245,11 +245,11 @@ func validateSearchIndexSchema(t *testing.T, yamlFile string) {
 		if searchIndex, ok := resource.(*types.SearchIndexManifest); ok {
 			found = true
 			assert.NotEmpty(t, searchIndex.Spec.ProjectName, "SearchIndex should have projectName")
-			assert.NotEmpty(t, searchIndex.Spec.ClusterName, "SearchIndex should have clusterName") 
+			assert.NotEmpty(t, searchIndex.Spec.ClusterName, "SearchIndex should have clusterName")
 			assert.NotEmpty(t, searchIndex.Spec.DatabaseName, "SearchIndex should have databaseName")
 			assert.NotEmpty(t, searchIndex.Spec.CollectionName, "SearchIndex should have collectionName")
 			assert.NotEmpty(t, searchIndex.Spec.IndexName, "SearchIndex should have indexName")
-			assert.Contains(t, []string{"search", "vectorSearch"}, searchIndex.Spec.IndexType, 
+			assert.Contains(t, []string{"search", "vectorSearch"}, searchIndex.Spec.IndexType,
 				"SearchIndex should have valid indexType")
 		}
 	}
@@ -319,11 +319,11 @@ func validateDatabaseRoleSchema(t *testing.T, yamlFile string) {
 			found = true
 			assert.NotEmpty(t, role.Spec.RoleName, "DatabaseRole should have roleName")
 			assert.NotEmpty(t, role.Spec.DatabaseName, "DatabaseRole should have databaseName")
-			
+
 			// Should have either privileges or inherited roles
 			hasPrivileges := len(role.Spec.Privileges) > 0
 			hasInheritedRoles := len(role.Spec.InheritedRoles) > 0
-			assert.True(t, hasPrivileges || hasInheritedRoles, 
+			assert.True(t, hasPrivileges || hasInheritedRoles,
 				"DatabaseRole should have either privileges or inheritedRoles")
 
 			// Validate privilege structure
@@ -342,30 +342,30 @@ func getProjectRoot(t *testing.T) string {
 	// Get the directory of this test file
 	_, filename, _, ok := runtime.Caller(0)
 	require.True(t, ok, "Should be able to get test file path")
-	
+
 	// Navigate up to project root (test/integration/yaml -> ../../..)
 	testDir := filepath.Dir(filename)
 	projectRoot := filepath.Join(testDir, "..", "..", "..")
 	absPath, err := filepath.Abs(projectRoot)
 	require.NoError(t, err, "Should be able to get absolute path")
-	
+
 	return absPath
 }
 
 func findYAMLFiles(dir string) ([]string, error) {
 	var yamlFiles []string
-	
+
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		
+
 		if !info.IsDir() && (strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")) {
 			yamlFiles = append(yamlFiles, path)
 		}
-		
+
 		return nil
 	})
-	
+
 	return yamlFiles, err
 }

@@ -170,7 +170,6 @@ type DatabaseUserSpec struct {
 	Scopes       []UserScopeConfig    `yaml:"scopes,omitempty" json:"scopes,omitempty"`
 }
 
-
 // DatabaseRoleManifest represents a database role resource manifest
 type DatabaseRoleManifest struct {
 	APIVersion APIVersion          `yaml:"apiVersion" json:"apiVersion"`

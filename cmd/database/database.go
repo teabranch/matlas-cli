@@ -781,11 +781,11 @@ func testConnection(ctx context.Context, connectionString string) bool {
 
 	// Create MongoDB client options
 	clientOptions := options.Client().ApplyURI(connectionString)
-	
+
 	// Set connection timeout and server selection timeout
 	clientOptions.SetConnectTimeout(5 * time.Second)
 	clientOptions.SetServerSelectionTimeout(5 * time.Second)
-	
+
 	// Create MongoDB client
 	client, err := mongo.Connect(testCtx, clientOptions)
 	if err != nil {

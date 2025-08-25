@@ -129,11 +129,11 @@ func getCredentialFromWindowsCredentialManager(service string) string {
 	// Use PowerShell to access Windows Credential Manager
 	// Get-StoredCredential -Target "matlas:<service>" | Select-Object -ExpandProperty Password
 	target := "matlas:" + service
-	cmd := exec.Command("powershell", "-Command", 
+	cmd := exec.Command("powershell", "-Command",
 		"try { $cred = Get-StoredCredential -Target '"+target+"' -ErrorAction Stop; "+
-		"[Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($cred.Password)) "+
-		"} catch { exit 1 }") // #nosec G204 -- target is sanitized service name
-	
+			"[Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($cred.Password)) "+
+			"} catch { exit 1 }") // #nosec G204 -- target is sanitized service name
+
 	out, err := cmd.Output()
 	if err == nil {
 		credential := strings.TrimSpace(string(out))
@@ -141,7 +141,7 @@ func getCredentialFromWindowsCredentialManager(service string) string {
 			return credential
 		}
 	}
-	
+
 	// Fallback: try cmdkey (older method)
 	// This doesn't retrieve passwords, but we can check if the credential exists
 	// For security reasons, Windows doesn't easily expose stored passwords via cmdkey
@@ -160,7 +160,7 @@ func getCredentialFromLinuxSecretService(service string) string {
 			return credential
 		}
 	}
-	
+
 	// Fallback: try GNOME Keyring directly (older systems)
 	cmd = exec.Command("gnome-keyring", "get", "matlas-"+service) // #nosec G204 -- service is validated input
 	out, err = cmd.Output()
@@ -170,6 +170,6 @@ func getCredentialFromLinuxSecretService(service string) string {
 			return credential
 		}
 	}
-	
+
 	return ""
 }

@@ -319,7 +319,6 @@ func TestDatabaseUserManifest_YAMLMarshaling(t *testing.T) {
 	}
 }
 
-
 func TestNetworkAccessManifest_YAMLMarshaling(t *testing.T) {
 	networkAccess := NetworkAccessManifest{
 		APIVersion: APIVersionV1,

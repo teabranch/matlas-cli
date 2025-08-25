@@ -906,27 +906,27 @@ func detectFileFormat(filename string, data []byte) string {
 func parseEnvFile(data []byte) map[string]interface{} {
 	config := make(map[string]interface{})
 	lines := strings.Split(string(data), "\n")
-	
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		
+
 		parts := strings.SplitN(line, "=", 2)
 		if len(parts) != 2 {
 			continue
 		}
-		
+
 		key := strings.TrimSpace(parts[0])
 		value := strings.TrimSpace(parts[1])
-		
+
 		// Remove quotes if present
 		if (strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"")) ||
-		   (strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'")) {
+			(strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'")) {
 			value = value[1 : len(value)-1]
 		}
-		
+
 		// Convert common Atlas environment variables to config keys
 		switch key {
 		case "ATLAS_PROJECT_ID":
@@ -952,13 +952,13 @@ func parseEnvFile(data []byte) map[string]interface{} {
 			}
 		}
 	}
-	
+
 	return config
 }
 
 func normalizeConfigKeys(config map[string]interface{}) map[string]interface{} {
 	normalized := make(map[string]interface{})
-	
+
 	for key, value := range config {
 		// Convert various key formats to standard camelCase
 		normalKey := key
@@ -974,26 +974,26 @@ func normalizeConfigKeys(config map[string]interface{}) map[string]interface{} {
 		case "public_key", "public-key", "pub_key", "pub-key", "publickey":
 			normalKey = "publicKey"
 		}
-		
+
 		normalized[normalKey] = value
 	}
-	
+
 	return normalized
 }
 
 func mergeConfigs(existing, source map[string]interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
-	
+
 	// Copy existing config
 	for key, value := range existing {
 		result[key] = value
 	}
-	
+
 	// Overlay source config (source wins conflicts)
 	for key, value := range source {
 		result[key] = value
 	}
-	
+
 	return result
 }
 
@@ -1121,7 +1121,7 @@ func detectConfigVersion(config map[string]interface{}) string {
 	}
 
 	// Check for schema indicators to detect version
-	
+
 	// v2.0.0+ indicators (current format)
 	if _, hasProjectId := config["projectId"]; hasProjectId {
 		// Check for new camelCase format
@@ -1147,7 +1147,7 @@ func detectConfigVersion(config map[string]interface{}) string {
 
 func applyMigrations(config map[string]interface{}, fromVersion, toVersion string) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
-	
+
 	// Copy original config
 	for k, v := range config {
 		result[k] = v
@@ -1176,7 +1176,7 @@ func applyMigrations(config map[string]interface{}, fromVersion, toVersion strin
 
 	// Add version field to migrated config
 	result["version"] = toVersion
-	
+
 	return result, nil
 }
 
@@ -1189,11 +1189,11 @@ type migration struct {
 func shouldApplyMigration(currentVersion, targetVersion, migrationFrom, migrationTo string) bool {
 	// Apply migration if:
 	// 1. Current version is at or past the migration starting point
-	// 2. Target version includes this migration step 
+	// 2. Target version includes this migration step
 	// 3. Current version is before the migration endpoint (to avoid applying migrations we've already done)
-	return versionLessOrEqual(migrationFrom, currentVersion) && 
-		   versionLessOrEqual(migrationTo, targetVersion) &&
-		   versionLess(currentVersion, migrationTo)
+	return versionLessOrEqual(migrationFrom, currentVersion) &&
+		versionLessOrEqual(migrationTo, targetVersion) &&
+		versionLess(currentVersion, migrationTo)
 }
 
 func versionLessOrEqual(v1, v2 string) bool {
@@ -1210,12 +1210,12 @@ func versionLess(v1, v2 string) bool {
 
 func migrateV0_9ToV1_0(config map[string]interface{}) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
-	
+
 	// Copy all existing values
 	for k, v := range config {
 		result[k] = v
 	}
-	
+
 	// Add default values that were introduced in v1.0.0
 	if _, exists := result["timeout"]; !exists {
 		result["timeout"] = "30s"
@@ -1223,51 +1223,51 @@ func migrateV0_9ToV1_0(config map[string]interface{}) (map[string]interface{}, e
 	if _, exists := result["output"]; !exists {
 		result["output"] = "text"
 	}
-	
+
 	return result, nil
 }
 
 func migrateV1_0ToV1_5(config map[string]interface{}) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
-	
+
 	// Migrate from snake_case to camelCase (partial migration)
 	keyMappings := map[string]string{
 		"project_id":   "projectId",
-		"org_id":       "orgId", 
+		"org_id":       "orgId",
 		"cluster_name": "clusterName",
 		"api_key":      "apiKey",
 		"public_key":   "publicKey",
 	}
-	
+
 	for oldKey, newKey := range keyMappings {
 		if value, exists := config[oldKey]; exists {
 			result[newKey] = value
 		}
 	}
-	
+
 	// Copy other values as-is
 	for k, v := range config {
 		if _, isMapped := keyMappings[k]; !isMapped {
 			result[k] = v
 		}
 	}
-	
+
 	return result, nil
 }
 
 func migrateV1_5ToV2_0(config map[string]interface{}) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
-	
+
 	// Copy all existing values (v1.5.0 → v2.0.0 is mostly compatible)
 	for k, v := range config {
 		result[k] = v
 	}
-	
+
 	// Ensure all keys are in proper camelCase format
 	result = normalizeConfigKeys(result)
-	
+
 	// Remove any deprecated keys
 	delete(result, "deprecated_field") // Example - remove any deprecated fields
-	
+
 	return result, nil
 }

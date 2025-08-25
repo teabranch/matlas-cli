@@ -156,7 +156,7 @@ resources:
 			// Create temporary YAML file
 			tmpDir := t.TempDir()
 			yamlFile := filepath.Join(tmpDir, fmt.Sprintf("%s.yaml", tc.name))
-			
+
 			err := os.WriteFile(yamlFile, []byte(tc.yamlContent), 0644)
 			require.NoError(t, err, "Should write test YAML file")
 
@@ -180,17 +180,17 @@ resources:
 
 			if tc.expectValid {
 				assert.Empty(t, result.Errors, "Should pass validation: %s", tc.description)
-				
+
 				// Additional structure validation for valid cases
 				assert.NotEmpty(t, roleResource.Spec.RoleName, "Should have roleName")
 				assert.NotEmpty(t, roleResource.Spec.DatabaseName, "Should have databaseName")
-				
+
 				// Should have either privileges or inherited roles
 				hasPrivileges := len(roleResource.Spec.Privileges) > 0
 				hasInheritedRoles := len(roleResource.Spec.InheritedRoles) > 0
-				assert.True(t, hasPrivileges || hasInheritedRoles, 
+				assert.True(t, hasPrivileges || hasInheritedRoles,
 					"Should have either privileges or inherited roles")
-				
+
 			} else {
 				assert.NotEmpty(t, result.Errors, "Should fail validation: %s", tc.description)
 			}
@@ -284,7 +284,7 @@ resources:
 	// Create temporary YAML file
 	tmpDir := t.TempDir()
 	yamlFile := filepath.Join(tmpDir, "role-user-test.yaml")
-	
+
 	err := os.WriteFile(yamlFile, []byte(yamlContent), 0644)
 	require.NoError(t, err, "Should write test YAML file")
 
@@ -363,7 +363,7 @@ func TestDatabaseRoleExampleFiles(t *testing.T) {
 
 	for _, exampleFile := range roleExamples {
 		examplePath := filepath.Join(examplesDir, exampleFile)
-		
+
 		// Check if file exists
 		if _, err := os.Stat(examplePath); os.IsNotExist(err) {
 			t.Logf("Skipping missing example file: %s", exampleFile)
@@ -380,12 +380,12 @@ func TestDatabaseRoleExampleFiles(t *testing.T) {
 			for _, resource := range document.Resources {
 				if role, ok := resource.(*types.DatabaseRoleManifest); ok {
 					roleCount++
-					
+
 					// Validate role structure
 					assert.NotEmpty(t, role.Metadata.Name, "Role should have metadata name")
 					assert.NotEmpty(t, role.Spec.RoleName, "Role should have roleName")
 					assert.NotEmpty(t, role.Spec.DatabaseName, "Role should have databaseName")
-					
+
 					// Should have either privileges or inherited roles
 					hasPrivileges := len(role.Spec.Privileges) > 0
 					hasInheritedRoles := len(role.Spec.InheritedRoles) > 0
@@ -399,7 +399,7 @@ func TestDatabaseRoleExampleFiles(t *testing.T) {
 			// Validate through apply validator
 			validator := apply.NewValidator()
 			result := validator.ValidateDocument(document)
-			
+
 			if len(result.Errors) > 0 {
 				t.Errorf("Example file validation errors for %s:", exampleFile)
 				for _, err := range result.Errors {
@@ -415,11 +415,11 @@ func TestDatabaseRoleExampleFiles(t *testing.T) {
 func getProjectRootForRoleTest(t *testing.T) string {
 	_, filename, _, ok := runtime.Caller(1)
 	require.True(t, ok, "Should be able to get test file path")
-	
+
 	testDir := filepath.Dir(filename)
 	projectRoot := filepath.Join(testDir, "..", "..", "..")
 	absPath, err := filepath.Abs(projectRoot)
 	require.NoError(t, err, "Should be able to get absolute path")
-	
+
 	return absPath
 }

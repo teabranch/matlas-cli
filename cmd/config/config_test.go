@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	
+
 	"github.com/teabranch/matlas-cli/internal/config"
 )
 
@@ -412,12 +412,12 @@ func TestConfigToMap(t *testing.T) {
 	t.Run("Exclude secrets", func(t *testing.T) {
 		result := configToMap(cfg, false)
 		expected := map[string]interface{}{
-			"projectId":    "12345",
-			"clusterName":  "my-cluster",
-			"output":       "json",
-			"timeout":      "45s",
-			"# apiKey":     "[REDACTED - use --include-secrets to export]",
-			"# publicKey":  "[REDACTED - use --include-secrets to export]",
+			"projectId":   "12345",
+			"clusterName": "my-cluster",
+			"output":      "json",
+			"timeout":     "45s",
+			"# apiKey":    "[REDACTED - use --include-secrets to export]",
+			"# publicKey": "[REDACTED - use --include-secrets to export]",
 		}
 		assert.Equal(t, expected, result)
 	})
@@ -432,7 +432,7 @@ func TestConvertToEnvFormat(t *testing.T) {
 	}
 
 	result := convertToEnvFormat(configMap, true)
-	
+
 	assert.Contains(t, result, "ATLAS_PROJECT_ID=12345")
 	assert.Contains(t, result, "ATLAS_CLUSTER_NAME=my-cluster")
 	assert.Contains(t, result, "ATLAS_OUTPUT=json")
@@ -447,7 +447,7 @@ func TestConvertToShellExportFormat(t *testing.T) {
 	}
 
 	result := convertToShellExportFormat(configMap, true)
-	
+
 	assert.Contains(t, result, `export ATLAS_PROJECT_ID="12345"`)
 	assert.Contains(t, result, `export ATLAS_OUTPUT="json"`)
 	assert.Contains(t, result, "# matlas-cli configuration as shell export statements")
@@ -586,8 +586,8 @@ func TestMigrationTransformations(t *testing.T) {
 
 	t.Run("migrateV1_5ToV2_0", func(t *testing.T) {
 		input := map[string]interface{}{
-			"projectId":       "12345",
-			"cluster-name":    "my-cluster", // Mixed format
+			"projectId":        "12345",
+			"cluster-name":     "my-cluster", // Mixed format
 			"deprecated_field": "should-be-removed",
 		}
 

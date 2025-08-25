@@ -35,10 +35,10 @@ func TestVPCEndpointLifecycleValidation(t *testing.T) {
 func testVPCEndpointValidation(t *testing.T, endpointType string) {
 	timestamp := time.Now().Unix()
 	tmpDir := t.TempDir()
-	
+
 	var yamlContent string
 	var configFile string
-	
+
 	switch endpointType {
 	case "basic":
 		configFile = filepath.Join(tmpDir, "vpc-basic.yaml")
@@ -61,7 +61,7 @@ resources:
       projectName: "test-project"
       cloudProvider: "AWS"
       region: "us-east-1"`, timestamp, timestamp)
-	
+
 	case "multi-provider":
 		configFile = filepath.Join(tmpDir, "vpc-multi-provider.yaml")
 		yamlContent = fmt.Sprintf(`apiVersion: matlas.mongodb.com/v1
@@ -97,7 +97,7 @@ resources:
       cloudProvider: "GCP"
       region: "us-central1"`, timestamp, timestamp, timestamp, timestamp)
 	}
-	
+
 	err := os.WriteFile(configFile, []byte(yamlContent), 0644)
 	require.NoError(t, err, "Should write test YAML file")
 
@@ -106,14 +106,14 @@ resources:
 	result, err := loader.LoadApplyDocument(configFile)
 	require.NoError(t, err, "Should load YAML as ApplyDocument")
 	require.NotNil(t, result, "LoadResult should not be nil")
-	
+
 	document, ok := result.Config.(*types.ApplyDocument)
 	require.True(t, ok, "Should be ApplyDocument type")
-	
+
 	// Verify document structure
 	assert.Equal(t, types.KindApplyDocument, document.Kind, "Should be ApplyDocument")
 	assert.NotEmpty(t, document.Resources, "Should have resources")
-	
+
 	// Count VPCEndpoint resources using field access
 	var vpcEndpointCount int
 	for _, resource := range document.Resources {
@@ -123,7 +123,7 @@ resources:
 			assert.NotEmpty(t, resource.Metadata.Name, "VPCEndpoint should have name")
 		}
 	}
-	
+
 	// Verify expected resource counts
 	switch endpointType {
 	case "basic":
@@ -131,10 +131,10 @@ resources:
 	case "multi-provider":
 		assert.Equal(t, 3, vpcEndpointCount, "Multi-provider config should have 3 VPCEndpoints")
 	}
-	
+
 	// Validate through apply validator
 	validationResult := apply.ValidateApplyDocument(document, apply.DefaultValidatorOptions())
-	
+
 	// Log validation results for debugging
 	if len(validationResult.Warnings) > 0 {
 		t.Logf("Validation warnings for %s VPC endpoint:", endpointType)
@@ -148,7 +148,7 @@ resources:
 			t.Logf("  - %s: %s", err.Path, err.Message)
 		}
 	}
-	
+
 	// Should pass validation
 	assert.Empty(t, validationResult.Errors, "%s VPC endpoint configuration should pass validation", endpointType)
 }

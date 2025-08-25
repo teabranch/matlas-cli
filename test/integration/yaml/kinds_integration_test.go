@@ -613,7 +613,7 @@ resources:
 	// Create temporary YAML file
 	tmpDir := t.TempDir()
 	yamlFile := filepath.Join(tmpDir, "comprehensive-test.yaml")
-	
+
 	err := os.WriteFile(yamlFile, []byte(yamlContent), 0644)
 	require.NoError(t, err, "Should write test YAML file")
 
@@ -676,13 +676,13 @@ func validateKindYAML(t *testing.T, yamlContent string, expectValid bool, descri
 	// Create temporary YAML file
 	tmpDir := t.TempDir()
 	yamlFile := filepath.Join(tmpDir, "test.yaml")
-	
+
 	err := os.WriteFile(yamlFile, []byte(yamlContent), 0644)
 	require.NoError(t, err, "Should write test YAML file")
 
 	// Try to load the YAML
 	var validationResult *apply.ValidationResult
-	
+
 	// Try as ApplyConfig first
 	if config, err := apply.LoadConfiguration(yamlFile); err == nil {
 		validator := apply.NewValidator()
@@ -691,7 +691,7 @@ func validateKindYAML(t *testing.T, yamlContent string, expectValid bool, descri
 		// Try as ApplyDocument
 		document, err := apply.LoadApplyDocument(yamlFile)
 		require.NoError(t, err, "Should load YAML file")
-		
+
 		validator := apply.NewValidator()
 		validationResult = validator.ValidateDocument(document)
 	}

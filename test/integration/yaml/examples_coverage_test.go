@@ -32,20 +32,20 @@ func TestExamplesCoverage(t *testing.T) {
 
 	projectRoot := getProjectRootFromTest(t)
 	examplesDir := filepath.Join(projectRoot, "examples")
-	
+
 	// Ensure examples directory exists
 	_, err := os.Stat(examplesDir)
 	require.NoError(t, err, "Examples directory should exist: %s", examplesDir)
 
 	// Map of documented kinds that MUST have examples
 	documentedKinds := map[types.ResourceKind]bool{
-		types.KindProject:      false,
-		types.KindCluster:      false,
-		types.KindDatabaseUser: false,
-		types.KindDatabaseRole: false,
+		types.KindProject:       false,
+		types.KindCluster:       false,
+		types.KindDatabaseUser:  false,
+		types.KindDatabaseRole:  false,
 		types.KindNetworkAccess: false,
-		types.KindSearchIndex:  false,
-		types.KindVPCEndpoint:  false,
+		types.KindSearchIndex:   false,
+		types.KindVPCEndpoint:   false,
 		types.KindApplyDocument: false,
 	}
 
@@ -61,7 +61,7 @@ func TestExamplesCoverage(t *testing.T) {
 	for _, yamlFile := range yamlFiles {
 		t.Run(fmt.Sprintf("Analyze_%s", filepath.Base(yamlFile)), func(t *testing.T) {
 			kinds := analyzeYAMLFileForKinds(t, yamlFile)
-			
+
 			for _, kind := range kinds {
 				kindsCoverage[kind] = append(kindsCoverage[kind], yamlFile)
 				if _, isDocumented := documentedKinds[kind]; isDocumented {
@@ -74,7 +74,7 @@ func TestExamplesCoverage(t *testing.T) {
 	// Verify coverage for all documented kinds
 	t.Run("VerifyKindsCoverage", func(t *testing.T) {
 		var missingKinds []types.ResourceKind
-		
+
 		for kind, found := range documentedKinds {
 			if !found {
 				missingKinds = append(missingKinds, kind)
@@ -92,7 +92,7 @@ func TestExamplesCoverage(t *testing.T) {
 		// Log coverage summary
 		t.Log("Examples coverage summary:")
 		for kind, files := range kindsCoverage {
-			t.Logf("  - %s: %d examples (%v)", kind, len(files), 
+			t.Logf("  - %s: %d examples (%v)", kind, len(files),
 				func() []string {
 					var basenames []string
 					for _, file := range files {
@@ -151,7 +151,7 @@ func TestExamplesLoadability(t *testing.T) {
 
 	projectRoot := getProjectRootFromTest(t)
 	examplesDir := filepath.Join(projectRoot, "examples")
-	
+
 	yamlFiles, err := findYAMLFilesInDir(examplesDir)
 	require.NoError(t, err, "Should find YAML files")
 
@@ -159,10 +159,10 @@ func TestExamplesLoadability(t *testing.T) {
 		t.Run(filepath.Base(yamlFile), func(t *testing.T) {
 			// Try to load as ApplyConfig first
 			config, configErr := apply.LoadConfiguration(yamlFile)
-			
+
 			// Try to load as ApplyDocument
 			document, docErr := apply.LoadApplyDocument(yamlFile)
-			
+
 			// At least one should succeed
 			assert.True(t, configErr == nil || docErr == nil,
 				"File should be loadable either as ApplyConfig or ApplyDocument: %s", yamlFile)
@@ -192,7 +192,7 @@ func TestExamplesConsistency(t *testing.T) {
 
 	projectRoot := getProjectRootFromTest(t)
 	examplesDir := filepath.Join(projectRoot, "examples")
-	
+
 	yamlFiles, err := findYAMLFilesInDir(examplesDir)
 	require.NoError(t, err, "Should find YAML files")
 
@@ -201,7 +201,7 @@ func TestExamplesConsistency(t *testing.T) {
 			// Read file content to check consistency patterns
 			content, err := os.ReadFile(yamlFile)
 			require.NoError(t, err, "Should be able to read file")
-			
+
 			contentStr := string(content)
 
 			// Should use consistent API version
@@ -230,7 +230,7 @@ func TestExamplesConsistency(t *testing.T) {
 					"example",
 					"test",
 				}
-				
+
 				hasPlaceholder := false
 				for _, pattern := range placeholderPatterns {
 					if strings.Contains(strings.ToLower(contentStr), pattern) {
@@ -238,7 +238,7 @@ func TestExamplesConsistency(t *testing.T) {
 						break
 					}
 				}
-				
+
 				assert.True(t, hasPlaceholder,
 					"Example with project/org references should use placeholder values: %s", yamlFile)
 			}
@@ -253,7 +253,7 @@ func analyzeYAMLFileForKinds(t *testing.T, yamlFile string) []types.ResourceKind
 	// Try loading as ApplyConfig (single resource)
 	if config, err := apply.LoadConfiguration(yamlFile); err == nil {
 		kinds = append(kinds, types.ResourceKind(config.Kind))
-		
+
 		// If it's a Project, also check for embedded resources
 		if types.ResourceKind(config.Kind) == types.KindProject {
 			if len(config.Spec.Clusters) > 0 {
@@ -271,7 +271,7 @@ func analyzeYAMLFileForKinds(t *testing.T, yamlFile string) []types.ResourceKind
 	// Try loading as ApplyDocument (multiple resources)
 	if document, err := apply.LoadApplyDocument(yamlFile); err == nil {
 		kinds = append(kinds, types.KindApplyDocument)
-		
+
 		// Analyze each resource in the document
 		for _, resource := range document.Resources {
 			switch resource.(type) {
@@ -311,29 +311,29 @@ func analyzeYAMLFileForKinds(t *testing.T, yamlFile string) []types.ResourceKind
 func getProjectRootFromTest(t *testing.T) string {
 	_, filename, _, ok := runtime.Caller(1)
 	require.True(t, ok, "Should be able to get test file path")
-	
+
 	testDir := filepath.Dir(filename)
 	projectRoot := filepath.Join(testDir, "..", "..", "..")
 	absPath, err := filepath.Abs(projectRoot)
 	require.NoError(t, err, "Should be able to get absolute path")
-	
+
 	return absPath
 }
 
 func findYAMLFilesInDir(dir string) ([]string, error) {
 	var yamlFiles []string
-	
+
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		
+
 		if !info.IsDir() && (strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")) {
 			yamlFiles = append(yamlFiles, path)
 		}
-		
+
 		return nil
 	})
-	
+
 	return yamlFiles, err
 }

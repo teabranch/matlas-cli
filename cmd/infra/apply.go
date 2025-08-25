@@ -837,7 +837,7 @@ func convertToClusterSpec(spec interface{}) types.ClusterSpec {
 		if clusterType, ok := specMap["clusterType"].(string); ok {
 			clusterSpec.ClusterType = clusterType
 		}
-		
+
 		// Convert complex fields
 		if replicationSpecs, ok := specMap["replicationSpecs"].([]interface{}); ok {
 			clusterSpec.ReplicationSpecs = convertToReplicationSpecs(replicationSpecs)
@@ -854,7 +854,7 @@ func convertToClusterSpec(spec interface{}) types.ClusterSpec {
 		if tags, ok := specMap["tags"].(map[string]interface{}); ok {
 			clusterSpec.Tags = convertToStringMap(tags)
 		}
-		
+
 		return clusterSpec
 	}
 	return types.ClusterSpec{}
