@@ -27,6 +27,7 @@ plugins:
   - jekyll-feed
   - jekyll-sitemap
   - jekyll-sass-converter
+  - jekyll-seo-tag
 
 # Navigation structure
 nav_order: 1
@@ -51,7 +52,7 @@ aux_links:
 aux_links_new_tab: true
 
 # Footer content
-footer_content: "Copyright &copy; 2024 matlas CLI. Distributed by an <a href=\"https://github.com/teabranch/matlas-cli/tree/main/LICENSE\">MIT license</a>."
+footer_content: "Copyright &copy; 2025 matlas CLI. Distributed by an <a href=\"https://github.com/teabranch/matlas-cli/tree/main/LICENSE\">MIT license</a>."
 
 # Footer last edit timestamp
 last_edit_timestamp: true
@@ -72,3 +73,13 @@ exclude:
 # Include files
 include:
   - _pages
+
+  # Add Google Site Verification
+webmaster_verifications:
+  google: ftuEYbK0wGbauiNVCeBi1PiNo3-lstmDQ7sXyymgu_c
+  # You can also add codes for Bing, Yandex, Baidu, and Facebook App ID here 
+  # bing: YOUR_BING_CODE
+  # yandex: YOUR_YANDEX_CODE
+  # baidu: YOUR_BAIDU_CODE
+  # facebook_app_id: YOUR_FACEBOOK_APP_ID
+  # facebook_admins: YOUR_FACEBOOK_USER_ID
