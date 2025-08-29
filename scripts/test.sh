@@ -46,6 +46,7 @@ COMMANDS:
     network     Run network access lifecycle live tests
     projects    Run projects lifecycle live tests (creates real project)
     search-cli  Run Atlas Search CLI command tests (creates real search indexes)
+    search-advanced Run Atlas Search advanced features tests (YAML-only: analyzers, facets, autocomplete, etc.)
     discovery   Run discovery lifecycle tests (comprehensive discovery feature testing)
                 Use --cluster-lifecycle flag to include cluster creation/deletion tests (costs money!)
     lifecycle   Run lifecycle validation tests (SAFE - no Atlas API calls, validates Search/VPC YAML)
@@ -83,7 +84,8 @@ EXAMPLES:
     $0 roles                # Run live database roles lifecycle tests
     $0 network              # Run live network lifecycle tests
     $0 projects             # Run live projects lifecycle tests
-    $0 search-cli           # Run Atlas Search CLI command tests
+    $0 search-cli           # Run Atlas Search CLI command tests (basic operations only)
+    $0 search-advanced      # Run Atlas Search advanced features tests (YAML-only)
     $0 search               # Run Atlas Search lifecycle tests
     $0 search-e2e           # Run Atlas Search E2E tests (creates/deletes indexes)
     $0 vpc                  # Run VPC Endpoints lifecycle tests
@@ -92,8 +94,12 @@ EXAMPLES:
     $0 all --coverage       # Run all tests with coverage
     $0 clean                # Clean test cache
 
-IMPORTANT: Do not run network tests concurrently with e2e tests - both manage
-           network access rules and may conflict. Run them separately.
+IMPORTANT: 
+- Do not run network tests concurrently with e2e tests - both manage
+  network access rules and may conflict. Run them separately.
+- Advanced search features (analyzers, facets, autocomplete, highlighting, 
+  synonyms, fuzzy search) are only available via YAML configuration due to
+  Atlas Admin API limitations. Use 'search-advanced' for YAML-based testing.
 
 EOF
 }
@@ -263,11 +269,25 @@ main() {
             print_info "Running Atlas Search CLI command tests (live)..."
             print_warning "⚠️  WARNING: Creates real Atlas search indexes for CLI testing!"
             print_success "✓ SAFE MODE: Uses test-specific names and comprehensive cleanup"
-            print_info "ℹ️  Tests all Atlas Search CLI commands (list, create, get, update, delete)"
+            print_info "ℹ️  Tests basic Atlas Search CLI commands (list, create, get, update, delete)"
+            print_info "ℹ️  NOTE: Advanced features (analyzers, facets, etc.) tested separately via YAML"
             if "$SCRIPT_DIR/test/atlas-search-cli.sh" "${args[@]}"; then
                 print_success "Atlas Search CLI tests passed"
             else
                 print_error "Atlas Search CLI tests failed"
+                return 1
+            fi
+            ;;
+        search-advanced)
+            print_info "Running Atlas Search advanced features tests (YAML-only)..."
+            print_warning "⚠️  WARNING: Creates real Atlas search indexes with advanced features!"
+            print_success "✓ SAFE MODE: Uses --preserve-existing flag to protect existing resources"
+            print_info "ℹ️  Tests YAML-based advanced features: analyzers, facets, autocomplete, highlighting, synonyms, fuzzy search"
+            print_info "ℹ️  NOTE: CLI commands for advanced features removed due to Atlas Admin API limitations"
+            if "$SCRIPT_DIR/test/search-advanced-features.sh" "${args[@]}"; then
+                print_success "Atlas Search advanced features tests passed"
+            else
+                print_error "Atlas Search advanced features tests failed"
                 return 1
             fi
             ;;

@@ -36,6 +36,8 @@ func TestNewSearchCmd_VisibleAndSubcommands(t *testing.T) {
 	for _, c := range cmd.Commands() {
 		found[c.Use] = true
 	}
+	
+	// Basic search index management commands (these work with Atlas Admin API)
 	expectedCommands := []string{"list", "get", "create", "update", "delete"}
 	for _, expectedCmd := range expectedCommands {
 		if !found[expectedCmd] {
@@ -43,6 +45,7 @@ func TestNewSearchCmd_VisibleAndSubcommands(t *testing.T) {
 		}
 	}
 
+	// Should have exactly 5 subcommands (advanced features removed - use YAML instead)
 	if len(found) != len(expectedCommands) {
 		t.Errorf("expected exactly %d subcommands, got %d: %+v", len(expectedCommands), len(found), found)
 	}

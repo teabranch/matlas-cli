@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
 )
 
 // Typed errors used by higher layers to reason about Atlas failures.

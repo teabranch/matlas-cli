@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
 )
 
 func TestClient_Do_RetriesTransient(t *testing.T) {

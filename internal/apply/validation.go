@@ -1683,6 +1683,56 @@ func convertToSearchIndexSpec(specMap map[string]interface{}) types.SearchIndexS
 	if val, ok := specMap["definition"]; ok {
 		if definitionMap, ok := val.(map[string]interface{}); ok {
 			spec.Definition = definitionMap
+			
+			// Extract advanced search features from definition
+			if analyzersRaw, ok := definitionMap["analyzers"]; ok {
+				if analyzersMap, ok := analyzersRaw.(map[string]interface{}); ok {
+					// Handle analyzers as a map (YAML object format)
+					for analyzerName, analyzerData := range analyzersMap {
+						if analyzerConfig, ok := analyzerData.(map[string]interface{}); ok {
+							analyzer := types.AnalyzerConfig{
+								Name: analyzerName,
+							}
+							if analyzerType, ok := analyzerConfig["type"].(string); ok {
+								analyzer.Type = analyzerType
+							}
+							if charFilters, ok := analyzerConfig["charFilters"].([]interface{}); ok {
+								analyzer.CharFilters = charFilters
+							}
+							if tokenizer, ok := analyzerConfig["tokenizer"].(map[string]interface{}); ok {
+								analyzer.Tokenizer = tokenizer
+							}
+							if tokenFilters, ok := analyzerConfig["tokenFilters"].([]interface{}); ok {
+								analyzer.TokenFilters = tokenFilters
+							}
+							spec.Analyzers = append(spec.Analyzers, analyzer)
+						}
+					}
+				} else if analyzersList, ok := analyzersRaw.([]interface{}); ok {
+					// Handle analyzers as a list (array format)
+					for _, analyzerRaw := range analyzersList {
+						if analyzerConfig, ok := analyzerRaw.(map[string]interface{}); ok {
+							analyzer := types.AnalyzerConfig{}
+							if name, ok := analyzerConfig["name"].(string); ok {
+								analyzer.Name = name
+							}
+							if analyzerType, ok := analyzerConfig["type"].(string); ok {
+								analyzer.Type = analyzerType
+							}
+							if charFilters, ok := analyzerConfig["charFilters"].([]interface{}); ok {
+								analyzer.CharFilters = charFilters
+							}
+							if tokenizer, ok := analyzerConfig["tokenizer"].(map[string]interface{}); ok {
+								analyzer.Tokenizer = tokenizer
+							}
+							if tokenFilters, ok := analyzerConfig["tokenFilters"].([]interface{}); ok {
+								analyzer.TokenFilters = tokenFilters
+							}
+							spec.Analyzers = append(spec.Analyzers, analyzer)
+						}
+					}
+				}
+			}
 		}
 	}
 	if val, ok := specMap["dependsOn"].([]interface{}); ok {

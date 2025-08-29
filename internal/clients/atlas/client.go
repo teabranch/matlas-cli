@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/teabranch/matlas-cli/internal/logging"
-	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
 )
 
 // Config defines optional settings for initializing the Atlas client wrapper.

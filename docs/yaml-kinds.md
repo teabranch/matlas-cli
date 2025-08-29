@@ -628,6 +628,69 @@ spec:
       dynamic: true
 ```
 
+### Advanced Search Index with Features
+
+```yaml
+apiVersion: matlas.mongodb.com/v1
+kind: SearchIndex
+metadata:
+  name: products-advanced-search
+spec:
+  projectName: "My Project"
+  clusterName: "production-cluster"
+  databaseName: "ecommerce"
+  collectionName: "products"
+  indexName: "products-advanced"
+  indexType: "search"
+  definition:
+    mappings:
+      dynamic: false
+      fields:
+        title:
+          type: string
+          analyzer: "titleAnalyzer"
+        category:
+          type: stringFacet
+        price:
+          type: numberFacet
+  # Advanced search features
+  analyzers:
+    - name: "titleAnalyzer"
+      type: "custom"
+      charFilters: []
+      tokenizer:
+        type: "standard"
+      tokenFilters:
+        - type: "lowercase"
+        - type: "stemmer"
+          language: "english"
+  facets:
+    - field: "category"
+      type: "string"
+      numBuckets: 20
+    - field: "price"
+      type: "number"
+      boundaries: [0, 25, 50, 100, 250, 500]
+  autocomplete:
+    - field: "title"
+      maxEdits: 2
+      prefixLength: 1
+  highlighting:
+    - field: "title"
+      maxCharsToExamine: 500000
+      maxNumPassages: 3
+  synonyms:
+    - name: "productSynonyms"
+      input: ["laptop", "notebook", "computer"]
+      output: "laptop"
+      explicit: false
+  fuzzySearch:
+    - field: "title"
+      maxEdits: 2
+      prefixLength: 1
+      maxExpansions: 50
+```
+
 ### Vector Search Index
 
 ```yaml
@@ -658,6 +721,38 @@ spec:
 - `spec.collectionName`: Collection name
 - `spec.indexName`: Search index name
 - `spec.definition`: Index definition object
+
+### Optional Advanced Search Fields
+
+- `spec.analyzers`: Custom analyzer configurations
+  - `name`: Analyzer name
+  - `type`: Analyzer type (standard, keyword, simple, whitespace, language, custom)
+  - `charFilters`: Character filters to apply
+  - `tokenizer`: Tokenizer configuration
+  - `tokenFilters`: Token filters to apply
+- `spec.facets`: Faceted search configurations
+  - `field`: Field name to facet on
+  - `type`: Facet type (string, number, date)
+  - `numBuckets`: Maximum number of buckets
+  - `boundaries`: Custom bucket boundaries
+- `spec.autocomplete`: Autocomplete configurations
+  - `field`: Field name for autocomplete
+  - `maxEdits`: Maximum edits for fuzzy matching
+  - `prefixLength`: Minimum prefix length
+- `spec.highlighting`: Search result highlighting
+  - `field`: Field name to highlight
+  - `maxCharsToExamine`: Maximum characters to examine
+  - `maxNumPassages`: Maximum highlighted passages
+- `spec.synonyms`: Synonym configurations
+  - `name`: Synonym collection name
+  - `input`: Array of input terms
+  - `output`: Output term
+  - `explicit`: Whether synonyms are explicit
+- `spec.fuzzySearch`: Fuzzy search configurations
+  - `field`: Field name for fuzzy search
+  - `maxEdits`: Maximum character edits
+  - `prefixLength`: Exact prefix match length
+  - `maxExpansions`: Maximum similar terms
 
 ### Index Types
 

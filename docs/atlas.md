@@ -159,7 +159,9 @@ Use `matlas atlas network-containers <command> --help` for detailed flag informa
 
 Atlas Search provides full-text search capabilities for your MongoDB collections.
 
-### List Search Indexes
+### Basic Search Index Management
+
+The CLI provides basic CRUD operations for search indexes:
 
 ```bash
 # List all search indexes in a cluster
@@ -168,11 +170,13 @@ matlas atlas search list --project-id <project-id> --cluster <cluster-name>
 # List search indexes for a specific collection
 matlas atlas search list --project-id <project-id> --cluster <cluster-name> \
   --database sample_mflix --collection movies
-```
 
-### Create Search Index
+# Get search index details by name
+matlas atlas search get --project-id <project-id> --cluster <cluster-name> --name default
 
-```bash
+# Get search index details by ID
+matlas atlas search get --project-id <project-id> --cluster <cluster-name> --index-id <index-id>
+
 # Create a basic search index with dynamic mapping
 matlas atlas search create \
   --project-id <project-id> \
@@ -189,35 +193,92 @@ matlas atlas search create \
   --collection movies \
   --name plot_vector_index \
   --type vectorSearch
-```
 
-### Get Search Index Details
-
-```bash
-# Get search index details by name
-matlas atlas search get --project-id <project-id> --cluster <cluster-name> --name default
-
-# Get search index details by ID
-matlas atlas search get --project-id <project-id> --cluster <cluster-name> --index-id <index-id>
-```
-
-### Update Search Index
-
-```bash
 # Update search index from definition file
 matlas atlas search update --project-id <project-id> --cluster <cluster-name> \
   --index-id <index-id> --index-file updated-definition.json
-```
 
-### Delete Search Index
-
-```bash
 # Delete search index by name (with confirmation)
 matlas atlas search delete --project-id <project-id> --cluster <cluster-name> --name default
 
 # Delete search index by name (skip confirmation)
 matlas atlas search delete --project-id <project-id> --cluster <cluster-name> --name default --force
 ```
+
+### Advanced Search Features (YAML Configuration)
+
+Advanced search features like analyzers, facets, autocomplete, highlighting, synonyms, and fuzzy search are configured through **YAML ApplyDocuments only**. These features are embedded within search index definitions due to Atlas Admin API limitations.
+
+```yaml
+apiVersion: matlas.mongodb.com/v1
+kind: SearchIndex
+metadata:
+  name: products-advanced-search
+spec:
+  projectName: "your-project-id"
+  clusterName: "your-cluster-name"
+  databaseName: "ecommerce"
+  collectionName: "products"
+  indexName: "products-advanced-search"
+  indexType: "search"
+  definition:
+    mappings:
+      dynamic: false
+      fields:
+        title:
+          type: string
+          analyzer: "productTitleAnalyzer"
+        category:
+          type: stringFacet
+        price:
+          type: numberFacet
+  # Advanced features (YAML only)
+  analyzers:
+    - name: "productTitleAnalyzer"
+      type: "custom"
+      charFilters: []
+      tokenizer:
+        type: "standard"
+      tokenFilters:
+        - type: "lowercase"
+        - type: "englishStemmer"
+  facets:
+    - field: "category"
+      type: "string"
+      numBuckets: 10
+    - field: "price"
+      type: "number"
+      boundaries: [0, 50, 100, 500]
+  autocomplete:
+    - field: "title"
+      maxEdits: 2
+      prefixLength: 1
+  highlighting:
+    - field: "description"
+      maxCharsToExamine: 500
+      maxNumPassages: 3
+  synonyms:
+    - name: "product-synonyms"
+      input: ["smartphone", "mobile", "phone"]
+      output: "smartphone"
+      explicit: false
+  fuzzySearch:
+    - field: "title"
+      maxEdits: 2
+      prefixLength: 1
+      maxExpansions: 50
+```
+
+Apply the configuration:
+```bash
+# Plan search index changes
+matlas infra plan -f search-index.yaml --preserve-existing
+
+# Apply search index configuration
+matlas infra apply -f search-index.yaml --preserve-existing --auto-approve
+```
+
+**Note**: Advanced search features are not available as separate CLI commands because the Atlas Admin API manages these features as part of search index definitions, not as independent resources.
 
 ## VPC Endpoints
 

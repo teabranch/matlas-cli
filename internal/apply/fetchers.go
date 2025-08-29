@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/teabranch/matlas-cli/internal/types"
-	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
 )
 
 // convertClusterToManifest converts an Atlas cluster to our ClusterManifest type
@@ -193,6 +193,11 @@ func (d *AtlasStateDiscovery) convertSearchIndexToManifest(index *admin.SearchIn
 		IndexName:      indexName,
 		IndexType:      index.GetType(),
 		Definition:     definition,
+	}
+
+	// Extract advanced features from the index definition
+	if defPtr, ok := index.GetLatestDefinitionOk(); ok && defPtr != nil {
+		d.extractAdvancedSearchFeatures(defPtr, &spec)
 	}
 
 	// Determine status based on index status

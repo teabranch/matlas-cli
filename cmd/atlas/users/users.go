@@ -8,7 +8,7 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
-	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
 	"golang.org/x/term"
 
 	"github.com/teabranch/matlas-cli/internal/cli"

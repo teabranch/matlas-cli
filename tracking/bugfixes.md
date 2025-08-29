@@ -122,6 +122,138 @@ fi
 
 ---
 
+## [2025-08-28] Search Advanced Features Test Command Syntax Fix
+
+**Status**: Completed  
+**Developer**: Assistant  
+**Related Issues**: Search advanced features test failing with "file 'apply' does not exist" error
+
+### Summary
+Fixed search-advanced-features.sh test script that was failing due to incorrect command syntax. The script was trying to use `matlas infra apply` as a subcommand, but the `infra` command is the apply command by default and requires the `-f` flag for file specification.
+
+### Tasks
+- [x] Investigate "file 'apply' does not exist" error in search-advanced-features test
+- [x] Identify root cause: incorrect command syntax using 'infra apply' instead of 'infra -f'
+- [x] Fix all instances of incorrect command syntax in test script
+- [x] Update validate, plan, and diff commands to use proper -f flag syntax
+- [x] Verify fix works with test execution
+
+### Files Modified
+- `scripts/test/search-advanced-features.sh` - Updated all `matlas infra apply` calls to `matlas infra -f` and fixed subcommand syntax
+
+### Root Cause Analysis
+
+#### Command Syntax Issue
+- **Error**: `failed to expand file patterns: file 'apply' does not exist: stat apply: no such file or directory`
+- **Problem**: Test script used `$MATLAS_CLI infra apply "$temp_yaml"` syntax
+- **Root Cause**: The `infra` command IS the apply command - there's no separate `apply` subcommand
+- **Correct Usage**: `$MATLAS_CLI infra -f "$temp_yaml"` for the default apply action
+- **Subcommands**: `validate`, `plan`, `diff`, `destroy` are actual subcommands that also need `-f` flag
+
+#### Discovery Process
+1. **Error Investigation**: Traced error to `expandFilePatterns` function in `apply.go`
+2. **Command Analysis**: Examined `infra` command help to understand structure
+3. **Source Review**: Confirmed `infra` command is the main apply command with subcommands for other operations
+4. **Pattern Analysis**: Found 8+ incorrect command calls throughout the test script
+
+### Technical Implementation
+
+#### Fixed Command Patterns
+```bash
+# Before: Incorrect syntax (treated 'apply' as filename)
+$MATLAS_CLI infra apply "$temp_yaml" --auto-approve --preserve-existing
+
+# After: Correct syntax (infra is the apply command)
+$MATLAS_CLI infra -f "$temp_yaml" --auto-approve --preserve-existing
+```
+
+#### Subcommand Fixes
+```bash
+# Before: Missing -f flag for file specification
+$MATLAS_CLI infra validate "$invalid_yaml"
+$MATLAS_CLI infra plan "$test_yaml" --preserve-existing
+$MATLAS_CLI infra diff "$test_yaml" --preserve-existing
+
+# After: Proper -f flag usage
+$MATLAS_CLI infra validate -f "$invalid_yaml"
+$MATLAS_CLI infra plan -f "$test_yaml" --preserve-existing
+$MATLAS_CLI infra diff -f "$test_yaml" --preserve-existing
+```
+
+### Command Structure Analysis
+
+#### Infra Command Design
+- **Primary Command**: `matlas infra` (default action is apply)
+- **File Specification**: Always requires `-f` flag for file paths
+- **Subcommands**: `validate`, `plan`, `diff`, `show`, `destroy`
+- **No Apply Subcommand**: The main `infra` command handles apply operations
+
+#### Correct Usage Examples
+```bash
+# Apply configuration (default action)
+matlas infra -f config.yaml --auto-approve
+
+# Other operations require subcommand + -f flag
+matlas infra validate -f config.yaml
+matlas infra plan -f config.yaml
+matlas infra diff -f config.yaml
+```
+
+### Impact Assessment
+
+#### Before Fix
+- **Test Failure**: Search advanced features test failed immediately with file expansion error
+- **Error Message**: Confusing "file 'apply' does not exist" made debugging difficult
+- **CI/CD**: Tests couldn't validate advanced search functionality
+- **Development**: Developers couldn't run search feature tests
+
+#### After Fix
+- ✅ Search advanced features test uses correct command syntax
+- ✅ All apply operations use proper `-f` flag syntax
+- ✅ Subcommands (validate, plan, diff) use correct flag patterns
+- ✅ Test can proceed to actual functionality validation
+- ✅ Error messages will now be meaningful for actual issues
+
+### Testing Results
+
+#### Command Verification
+- ✅ `./matlas infra --help` shows correct usage patterns
+- ✅ `./matlas infra validate --help` confirms `-f` flag requirement
+- ✅ No `apply` subcommand exists in help output
+- ✅ Test script syntax now matches documented command structure
+
+#### Error Prevention
+- All command calls now follow established patterns
+- Consistent `-f` flag usage across all file operations
+- Proper distinction between main command and subcommands
+- Clear alignment with CLI help documentation
+
+### CLI Design Patterns
+
+#### File Specification Standard
+- **All Operations**: Use `-f` flag to specify configuration files
+- **Consistency**: Same pattern across `apply`, `validate`, `plan`, `diff`, `destroy`
+- **Flexibility**: Supports glob patterns, stdin (`-`), and multiple files
+
+#### Command Hierarchy
+```
+matlas infra [flags]              # Default apply action
+matlas infra validate [flags]     # Validation subcommand
+matlas infra plan [flags]         # Planning subcommand
+matlas infra diff [flags]         # Diff subcommand
+matlas infra show [flags]         # Show subcommand
+matlas infra destroy [flags]      # Destroy subcommand
+```
+
+### Code Quality Impact
+
+1. **Accuracy**: Test commands now match actual CLI interface
+2. **Maintainability**: Consistent command patterns throughout test
+3. **Debugging**: Future errors will be meaningful rather than syntax-related
+4. **Documentation**: Test serves as accurate usage example
+
+---
+
 ## [2025-01-27] Semantic Release Workflow Fix
 
 **Status**: Completed  
