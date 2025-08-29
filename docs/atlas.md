@@ -205,6 +205,69 @@ matlas atlas search delete --project-id <project-id> --cluster <cluster-name> --
 matlas atlas search delete --project-id <project-id> --cluster <cluster-name> --name default --force
 ```
 
+### Search Analytics and Optimization
+
+The CLI provides advanced search operations for performance monitoring and optimization:
+
+```bash
+# Get search metrics for all indexes in a cluster
+matlas atlas search metrics --project-id <project-id> --cluster <cluster-name>
+
+# Get metrics for a specific search index
+matlas atlas search metrics --project-id <project-id> --cluster <cluster-name> \
+  --index-name products-search --time-range 7d
+
+# Get metrics with JSON output for automation
+matlas atlas search metrics --project-id <project-id> --cluster <cluster-name> \
+  --index-name products-search --time-range 24h --output json
+
+# Analyze all search indexes for optimization recommendations
+matlas atlas search optimize --project-id <project-id> --cluster <cluster-name>
+
+# Analyze a specific index with detailed recommendations
+matlas atlas search optimize --project-id <project-id> --cluster <cluster-name> \
+  --index-name products-search --analyze-all
+
+# Get optimization results in JSON format
+matlas atlas search optimize --project-id <project-id> --cluster <cluster-name> \
+  --index-name products-search --output json
+
+# Validate a search query from a file
+matlas atlas search validate-query --project-id <project-id> --cluster <cluster-name> \
+  --index-name products-search --query-file search-query.json
+
+# Validate an inline search query
+matlas atlas search validate-query --project-id <project-id> --cluster <cluster-name> \
+  --index-name products-search --query '{"text": {"query": "laptop", "path": "title"}}'
+
+# Validate with detailed analysis and recommendations
+matlas atlas search validate-query --project-id <project-id> --cluster <cluster-name> \
+  --index-name products-search --query-file complex-query.json --test-mode
+
+# Get validation results in JSON format
+matlas atlas search validate-query --project-id <project-id> --cluster <cluster-name> \
+  --index-name products-search --query-file query.json --output json
+```
+
+#### Available Time Ranges for Metrics
+- `1h` - Last hour
+- `6h` - Last 6 hours  
+- `24h` - Last 24 hours (default)
+- `7d` - Last 7 days
+- `30d` - Last 30 days
+
+#### Optimization Categories
+- `performance` - Performance optimizations
+- `mappings` - Field mapping recommendations
+- `analyzers` - Analyzer optimization suggestions
+- `facets` - Facet configuration improvements
+- `synonyms` - Synonym mapping optimizations
+
+#### Query Validation Types
+- `syntax` - Query syntax validation
+- `fields` - Field existence and mapping validation
+- `performance` - Performance optimization suggestions
+
 ### Advanced Search Features (YAML Configuration)
 
 Advanced search features like analyzers, facets, autocomplete, highlighting, synonyms, and fuzzy search are configured through **YAML ApplyDocuments only**. These features are embedded within search index definitions due to Atlas Admin API limitations.

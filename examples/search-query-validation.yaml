@@ -1,0 +1,128 @@
+# Search Query Validation Example
+# Validates Atlas Search queries and provides optimization suggestions
+
+apiVersion: matlas.mongodb.com/v1alpha1
+kind: SearchQueryValidation
+metadata:
+  name: product-search-validation
+  labels:
+    environment: development
+    query-type: text-search
+spec:
+  projectName: your-project-id
+  clusterName: your-cluster-name
+  indexName: products-search-index
+  
+  # Enable test mode for detailed analysis and recommendations
+  testMode: true
+  
+  # Search query to validate
+  query:
+    text:
+      query: "wireless headphones"
+      path: "title"
+  
+  # Validation types to perform
+  validate:
+    - syntax      # Query syntax validation
+    - fields      # Field existence and mapping validation
+    - performance # Performance optimization suggestions
+
+---
+# Complex compound query validation
+apiVersion: matlas.mongodb.com/v1alpha1
+kind: SearchQueryValidation
+metadata:
+  name: complex-search-validation
+  labels:
+    query-type: compound
+    complexity: high
+spec:
+  projectName: your-project-id
+  clusterName: your-cluster-name
+  indexName: products-advanced-index
+  testMode: true
+  query:
+    compound:
+      must:
+        - text:
+            query: "laptop"
+            path: "title"
+        - range:
+            path: "price"
+            gte: 500
+            lte: 2000
+      should:
+        - text:
+            query: "gaming"
+            path: "description"
+        - text:
+            query: "professional"
+            path: "category"
+      filter:
+        - text:
+            query: "electronics"
+            path: "department"
+      minimumShouldMatch: 1
+  validate:
+    - syntax
+    - fields
+    - performance
+
+---
+# Vector search query validation
+apiVersion: matlas.mongodb.com/v1alpha1
+kind: SearchQueryValidation
+metadata:
+  name: vector-search-validation
+  labels:
+    query-type: vector-search
+spec:
+  projectName: your-project-id
+  clusterName: your-cluster-name
+  indexName: image-vector-index
+  testMode: false
+  query:
+    knnBeta:
+      vector: [0.1, 0.2, 0.3, 0.4, 0.5]  # Example vector
+      path: "image_embedding"
+      k: 10
+      filter:
+        text:
+          query: "product"
+          path: "category"
+  validate:
+    - syntax
+    - fields
+
+---
+# Faceted search validation
+apiVersion: matlas.mongodb.com/v1alpha1
+kind: SearchQueryValidation
+metadata:
+  name: faceted-search-validation
+  labels:
+    query-type: faceted
+spec:
+  projectName: your-project-id
+  clusterName: your-cluster-name
+  indexName: products-faceted-index
+  testMode: true
+  query:
+    facet:
+      operator:
+        text:
+          query: "smartphone"
+          path: "title"
+      facets:
+        brandFacet:
+          type: string
+          path: "brand"
+        priceFacet:
+          type: number
+          path: "price"
+          boundaries: [0, 100, 500, 1000, 5000]
+  validate:
+    - syntax
+    - fields
+    - performance

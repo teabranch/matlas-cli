@@ -47,6 +47,7 @@ COMMANDS:
     projects    Run projects lifecycle live tests (creates real project)
     search-cli  Run Atlas Search CLI command tests (creates real search indexes)
     search-advanced Run Atlas Search advanced features tests (YAML-only: analyzers, facets, autocomplete, etc.)
+    search-missing Run missing search operations tests (metrics, optimization, query validation)
     discovery   Run discovery lifecycle tests (comprehensive discovery feature testing)
                 Use --cluster-lifecycle flag to include cluster creation/deletion tests (costs money!)
     lifecycle   Run lifecycle validation tests (SAFE - no Atlas API calls, validates Search/VPC YAML)
@@ -86,6 +87,7 @@ EXAMPLES:
     $0 projects             # Run live projects lifecycle tests
     $0 search-cli           # Run Atlas Search CLI command tests (basic operations only)
     $0 search-advanced      # Run Atlas Search advanced features tests (YAML-only)
+    $0 search-missing       # Run missing search operations tests (metrics, optimization, validation)
     $0 search               # Run Atlas Search lifecycle tests
     $0 search-e2e           # Run Atlas Search E2E tests (creates/deletes indexes)
     $0 vpc                  # Run VPC Endpoints lifecycle tests
@@ -291,6 +293,18 @@ main() {
                 return 1
             fi
             ;;
+        search-missing)
+            print_info "Running missing search operations tests..."
+            print_warning "⚠️  WARNING: Creates real Atlas search indexes for testing new operations!"
+            print_info "ℹ️  Tests the 3 missing search operations: metrics, optimization, query validation"
+            print_info "Tests: CLI commands, YAML support, error handling, output formats"
+            if "$SCRIPT_DIR/test/search-missing-operations.sh" "${args[@]}"; then
+                print_success "Missing search operations tests passed"
+            else
+                print_error "Missing search operations tests failed"
+                return 1
+            fi
+            ;;
         applydoc)
             print_info "Running ApplyDocument format tests..."
             print_info "Testing comprehensive ApplyDocument YAML format coverage"
@@ -378,6 +392,7 @@ main() {
             "$SCRIPT_DIR/test/database-operations.sh" "${args[@]}" || ((failed++))
             "$SCRIPT_DIR/test/search-lifecycle.sh" "${args[@]}" || ((failed++))
             "$SCRIPT_DIR/test/search-e2e.sh" "${args[@]}" || ((failed++))
+            "$SCRIPT_DIR/test/search-missing-operations.sh" "${args[@]}" || ((failed++))
             "$SCRIPT_DIR/test/vpc-endpoints-lifecycle.sh" "${args[@]}" || ((failed++))
             "$SCRIPT_DIR/test/cluster-lifecycle.sh" "${args[@]}" || ((failed++))
             

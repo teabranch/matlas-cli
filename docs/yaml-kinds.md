@@ -767,6 +767,160 @@ See the [Examples]({{ '/examples/' | relative_url }}) for:
 
 ---
 
+## SearchMetrics
+
+**Purpose**: Search index performance metrics and analytics  
+**Use case**: Monitor search index performance, query patterns, and usage  
+**Usage**: Read-only operation for retrieving metrics data
+
+### Basic Structure
+
+```yaml
+apiVersion: matlas.mongodb.com/v1alpha1
+kind: SearchMetrics
+metadata:
+  name: product-search-metrics
+spec:
+  projectName: "My Project"
+  clusterName: "my-cluster"
+  indexName: "products-search"
+  timeRange: "24h"
+  metrics:
+    - query
+    - performance
+    - usage
+```
+
+### Required Fields
+
+- `spec.projectName`: Atlas project name or ID
+- `spec.clusterName`: Atlas cluster name
+
+### Optional Fields
+
+- `spec.indexName`: Specific search index name (omit for all indexes)
+- `spec.timeRange`: Time range for metrics (`1h`, `6h`, `24h`, `7d`, `30d`)
+- `spec.metrics`: Types of metrics to retrieve (`query`, `performance`, `usage`)
+
+---
+
+## SearchOptimization
+
+**Purpose**: Search index optimization analysis and recommendations  
+**Use case**: Analyze search indexes for performance improvements  
+**Usage**: Analysis operation providing optimization recommendations
+
+### Basic Structure
+
+```yaml
+apiVersion: matlas.mongodb.com/v1alpha1
+kind: SearchOptimization
+metadata:
+  name: index-optimization-analysis
+spec:
+  projectName: "My Project"
+  clusterName: "my-cluster"
+  indexName: "products-search"
+  analyzeAll: true
+  categories:
+    - performance
+    - mappings
+    - analyzers
+```
+
+### Required Fields
+
+- `spec.projectName`: Atlas project name or ID
+- `spec.clusterName`: Atlas cluster name
+
+### Optional Fields
+
+- `spec.indexName`: Specific search index name (omit for all indexes)
+- `spec.analyzeAll`: Enable detailed analysis (default: false)
+- `spec.categories`: Analysis categories (`performance`, `mappings`, `analyzers`, `facets`, `synonyms`)
+
+---
+
+## SearchQueryValidation
+
+**Purpose**: Search query syntax validation and optimization  
+**Use case**: Validate search queries before execution  
+**Usage**: Validation operation for query syntax and performance analysis
+
+### Basic Structure
+
+```yaml
+apiVersion: matlas.mongodb.com/v1alpha1
+kind: SearchQueryValidation
+metadata:
+  name: query-validation-test
+spec:
+  projectName: "My Project"
+  clusterName: "my-cluster"
+  indexName: "products-search"
+  testMode: true
+  query:
+    text:
+      query: "wireless headphones"
+      path: "title"
+  validate:
+    - syntax
+    - fields
+    - performance
+```
+
+### Required Fields
+
+- `spec.projectName`: Atlas project name or ID
+- `spec.clusterName`: Atlas cluster name
+- `spec.indexName`: Search index name
+- `spec.query`: Search query object to validate
+
+### Optional Fields
+
+- `spec.testMode`: Enable detailed analysis and recommendations (default: false)
+- `spec.validate`: Validation types (`syntax`, `fields`, `performance`)
+
+### Query Examples
+
+#### Text Search Query
+```yaml
+query:
+  text:
+    query: "search term"
+    path: "fieldName"
+```
+
+#### Compound Query
+```yaml
+query:
+  compound:
+    must:
+      - text:
+          query: "required term"
+          path: "title"
+    should:
+      - text:
+          query: "optional term"
+          path: "description"
+    filter:
+      - range:
+          path: "price"
+          gte: 10
+          lte: 100
+```
+
+#### Vector Search Query
+```yaml
+query:
+  knnBeta:
+    vector: [0.1, 0.2, 0.3, 0.4, 0.5]
+    path: "embedding"
+    k: 10
+```
+
+---
+
 ## VPCEndpoint
 
 **Purpose**: VPC endpoint service configuration  

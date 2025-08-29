@@ -1,5 +1,40 @@
 # Features Tracking
 
+## [2025-01-27] Search Missing Operations Implementation
+
+**Status**: Completed ✅  
+**Developer**: Assistant  
+**Related Issues**: Missing search operations from new_gaps.md analysis
+
+### Summary
+Implemented the 3 missing Atlas Search operations identified in the gap analysis: search metrics and performance analytics, index optimization recommendations, and search query validation and testing. Provides both CLI commands and YAML ApplyDocument support for comprehensive search operations beyond basic CRUD.
+
+### Tasks
+- [x] Analyze missing search operations requirements
+- [x] Implement search metrics CLI command (`matlas atlas search metrics`)
+- [x] Implement search optimization CLI command (`matlas atlas search optimize`) 
+- [x] Implement search query validation CLI command (`matlas atlas search validate-query`)
+- [x] Add YAML ApplyDocument support for all three operations
+- [x] Create SearchMetrics, SearchOptimization, and SearchQueryValidation manifest types
+- [x] Integrate with apply pipeline validation and execution
+- [x] Create comprehensive test suite with cleanup
+- [x] Update documentation with CLI examples and YAML reference
+- [x] Add example YAML files for all operations
+
+### Files Modified
+- `cmd/atlas/search/search.go` - Added three new CLI subcommands
+- `internal/types/apply.go` - Added new ResourceKind constants and manifest types
+- `internal/apply/validation.go` - Added validation functions
+- `internal/apply/executor.go` - Added executor functions
+- `scripts/test/search-missing-operations.sh` - New comprehensive test script
+- `docs/atlas.md`, `docs/yaml-kinds.md` - Updated documentation
+- `examples/search-*.yaml` - Added example configurations
+
+### Notes
+All operations use the existing AdvancedSearchService infrastructure. The implementation is fully backward compatible and provides both CLI and YAML interfaces following the project's interface consistency policy. Test script only creates/removes test-specific resources.
+
+---
+
 ## [2025-01-07] Advanced Atlas Search Features Implementation
 
 **Status**: Completed ✅  

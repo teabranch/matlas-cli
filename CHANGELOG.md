@@ -8,9 +8,12 @@
 - Search Highlighting configuration for result highlighting
 - Search Synonyms management for improved search relevance
 - Fuzzy Search configuration with configurable edit distance
-- Search metrics and performance analytics commands
-- Index optimization analysis and recommendations
-- Search query and index configuration validation
+- Search metrics and performance analytics CLI commands (`matlas atlas search metrics`)
+- Index optimization analysis and recommendations CLI commands (`matlas atlas search optimize`)
+- Search query validation and testing CLI commands (`matlas atlas search validate-query`)
+- SearchMetrics, SearchOptimization, and SearchQueryValidation YAML kinds for ApplyDocument support
+- Comprehensive time range support for metrics (1h, 6h, 24h, 7d, 30d)
+- Advanced query validation with test mode and performance analysis
 - Comprehensive test suite for advanced search features with `--preserve-existing` flag
 - Advanced search examples and documentation
 

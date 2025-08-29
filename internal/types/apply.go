@@ -18,14 +18,17 @@ const (
 type ResourceKind string
 
 const (
-	KindProject       ResourceKind = "Project"
-	KindCluster       ResourceKind = "Cluster"
-	KindDatabaseUser  ResourceKind = "DatabaseUser"
-	KindDatabaseRole  ResourceKind = "DatabaseRole"
-	KindNetworkAccess ResourceKind = "NetworkAccess"
-	KindSearchIndex   ResourceKind = "SearchIndex"
-	KindVPCEndpoint   ResourceKind = "VPCEndpoint"
-	KindApplyDocument ResourceKind = "ApplyDocument"
+	KindProject              ResourceKind = "Project"
+	KindCluster              ResourceKind = "Cluster"
+	KindDatabaseUser         ResourceKind = "DatabaseUser"
+	KindDatabaseRole         ResourceKind = "DatabaseRole"
+	KindNetworkAccess        ResourceKind = "NetworkAccess"
+	KindSearchIndex          ResourceKind = "SearchIndex"
+	KindSearchMetrics        ResourceKind = "SearchMetrics"
+	KindSearchOptimization   ResourceKind = "SearchOptimization"
+	KindSearchQueryValidation ResourceKind = "SearchQueryValidation"
+	KindVPCEndpoint          ResourceKind = "VPCEndpoint"
+	KindApplyDocument        ResourceKind = "ApplyDocument"
 )
 
 // ResourceStatus represents the current status of a resource.
@@ -188,6 +191,64 @@ type FuzzyConfig struct {
 	MaxEdits      int    `yaml:"maxEdits,omitempty" json:"maxEdits,omitempty"`
 	PrefixLength  int    `yaml:"prefixLength,omitempty" json:"prefixLength,omitempty"`
 	MaxExpansions int    `yaml:"maxExpansions,omitempty" json:"maxExpansions,omitempty"`
+}
+
+// SearchMetricsManifest represents a search metrics resource manifest
+type SearchMetricsManifest struct {
+	APIVersion APIVersion          `yaml:"apiVersion" json:"apiVersion"`
+	Kind       ResourceKind        `yaml:"kind" json:"kind"`
+	Metadata   ResourceMetadata    `yaml:"metadata" json:"metadata"`
+	Spec       SearchMetricsSpec   `yaml:"spec" json:"spec"`
+	Status     *ResourceStatusInfo `yaml:"status,omitempty" json:"status,omitempty"`
+}
+
+// SearchMetricsSpec represents the specification for search metrics
+type SearchMetricsSpec struct {
+	ProjectName string   `yaml:"projectName" json:"projectName"`
+	ClusterName string   `yaml:"clusterName" json:"clusterName"`
+	IndexName   *string  `yaml:"indexName,omitempty" json:"indexName,omitempty"`
+	TimeRange   string   `yaml:"timeRange,omitempty" json:"timeRange,omitempty"` // 1h, 6h, 24h, 7d, 30d
+	Metrics     []string `yaml:"metrics,omitempty" json:"metrics,omitempty"`     // query, performance, usage
+	DependsOn   []string `yaml:"dependsOn,omitempty" json:"dependsOn,omitempty"`
+}
+
+// SearchOptimizationManifest represents a search optimization resource manifest
+type SearchOptimizationManifest struct {
+	APIVersion APIVersion                `yaml:"apiVersion" json:"apiVersion"`
+	Kind       ResourceKind              `yaml:"kind" json:"kind"`
+	Metadata   ResourceMetadata          `yaml:"metadata" json:"metadata"`
+	Spec       SearchOptimizationSpec    `yaml:"spec" json:"spec"`
+	Status     *ResourceStatusInfo       `yaml:"status,omitempty" json:"status,omitempty"`
+}
+
+// SearchOptimizationSpec represents the specification for search optimization
+type SearchOptimizationSpec struct {
+	ProjectName string   `yaml:"projectName" json:"projectName"`
+	ClusterName string   `yaml:"clusterName" json:"clusterName"`
+	IndexName   *string  `yaml:"indexName,omitempty" json:"indexName,omitempty"`
+	AnalyzeAll  bool     `yaml:"analyzeAll,omitempty" json:"analyzeAll,omitempty"`
+	Categories  []string `yaml:"categories,omitempty" json:"categories,omitempty"` // performance, mappings, analyzers, etc.
+	DependsOn   []string `yaml:"dependsOn,omitempty" json:"dependsOn,omitempty"`
+}
+
+// SearchQueryValidationManifest represents a search query validation resource manifest
+type SearchQueryValidationManifest struct {
+	APIVersion APIVersion                   `yaml:"apiVersion" json:"apiVersion"`
+	Kind       ResourceKind                 `yaml:"kind" json:"kind"`
+	Metadata   ResourceMetadata             `yaml:"metadata" json:"metadata"`
+	Spec       SearchQueryValidationSpec    `yaml:"spec" json:"spec"`
+	Status     *ResourceStatusInfo          `yaml:"status,omitempty" json:"status,omitempty"`
+}
+
+// SearchQueryValidationSpec represents the specification for search query validation
+type SearchQueryValidationSpec struct {
+	ProjectName string                 `yaml:"projectName" json:"projectName"`
+	ClusterName string                 `yaml:"clusterName" json:"clusterName"`
+	IndexName   string                 `yaml:"indexName" json:"indexName"`
+	Query       map[string]interface{} `yaml:"query" json:"query"`
+	TestMode    bool                   `yaml:"testMode,omitempty" json:"testMode,omitempty"`
+	Validate    []string               `yaml:"validate,omitempty" json:"validate,omitempty"` // syntax, fields, performance
+	DependsOn   []string               `yaml:"dependsOn,omitempty" json:"dependsOn,omitempty"`
 }
 
 // VPCEndpointManifest represents a VPC endpoint resource manifest
@@ -379,7 +440,7 @@ func ValidateAPIVersion(version APIVersion) error {
 // ValidateResourceKind validates the resource kind
 func ValidateResourceKind(kind ResourceKind) error {
 	switch kind {
-	case KindProject, KindCluster, KindDatabaseUser, KindDatabaseRole, KindNetworkAccess, KindApplyDocument, KindSearchIndex, KindVPCEndpoint:
+	case KindProject, KindCluster, KindDatabaseUser, KindDatabaseRole, KindNetworkAccess, KindApplyDocument, KindSearchIndex, KindSearchMetrics, KindSearchOptimization, KindSearchQueryValidation, KindVPCEndpoint:
 		return nil
 	default:
 		return fmt.Errorf("unsupported resource kind: %s", kind)

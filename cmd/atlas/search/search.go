@@ -37,6 +37,7 @@ func NewSearchCmd() *cobra.Command {
 	
 	// Advanced search features are supported via YAML configuration only
 	// CLI commands removed as they returned placeholder data due to Atlas API limitations
+	// For search metrics, optimization, and query validation, use YAML ApplyDocument support
 
 	return cmd
 }
@@ -678,6 +679,3 @@ func convertToSearchIndexDefinition(rawDefinition map[string]interface{}) (*admi
 
 	return definition, nil
 }
-
-// Advanced search command functions removed - these features are now YAML-only
-// Use YAML configuration through the apply pipeline for advanced search features

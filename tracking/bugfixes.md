@@ -1129,6 +1129,119 @@ VPCEndpoint    Create     test-vpc-endpoint-123  low   30s
 
 ---
 
+## [2025-08-29] Search Missing Operations Unit Tests and YAML Support Fix
+
+**Status**: Completed  
+**Developer**: Assistant  
+**Related Issues**: Unit test failures and search-missing operations script YAML validation errors
+
+### Summary
+Fixed unit test failures and YAML validation issues for the search missing operations feature. The unit tests were expecting CLI commands that had been intentionally removed due to Atlas API limitations, and the YAML validation was failing because the new search resource kinds weren't registered as supported.
+
+### Tasks
+- [x] Fix search_test.go expectations to match YAML-only approach with removed CLI commands
+- [x] Add new search resource kinds (SearchMetrics, SearchOptimization, SearchQueryValidation) to ValidateResourceKind function
+- [x] Verify unit tests pass after fixes
+- [x] Verify search-missing operations script works correctly with YAML validation
+
+### Files Modified
+- `cmd/atlas/search/search_test.go` - Updated test expectations to match the 5 basic CRUD commands only, added comments explaining removal of advanced operations
+- `internal/types/apply.go` - Added KindSearchMetrics, KindSearchOptimization, and KindSearchQueryValidation to ValidateResourceKind switch statement
+
+### Root Cause Analysis
+
+#### Unit Test Issue
+- **Problem**: TestNewSearchCmd_VisibleAndSubcommands expected 8 subcommands including `metrics`, `optimize`, and `validate-query`
+- **Reality**: Only 5 basic CRUD commands (list, get, create, update, delete) exist due to intentional removal of CLI commands
+- **Cause**: Test was outdated and expected CLI commands that were removed due to Atlas API limitations
+- **Feature Context**: Advanced operations are now YAML-only support as documented in 2025-08-29-search-missing-operations.md
+
+#### YAML Validation Issue  
+- **Problem**: Search-missing operations test failed with "unsupported resource kind: SearchMetrics" (and similar for other kinds)
+- **Cause**: ValidateResourceKind function in internal/types/apply.go didn't include the new search resource kinds
+- **Impact**: YAML documents couldn't be validated even though the types and validation logic were properly implemented
+
+### Technical Implementation
+
+#### 1. Test Expectations Update
+```go
+// Before: Expected 8 commands including removed ones
+expectedCommands := []string{"list", "get", "create", "update", "delete", "metrics", "optimize", "validate-query"}
+
+// After: Only expect 5 basic CRUD commands
+expectedCommands := []string{"list", "get", "create", "update", "delete"}
+// Note: advanced operations (metrics, optimize, validate-query) removed due to Atlas API limitations
+// These operations are now supported via YAML ApplyDocument only
+```
+
+#### 2. Resource Kind Validation Fix
+```go
+// Before: Missing new search kinds
+case KindProject, KindCluster, KindDatabaseUser, KindDatabaseRole, KindNetworkAccess, KindApplyDocument, KindSearchIndex, KindVPCEndpoint:
+
+// After: Added all search kinds
+case KindProject, KindCluster, KindDatabaseUser, KindDatabaseRole, KindNetworkAccess, KindApplyDocument, KindSearchIndex, KindSearchMetrics, KindSearchOptimization, KindSearchQueryValidation, KindVPCEndpoint:
+```
+
+### Impact Assessment
+
+#### Before Fix
+- **Unit Tests**: Failed with search command expectation mismatches
+- **YAML Validation**: All search operations YAML failed with "unsupported resource kind" errors
+- **CI/CD**: Tests couldn't pass preventing development progress
+- **Feature Usage**: Users couldn't use YAML configurations for search operations despite complete implementation
+
+#### After Fix
+- ✅ All unit tests pass (39 packages tested successfully)
+- ✅ Search-missing operations script passes completely
+- ✅ YAML validation works for SearchMetrics, SearchOptimization, and SearchQueryValidation
+- ✅ Full search operations functionality available via YAML as designed
+
+### Verification Results
+
+#### Unit Tests
+```
+✓ Unit tests passed
+✓ unit tests passed
+Packages tested: 39
+All search command tests now pass
+```
+
+#### Search Missing Operations Test
+```
+=== Testing YAML ApplyDocument Support ===
+✓ SearchMetrics YAML validation passed
+✓ SearchOptimization YAML validation passed  
+✓ SearchQueryValidation YAML validation passed
+✓ Search operations are properly configured for YAML-only support
+✓ ✓ Misleading CLI commands removed due to Atlas API limitations
+✓ ✓ YAML support available for search metrics, optimization, and query validation
+```
+
+### Feature Alignment
+
+This fix ensures proper alignment with the search missing operations feature design:
+
+#### Design Intent (per 2025-08-29-search-missing-operations.md)
+- **CLI Commands Removed**: Due to Atlas API limitations that caused placeholder data instead of real metrics
+- **YAML Support**: Full implementation via ApplyDocument with proper validation and execution
+- **API Limitations**: Atlas Admin API embeds advanced features within search index definitions rather than exposing as separate manageable resources
+
+#### Implementation Reality After Fix
+- ✅ CLI commands properly removed (test now expects 5 commands, not 8)  
+- ✅ YAML validation works for all 3 new resource kinds
+- ✅ Feature behaves exactly as documented and intended
+- ✅ Tests validate the actual implementation rather than obsolete expectations
+
+### Code Quality Impact
+
+1. **Test Accuracy**: Tests now validate actual functionality rather than non-existent features
+2. **Feature Completeness**: YAML support fully functional as the primary interface for advanced search operations
+3. **Documentation Alignment**: Test expectations match documented behavior and design decisions
+4. **Developer Experience**: Clear error messages and working functionality for the intended YAML-based approach
+
+---
+
 ## [2025-08-19] Search Index Discovery & Apply Pipeline Fixes
 **Status**: Completed  
 **Developer**: Assistant  

@@ -486,6 +486,12 @@ func validateResourceContent(manifest *types.ResourceManifest, basePath string, 
 		validateProjectManifest(manifest, basePath, result, opts)
 	case types.KindSearchIndex:
 		validateSearchIndexManifest(manifest, basePath, result, opts)
+	case types.KindSearchMetrics:
+		validateSearchMetricsManifest(manifest, basePath, result, opts)
+	case types.KindSearchOptimization:
+		validateSearchOptimizationManifest(manifest, basePath, result, opts)
+	case types.KindSearchQueryValidation:
+		validateSearchQueryValidationManifest(manifest, basePath, result, opts)
 	case types.KindVPCEndpoint:
 		validateVPCEndpointManifest(manifest, basePath, result, opts)
 	default:
@@ -1613,6 +1619,145 @@ func validateSearchIndexManifest(manifest *types.ResourceManifest, basePath stri
 	if spec.Definition == nil {
 		addError(result, basePath+".spec.definition", "definition", "",
 			"index definition is required", "REQUIRED_FIELD_MISSING")
+	}
+}
+
+// validateSearchMetricsManifest validates a SearchMetrics resource manifest
+func validateSearchMetricsManifest(manifest *types.ResourceManifest, basePath string, result *ValidationResult, opts *ValidatorOptions) {
+	spec, ok := manifest.Spec.(types.SearchMetricsSpec)
+	if !ok {
+		// Try to convert from map[string]interface{}
+		if specMap, ok := manifest.Spec.(map[string]interface{}); ok {
+			spec = convertToSearchMetricsSpec(specMap)
+		} else {
+			addError(result, basePath+".spec", "spec", "",
+				"search metrics spec must be an object", "INVALID_SPEC_TYPE")
+			return
+		}
+	}
+
+	// Validate required fields
+	if spec.ProjectName == "" {
+		addError(result, basePath+".spec.projectName", "projectName", "",
+			"project name is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	if spec.ClusterName == "" {
+		addError(result, basePath+".spec.clusterName", "clusterName", "",
+			"cluster name is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	// Validate time range if provided
+	if spec.TimeRange != "" {
+		validRanges := map[string]bool{
+			"1h": true, "6h": true, "24h": true, "7d": true, "30d": true,
+		}
+		if !validRanges[spec.TimeRange] {
+			addError(result, basePath+".spec.timeRange", "timeRange", spec.TimeRange,
+				"time range must be one of: 1h, 6h, 24h, 7d, 30d", "INVALID_TIME_RANGE")
+		}
+	}
+
+	// Validate metrics if provided
+	if len(spec.Metrics) > 0 {
+		validMetrics := map[string]bool{
+			"query": true, "performance": true, "usage": true,
+		}
+		for i, metric := range spec.Metrics {
+			if !validMetrics[metric] {
+				addError(result, fmt.Sprintf("%s.spec.metrics[%d]", basePath, i), "metric", metric,
+					"metric must be one of: query, performance, usage", "INVALID_METRIC")
+			}
+		}
+	}
+}
+
+// validateSearchOptimizationManifest validates a SearchOptimization resource manifest
+func validateSearchOptimizationManifest(manifest *types.ResourceManifest, basePath string, result *ValidationResult, opts *ValidatorOptions) {
+	spec, ok := manifest.Spec.(types.SearchOptimizationSpec)
+	if !ok {
+		// Try to convert from map[string]interface{}
+		if specMap, ok := manifest.Spec.(map[string]interface{}); ok {
+			spec = convertToSearchOptimizationSpec(specMap)
+		} else {
+			addError(result, basePath+".spec", "spec", "",
+				"search optimization spec must be an object", "INVALID_SPEC_TYPE")
+			return
+		}
+	}
+
+	// Validate required fields
+	if spec.ProjectName == "" {
+		addError(result, basePath+".spec.projectName", "projectName", "",
+			"project name is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	if spec.ClusterName == "" {
+		addError(result, basePath+".spec.clusterName", "clusterName", "",
+			"cluster name is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	// Validate categories if provided
+	if len(spec.Categories) > 0 {
+		validCategories := map[string]bool{
+			"performance": true, "mappings": true, "analyzers": true, "facets": true, "synonyms": true,
+		}
+		for i, category := range spec.Categories {
+			if !validCategories[category] {
+				addError(result, fmt.Sprintf("%s.spec.categories[%d]", basePath, i), "category", category,
+					"category must be one of: performance, mappings, analyzers, facets, synonyms", "INVALID_CATEGORY")
+			}
+		}
+	}
+}
+
+// validateSearchQueryValidationManifest validates a SearchQueryValidation resource manifest
+func validateSearchQueryValidationManifest(manifest *types.ResourceManifest, basePath string, result *ValidationResult, opts *ValidatorOptions) {
+	spec, ok := manifest.Spec.(types.SearchQueryValidationSpec)
+	if !ok {
+		// Try to convert from map[string]interface{}
+		if specMap, ok := manifest.Spec.(map[string]interface{}); ok {
+			spec = convertToSearchQueryValidationSpec(specMap)
+		} else {
+			addError(result, basePath+".spec", "spec", "",
+				"search query validation spec must be an object", "INVALID_SPEC_TYPE")
+			return
+		}
+	}
+
+	// Validate required fields
+	if spec.ProjectName == "" {
+		addError(result, basePath+".spec.projectName", "projectName", "",
+			"project name is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	if spec.ClusterName == "" {
+		addError(result, basePath+".spec.clusterName", "clusterName", "",
+			"cluster name is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	if spec.IndexName == "" {
+		addError(result, basePath+".spec.indexName", "indexName", "",
+			"index name is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	// Validate query is provided
+	if spec.Query == nil {
+		addError(result, basePath+".spec.query", "query", "",
+			"query is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	// Validate validation types if provided
+	if len(spec.Validate) > 0 {
+		validTypes := map[string]bool{
+			"syntax": true, "fields": true, "performance": true,
+		}
+		for i, validationType := range spec.Validate {
+			if !validTypes[validationType] {
+				addError(result, fmt.Sprintf("%s.spec.validate[%d]", basePath, i), "validate", validationType,
+					"validation type must be one of: syntax, fields, performance", "INVALID_VALIDATION_TYPE")
+			}
+		}
 	}
 }
 
