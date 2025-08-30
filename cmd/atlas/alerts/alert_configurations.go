@@ -218,7 +218,7 @@ func runListAlertConfigurations(cmd *cobra.Command, projectID string, pagination
 			if config.Enabled != nil && *config.Enabled {
 				enabled = "true"
 			}
-			
+
 			// We need to get the ID from somewhere - let's check if it's in metadata
 			configID := config.Metadata.Name // fallback to name if no ID available
 			if config.Metadata.Labels != nil {
@@ -226,7 +226,7 @@ func runListAlertConfigurations(cmd *cobra.Command, projectID string, pagination
 					configID = id
 				}
 			}
-			
+
 			return []string{
 				configID,
 				config.Metadata.Name,

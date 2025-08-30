@@ -198,15 +198,15 @@ type NetworkAccessConfig struct {
 
 // AlertConfig represents a declarative alert configuration
 type AlertConfig struct {
-	Metadata         ResourceMetadata                 `yaml:"metadata" json:"metadata" validate:"required"`
-	Enabled          *bool                            `yaml:"enabled,omitempty" json:"enabled,omitempty"`
-	EventTypeName    string                           `yaml:"eventTypeName" json:"eventTypeName" validate:"required,min=1,max=100"`
-	Matchers         []AlertMatcher                   `yaml:"matchers,omitempty" json:"matchers,omitempty" validate:"dive"`
-	Notifications    []AlertNotification              `yaml:"notifications" json:"notifications" validate:"required,min=1,dive"`
-	MetricThreshold  *AlertMetricThreshold            `yaml:"metricThreshold,omitempty" json:"metricThreshold,omitempty" validate:"omitempty"`
-	Threshold        *AlertThreshold                  `yaml:"threshold,omitempty" json:"threshold,omitempty" validate:"omitempty"`
-	SeverityOverride string                           `yaml:"severityOverride,omitempty" json:"severityOverride,omitempty" validate:"omitempty,oneof=LOW MEDIUM HIGH CRITICAL"`
-	DependsOn        []string                         `yaml:"dependsOn,omitempty" json:"dependsOn,omitempty" validate:"dive,min=1,max=64"`
+	Metadata         ResourceMetadata      `yaml:"metadata" json:"metadata" validate:"required"`
+	Enabled          *bool                 `yaml:"enabled,omitempty" json:"enabled,omitempty"`
+	EventTypeName    string                `yaml:"eventTypeName" json:"eventTypeName" validate:"required,min=1,max=100"`
+	Matchers         []AlertMatcher        `yaml:"matchers,omitempty" json:"matchers,omitempty" validate:"dive"`
+	Notifications    []AlertNotification   `yaml:"notifications" json:"notifications" validate:"required,min=1,dive"`
+	MetricThreshold  *AlertMetricThreshold `yaml:"metricThreshold,omitempty" json:"metricThreshold,omitempty" validate:"omitempty"`
+	Threshold        *AlertThreshold       `yaml:"threshold,omitempty" json:"threshold,omitempty" validate:"omitempty"`
+	SeverityOverride string                `yaml:"severityOverride,omitempty" json:"severityOverride,omitempty" validate:"omitempty,oneof=LOW MEDIUM HIGH CRITICAL"`
+	DependsOn        []string              `yaml:"dependsOn,omitempty" json:"dependsOn,omitempty" validate:"dive,min=1,max=64"`
 }
 
 // AlertMatcher represents rules that determine whether MongoDB Cloud checks an object for the alert configuration
@@ -263,20 +263,20 @@ type AlertThreshold struct {
 
 // AlertStatus represents the status of an alert (read-only)
 type AlertStatus struct {
-	ID                string                 `yaml:"id" json:"id"`
-	AlertConfigID     string                 `yaml:"alertConfigId" json:"alertConfigId"`
-	EventTypeName     string                 `yaml:"eventTypeName" json:"eventTypeName"`
-	Status            string                 `yaml:"status" json:"status"`
-	AcknowledgedUntil *time.Time             `yaml:"acknowledgedUntil,omitempty" json:"acknowledgedUntil,omitempty"`
-	AcknowledgingUser string                 `yaml:"acknowledgingUser,omitempty" json:"acknowledgingUser,omitempty"`
-	Created           *time.Time             `yaml:"created,omitempty" json:"created,omitempty"`
-	Updated           *time.Time             `yaml:"updated,omitempty" json:"updated,omitempty"`
-	LastNotified      *time.Time             `yaml:"lastNotified,omitempty" json:"lastNotified,omitempty"`
-	MetricName        string                 `yaml:"metricName,omitempty" json:"metricName,omitempty"`
-	CurrentValue      *AlertCurrentValue     `yaml:"currentValue,omitempty" json:"currentValue,omitempty"`
-	HostnameAndPort   string                 `yaml:"hostnameAndPort,omitempty" json:"hostnameAndPort,omitempty"`
-	ReplicaSetName    string                 `yaml:"replicaSetName,omitempty" json:"replicaSetName,omitempty"`
-	ClusterName       string                 `yaml:"clusterName,omitempty" json:"clusterName,omitempty"`
+	ID                string             `yaml:"id" json:"id"`
+	AlertConfigID     string             `yaml:"alertConfigId" json:"alertConfigId"`
+	EventTypeName     string             `yaml:"eventTypeName" json:"eventTypeName"`
+	Status            string             `yaml:"status" json:"status"`
+	AcknowledgedUntil *time.Time         `yaml:"acknowledgedUntil,omitempty" json:"acknowledgedUntil,omitempty"`
+	AcknowledgingUser string             `yaml:"acknowledgingUser,omitempty" json:"acknowledgingUser,omitempty"`
+	Created           *time.Time         `yaml:"created,omitempty" json:"created,omitempty"`
+	Updated           *time.Time         `yaml:"updated,omitempty" json:"updated,omitempty"`
+	LastNotified      *time.Time         `yaml:"lastNotified,omitempty" json:"lastNotified,omitempty"`
+	MetricName        string             `yaml:"metricName,omitempty" json:"metricName,omitempty"`
+	CurrentValue      *AlertCurrentValue `yaml:"currentValue,omitempty" json:"currentValue,omitempty"`
+	HostnameAndPort   string             `yaml:"hostnameAndPort,omitempty" json:"hostnameAndPort,omitempty"`
+	ReplicaSetName    string             `yaml:"replicaSetName,omitempty" json:"replicaSetName,omitempty"`
+	ClusterName       string             `yaml:"clusterName,omitempty" json:"clusterName,omitempty"`
 }
 
 // AlertCurrentValue represents the current value that triggered the alert
