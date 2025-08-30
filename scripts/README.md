@@ -24,7 +24,13 @@ scripts/
 │   ├── unit.sh          # Unit tests (fast, no dependencies)
 │   ├── integration.sh   # Integration tests (live Atlas API)
 │   ├── e2e.sh           # End-to-end tests (complete workflows)
-│   └── cluster-lifecycle.sh  # Real cluster lifecycle tests (creates clusters!)
+│   ├── cluster-lifecycle.sh  # Real cluster lifecycle tests (creates clusters!)
+│   ├── alerts-lifecycle.sh   # Alert configuration lifecycle tests
+│   ├── users-lifecycle.sh    # User management lifecycle tests
+│   ├── network-lifecycle.sh  # Network access lifecycle tests
+│   ├── database-operations.sh # Database operations tests
+│   ├── search-lifecycle.sh   # Atlas Search lifecycle tests
+│   └── vpc-endpoints-lifecycle.sh # VPC endpoints lifecycle tests
 ├── build/               # Build scripts
 │   └── build.sh         # Build binary with versioning
 ├── utils/               # Utility scripts
@@ -45,6 +51,9 @@ scripts/
 ./scripts/test.sh e2e                  # E2E tests only
 ./scripts/test.sh cluster              # Cluster lifecycle tests (creates real clusters!)
 ./scripts/test.sh database             # Database operations tests (creates test cluster!)
+./scripts/test.sh alerts               # Alert configuration lifecycle tests
+./scripts/test.sh users                # User management lifecycle tests
+./scripts/test.sh network              # Network access lifecycle tests
 ./scripts/test.sh all                  # All tests
 ./scripts/test.sh comprehensive        # All tests including cluster and database tests
 ./scripts/test.sh all --coverage       # All tests with coverage

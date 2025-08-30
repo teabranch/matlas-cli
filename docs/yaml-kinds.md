@@ -921,6 +921,170 @@ query:
 
 ---
 
+## AlertConfiguration
+
+**Purpose**: Atlas alert configuration for monitoring  
+**Use case**: Set up monitoring alerts for Atlas resources  
+**Usage**: Recommended within ApplyDocument for comprehensive monitoring setup
+
+### Basic Structure
+
+```yaml
+apiVersion: matlas.mongodb.com/v1
+kind: AlertConfiguration
+metadata:
+  name: high-cpu-alert
+spec:
+  enabled: true
+  eventTypeName: "HOST_CPU_USAGE_PERCENT"
+  severityOverride: "HIGH"
+  matchers:
+    - fieldName: "HOSTNAME_AND_PORT"
+      operator: "CONTAINS"
+      value: "production"
+  notifications:
+    - typeName: "EMAIL"
+      emailAddress: "alerts@company.com"
+      delayMin: 0
+      intervalMin: 15
+  metricThreshold:
+    metricName: "CPU_USAGE_PERCENT"
+    operator: "GREATER_THAN"
+    threshold: 80.0
+    units: "PERCENT"
+    mode: "AVERAGE"
+```
+
+### Required Fields
+
+- `spec.enabled`: Whether the alert is active
+- `spec.eventTypeName`: Type of event to monitor
+- `spec.notifications`: Array of notification channels
+
+### Alert Event Types
+
+Common event types include:
+- `HOST_CPU_USAGE_PERCENT` - CPU usage monitoring
+- `HOST_MEMORY_USAGE_PERCENT` - Memory usage monitoring
+- `HOST_DISK_USAGE_PERCENT` - Disk usage monitoring
+- `CLUSTER_MONGOS_IS_MISSING` - Missing mongos process
+- `CLUSTER_PRIMARY_ELECTED` - Primary election events
+- `DATABASE_CONNECTIONS_PERCENT` - Connection usage monitoring
+
+### Notification Channels
+
+**Email notifications**:
+```yaml
+notifications:
+  - typeName: "EMAIL"
+    emailAddress: "alerts@company.com"
+    delayMin: 0
+    intervalMin: 15
+```
+
+**Slack notifications**:
+```yaml
+notifications:
+  - typeName: "SLACK"
+    apiToken: "${SLACK_TOKEN}"
+    channelName: "#alerts"
+    username: "Atlas Alert"
+```
+
+**PagerDuty notifications**:
+```yaml
+notifications:
+  - typeName: "PAGER_DUTY"
+    serviceKey: "${PAGERDUTY_SERVICE_KEY}"
+```
+
+**Webhook notifications**:
+```yaml
+notifications:
+  - typeName: "WEBHOOK"
+    url: "https://api.company.com/webhooks/atlas"
+    secret: "${WEBHOOK_SECRET}"
+```
+
+### Matchers
+
+Target specific resources with matchers:
+
+```yaml
+matchers:
+  - fieldName: "HOSTNAME_AND_PORT"
+    operator: "CONTAINS"
+    value: "production"
+  - fieldName: "REPLICA_SET_NAME"
+    operator: "EQUALS"
+    value: "atlas-cluster0-shard-0"
+```
+
+**Matcher operators**:
+- `EQUALS` / `NOT_EQUALS` - Exact matching
+- `CONTAINS` / `NOT_CONTAINS` - Substring matching
+- `STARTS_WITH` / `ENDS_WITH` - Prefix/suffix matching
+- `REGEX` / `NOT_REGEX` - Regular expression matching
+
+### Thresholds
+
+**Metric thresholds** (for performance metrics):
+```yaml
+metricThreshold:
+  metricName: "CPU_USAGE_PERCENT"
+  operator: "GREATER_THAN"
+  threshold: 80.0
+  units: "PERCENT"
+  mode: "AVERAGE"
+```
+
+**General thresholds** (for non-metric events):
+```yaml
+threshold:
+  operator: "LESS_THAN"
+  threshold: 5
+  units: "RAW"
+```
+
+### Examples
+
+See the [Alert Examples]({{ '/examples/' | relative_url }}) for:
+- Basic CPU and memory monitoring
+- Multi-channel notification setups
+- Complex matcher configurations
+
+---
+
+## Alert (Read-Only)
+
+**Purpose**: Atlas alert status and details  
+**Use case**: Monitor active alerts and acknowledgment status  
+**Usage**: Read-only resource for alert status information
+
+### Basic Structure
+
+```yaml
+apiVersion: matlas.mongodb.com/v1
+kind: Alert
+metadata:
+  name: alert-status
+spec:
+  projectName: "My Project"
+  alertId: "507f1f77bcf86cd799439011"  # Optional: specific alert ID
+```
+
+### Required Fields
+
+- `spec.projectName`: Atlas project name or ID
+
+### Optional Fields
+
+- `spec.alertId`: Specific alert ID (omit to list all alerts)
+
+**Note**: Alert resources are read-only and used for monitoring alert status. Alert configurations are managed through the `AlertConfiguration` kind.
+
+---
+
 ## VPCEndpoint
 
 **Purpose**: VPC endpoint service configuration  

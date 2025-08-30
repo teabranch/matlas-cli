@@ -56,6 +56,19 @@ func (ve ValidationError) Error() string {
 	return fmt.Sprintf("%s: %s", ve.Path, ve.Message)
 }
 
+// AddError adds an error to the validation result
+func (vr *ValidationResult) AddError(path, field, value, message, code string) {
+	vr.Valid = false
+	vr.Errors = append(vr.Errors, ValidationError{
+		Path:     path,
+		Field:    field,
+		Value:    value,
+		Message:  message,
+		Code:     code,
+		Severity: "error",
+	})
+}
+
 // ValidateApplyConfig validates a complete apply configuration
 func ValidateApplyConfig(config *types.ApplyConfig, opts *ValidatorOptions) *ValidationResult {
 	if opts == nil {
@@ -295,13 +308,13 @@ func validateProjectConfig(project *types.ProjectConfig, result *ValidationResul
 func validateClusterConfig(cluster *types.ClusterConfig, basePath string, result *ValidationResult, opts *ValidatorOptions) {
 	// Validate cluster name
 	if err := validation.ValidateClusterName(cluster.Metadata.Name); err != nil {
-		addError(result, basePath+".metadata.name", "name", cluster.Metadata.Name,
+		result.AddError(basePath+".metadata.name", "name", cluster.Metadata.Name,
 			err.Error(), "INVALID_CLUSTER_NAME")
 	}
 
 	// Validate provider
 	if cluster.Provider == "" {
-		addError(result, basePath+".provider", "provider", "",
+		result.AddError(basePath+".provider", "provider", "",
 			"provider is required", "REQUIRED_FIELD_MISSING")
 	} else {
 		validateProvider(cluster.Provider, basePath+".provider", result)
@@ -309,13 +322,13 @@ func validateClusterConfig(cluster *types.ClusterConfig, basePath string, result
 
 	// Validate region
 	if cluster.Region == "" {
-		addError(result, basePath+".region", "region", "",
+		result.AddError(basePath+".region", "region", "",
 			"region is required", "REQUIRED_FIELD_MISSING")
 	}
 
 	// Validate instance size
 	if cluster.InstanceSize == "" {
-		addError(result, basePath+".instanceSize", "instanceSize", "",
+		result.AddError(basePath+".instanceSize", "instanceSize", "",
 			"instance size is required", "REQUIRED_FIELD_MISSING")
 	} else {
 		validateInstanceSize(cluster.InstanceSize, basePath+".instanceSize", result)
@@ -346,13 +359,13 @@ func validateClusterConfig(cluster *types.ClusterConfig, basePath string, result
 func validateDatabaseUserConfig(user *types.DatabaseUserConfig, basePath string, result *ValidationResult, opts *ValidatorOptions) {
 	// Validate username
 	if err := validation.ValidateUsername(user.Username); err != nil {
-		addError(result, basePath+".username", "username", user.Username,
+		result.AddError(basePath+".username", "username", user.Username,
 			err.Error(), "INVALID_USERNAME")
 	}
 
 	// Validate roles
 	if len(user.Roles) == 0 {
-		addError(result, basePath+".roles", "roles", "",
+		result.AddError(basePath+".roles", "roles", "",
 			"at least one role is required", "REQUIRED_FIELD_MISSING")
 	}
 
@@ -384,7 +397,7 @@ func validateNetworkAccessConfig(netAccess *types.NetworkAccessConfig, basePath 
 	// Validate IP address
 	if netAccess.IPAddress != "" {
 		if ip := net.ParseIP(netAccess.IPAddress); ip == nil {
-			addError(result, basePath+".ipAddress", "ipAddress", netAccess.IPAddress,
+			result.AddError(basePath+".ipAddress", "ipAddress", netAccess.IPAddress,
 				"invalid IP address", "INVALID_IP_ADDRESS")
 		}
 	}
@@ -392,7 +405,7 @@ func validateNetworkAccessConfig(netAccess *types.NetworkAccessConfig, basePath 
 	// Validate CIDR
 	if netAccess.CIDR != "" {
 		if _, _, err := net.ParseCIDR(netAccess.CIDR); err != nil {
-			addError(result, basePath+".cidr", "cidr", netAccess.CIDR,
+			result.AddError(basePath+".cidr", "cidr", netAccess.CIDR,
 				"invalid CIDR notation", "INVALID_CIDR")
 		}
 	}
@@ -400,7 +413,7 @@ func validateNetworkAccessConfig(netAccess *types.NetworkAccessConfig, basePath 
 	// Validate delete after date
 	if netAccess.DeleteAfterDate != "" {
 		if _, err := time.Parse(time.RFC3339, netAccess.DeleteAfterDate); err != nil {
-			addError(result, basePath+".deleteAfterDate", "deleteAfterDate", netAccess.DeleteAfterDate,
+			result.AddError(basePath+".deleteAfterDate", "deleteAfterDate", netAccess.DeleteAfterDate,
 				"invalid date format (use RFC3339)", "INVALID_DATE_FORMAT")
 		}
 	}
@@ -409,7 +422,7 @@ func validateNetworkAccessConfig(netAccess *types.NetworkAccessConfig, basePath 
 func validateMetadata(metadata *types.MetadataConfig, basePath string, result *ValidationResult, opts *ValidatorOptions) {
 	// Validate name
 	if metadata.Name == "" {
-		addError(result, basePath+".name", "name", "",
+		result.AddError(basePath+".name", "name", "",
 			"name is required", "REQUIRED_FIELD_MISSING")
 	} else {
 		validateResourceName(metadata.Name, basePath+".name", result, opts)
@@ -454,13 +467,13 @@ func validateDocumentStructure(doc *types.ApplyDocument, result *ValidationResul
 func validateResourceManifest(manifest *types.ResourceManifest, basePath string, result *ValidationResult, opts *ValidatorOptions) {
 	// Validate API version
 	if err := types.ValidateAPIVersion(manifest.APIVersion); err != nil {
-		addError(result, basePath+".apiVersion", "apiVersion", string(manifest.APIVersion),
+		result.AddError(basePath+".apiVersion", "apiVersion", string(manifest.APIVersion),
 			err.Error(), "INVALID_API_VERSION")
 	}
 
 	// Validate kind
 	if err := types.ValidateResourceKind(manifest.Kind); err != nil {
-		addError(result, basePath+".kind", "kind", string(manifest.Kind),
+		result.AddError(basePath+".kind", "kind", string(manifest.Kind),
 			err.Error(), "INVALID_KIND")
 	}
 
@@ -494,6 +507,10 @@ func validateResourceContent(manifest *types.ResourceManifest, basePath string, 
 		validateSearchQueryValidationManifest(manifest, basePath, result, opts)
 	case types.KindVPCEndpoint:
 		validateVPCEndpointManifest(manifest, basePath, result, opts)
+	case types.KindAlertConfiguration:
+		validateAlertConfigurationManifest(manifest, basePath, result, opts)
+	case types.KindAlert:
+		validateAlertManifest(manifest, basePath, result, opts)
 	default:
 		// For unknown resource types, log a warning but don't fail validation
 		addWarning(result, basePath+".kind", "kind", string(manifest.Kind),
@@ -513,12 +530,12 @@ func validateDatabaseUserManifest(manifest *types.ResourceManifest, basePath str
 	case map[string]interface{}:
 		// Convert from map to struct using JSON marshaling
 		if err := convertMapToStruct(spec, &userSpec); err != nil {
-			addError(result, basePath+".spec", "spec", "",
+			result.AddError(basePath+".spec", "spec", "",
 				fmt.Sprintf("invalid DatabaseUser spec format: %v", err), "INVALID_SPEC_FORMAT")
 			return
 		}
 	default:
-		addError(result, basePath+".spec", "spec", "",
+		result.AddError(basePath+".spec", "spec", "",
 			"DatabaseUser spec must be a valid structure", "INVALID_SPEC_TYPE")
 		return
 	}
@@ -549,12 +566,12 @@ func validateDatabaseRoleManifest(manifest *types.ResourceManifest, basePath str
 	case map[string]interface{}:
 		// Convert from map to struct using JSON marshaling
 		if err := convertMapToStruct(spec, &roleSpec); err != nil {
-			addError(result, basePath+".spec", "spec", "",
+			result.AddError(basePath+".spec", "spec", "",
 				fmt.Sprintf("invalid DatabaseRole spec format: %v", err), "INVALID_SPEC_FORMAT")
 			return
 		}
 	default:
-		addError(result, basePath+".spec", "spec", "",
+		result.AddError(basePath+".spec", "spec", "",
 			"DatabaseRole spec must be a valid structure", "INVALID_SPEC_TYPE")
 		return
 	}
@@ -582,12 +599,12 @@ func validateClusterManifest(manifest *types.ResourceManifest, basePath string, 
 		clusterSpec = spec
 	case map[string]interface{}:
 		if err := convertMapToStruct(spec, &clusterSpec); err != nil {
-			addError(result, basePath+".spec", "spec", "",
+			result.AddError(basePath+".spec", "spec", "",
 				fmt.Sprintf("invalid Cluster spec format: %v", err), "INVALID_SPEC_FORMAT")
 			return
 		}
 	default:
-		addError(result, basePath+".spec", "spec", "",
+		result.AddError(basePath+".spec", "spec", "",
 			"Cluster spec must be a valid structure", "INVALID_SPEC_TYPE")
 		return
 	}
@@ -623,12 +640,12 @@ func validateNetworkAccessManifest(manifest *types.ResourceManifest, basePath st
 		netSpec = spec
 	case map[string]interface{}:
 		if err := convertMapToStruct(spec, &netSpec); err != nil {
-			addError(result, basePath+".spec", "spec", "",
+			result.AddError(basePath+".spec", "spec", "",
 				fmt.Sprintf("invalid NetworkAccess spec format: %v", err), "INVALID_SPEC_FORMAT")
 			return
 		}
 	default:
-		addError(result, basePath+".spec", "spec", "",
+		result.AddError(basePath+".spec", "spec", "",
 			"NetworkAccess spec must be a valid structure", "INVALID_SPEC_TYPE")
 		return
 	}
@@ -797,7 +814,7 @@ func validateAutoScalingConfig(autoScaling *types.AutoScalingConfig, basePath st
 	if autoScaling.DiskGB != nil {
 		if autoScaling.DiskGB.MinimumGB != nil && autoScaling.DiskGB.MaximumGB != nil {
 			if *autoScaling.DiskGB.MinimumGB >= *autoScaling.DiskGB.MaximumGB {
-				addError(result, basePath+".diskGB", "minimumGB/maximumGB",
+				result.AddError(basePath+".diskGB", "minimumGB/maximumGB",
 					fmt.Sprintf("%d/%d", *autoScaling.DiskGB.MinimumGB, *autoScaling.DiskGB.MaximumGB),
 					"minimum disk size must be less than maximum", "INVALID_DISK_RANGE")
 			}
@@ -819,7 +836,7 @@ func validateAutoScalingConfig(autoScaling *types.AutoScalingConfig, basePath st
 func validateReplicationSpec(spec *types.ReplicationSpec, basePath string, result *ValidationResult) {
 	// Validate number of shards
 	if spec.NumShards != nil && *spec.NumShards < 1 {
-		addError(result, basePath+".numShards", "numShards", fmt.Sprintf("%d", *spec.NumShards),
+		result.AddError(basePath+".numShards", "numShards", fmt.Sprintf("%d", *spec.NumShards),
 			"number of shards must be at least 1", "INVALID_SHARD_COUNT")
 	}
 
@@ -833,24 +850,24 @@ func validateReplicationSpec(spec *types.ReplicationSpec, basePath string, resul
 func validateRegionConfig(config *types.RegionConfig, basePath string, result *ValidationResult) {
 	// Validate required fields
 	if config.RegionName == "" {
-		addError(result, basePath+".regionName", "regionName", "",
+		result.AddError(basePath+".regionName", "regionName", "",
 			"region name is required", "REQUIRED_FIELD_MISSING")
 	}
 
 	if config.ProviderName == "" {
-		addError(result, basePath+".providerName", "providerName", "",
+		result.AddError(basePath+".providerName", "providerName", "",
 			"provider name is required", "REQUIRED_FIELD_MISSING")
 	}
 
 	// Validate priority
 	if config.Priority != nil && (*config.Priority < 0 || *config.Priority > 7) {
-		addError(result, basePath+".priority", "priority", fmt.Sprintf("%d", *config.Priority),
+		result.AddError(basePath+".priority", "priority", fmt.Sprintf("%d", *config.Priority),
 			"priority must be between 0 and 7", "INVALID_PRIORITY")
 	}
 
 	// Validate node counts
 	if config.ElectableNodes != nil && *config.ElectableNodes < 0 {
-		addError(result, basePath+".electableNodes", "electableNodes", fmt.Sprintf("%d", *config.ElectableNodes),
+		result.AddError(basePath+".electableNodes", "electableNodes", fmt.Sprintf("%d", *config.ElectableNodes),
 			"electable nodes must be non-negative", "INVALID_NODE_COUNT")
 	}
 }
@@ -858,13 +875,13 @@ func validateRegionConfig(config *types.RegionConfig, basePath string, result *V
 func validateDatabaseRole(role *types.DatabaseRoleConfig, basePath string, result *ValidationResult) {
 	// Validate role name
 	if role.RoleName == "" {
-		addError(result, basePath+".roleName", "roleName", "",
+		result.AddError(basePath+".roleName", "roleName", "",
 			"role name is required", "REQUIRED_FIELD_MISSING")
 	}
 
 	// Validate database name
 	if role.DatabaseName == "" {
-		addError(result, basePath+".databaseName", "databaseName", "",
+		result.AddError(basePath+".databaseName", "databaseName", "",
 			"database name is required", "REQUIRED_FIELD_MISSING")
 	} else {
 		validateDatabaseName(role.DatabaseName, basePath+".databaseName", result)
@@ -879,13 +896,13 @@ func validateDatabaseRole(role *types.DatabaseRoleConfig, basePath string, resul
 func validateCustomDatabaseRoleConfig(role *types.CustomDatabaseRoleConfig, basePath string, result *ValidationResult, opts *ValidatorOptions) {
 	// Validate role name
 	if role.RoleName == "" {
-		addError(result, basePath+".roleName", "roleName", "",
+		result.AddError(basePath+".roleName", "roleName", "",
 			"role name is required", "REQUIRED_FIELD_MISSING")
 	}
 
 	// Validate database name
 	if role.DatabaseName == "" {
-		addError(result, basePath+".databaseName", "databaseName", "",
+		result.AddError(basePath+".databaseName", "databaseName", "",
 			"database name is required", "REQUIRED_FIELD_MISSING")
 	} else {
 		validateDatabaseName(role.DatabaseName, basePath+".databaseName", result)
@@ -913,13 +930,13 @@ func validateCustomDatabaseRoleConfig(role *types.CustomDatabaseRoleConfig, base
 func validateCustomRolePrivilege(privilege *types.CustomRolePrivilegeConfig, basePath string, result *ValidationResult) {
 	// Validate actions
 	if len(privilege.Actions) == 0 {
-		addError(result, basePath+".actions", "actions", "",
+		result.AddError(basePath+".actions", "actions", "",
 			"at least one action is required", "REQUIRED_FIELD_MISSING")
 	}
 
 	for i, action := range privilege.Actions {
 		if action == "" {
-			addError(result, basePath+".actions", "actions", fmt.Sprintf("index %d", i),
+			result.AddError(basePath+".actions", "actions", fmt.Sprintf("index %d", i),
 				"action cannot be empty", "INVALID_ACTION")
 		}
 	}
@@ -931,7 +948,7 @@ func validateCustomRolePrivilege(privilege *types.CustomRolePrivilegeConfig, bas
 func validateCustomRoleResource(resource *types.CustomRoleResourceConfig, basePath string, result *ValidationResult) {
 	// Validate database name
 	if resource.Database == "" {
-		addError(result, basePath+".database", "database", "",
+		result.AddError(basePath+".database", "database", "",
 			"database name is required", "REQUIRED_FIELD_MISSING")
 	} else {
 		validateDatabaseName(resource.Database, basePath+".database", result)
@@ -946,13 +963,13 @@ func validateCustomRoleResource(resource *types.CustomRoleResourceConfig, basePa
 func validateCustomRoleInheritedRole(inheritedRole *types.CustomRoleInheritedRoleConfig, basePath string, result *ValidationResult) {
 	// Validate role name
 	if inheritedRole.RoleName == "" {
-		addError(result, basePath+".roleName", "roleName", "",
+		result.AddError(basePath+".roleName", "roleName", "",
 			"inherited role name is required", "REQUIRED_FIELD_MISSING")
 	}
 
 	// Validate database name
 	if inheritedRole.DatabaseName == "" {
-		addError(result, basePath+".databaseName", "databaseName", "",
+		result.AddError(basePath+".databaseName", "databaseName", "",
 			"inherited role database name is required", "REQUIRED_FIELD_MISSING")
 	} else {
 		validateDatabaseName(inheritedRole.DatabaseName, basePath+".databaseName", result)
@@ -962,7 +979,7 @@ func validateCustomRoleInheritedRole(inheritedRole *types.CustomRoleInheritedRol
 func validateUserScope(scope *types.UserScopeConfig, basePath string, result *ValidationResult) {
 	// Validate scope name
 	if scope.Name == "" {
-		addError(result, basePath+".name", "name", "",
+		result.AddError(basePath+".name", "name", "",
 			"scope name is required", "REQUIRED_FIELD_MISSING")
 	}
 
@@ -976,7 +993,7 @@ func validateUserScope(scope *types.UserScopeConfig, basePath string, result *Va
 		}
 	}
 	if !valid {
-		addError(result, basePath+".type", "type", scope.Type,
+		result.AddError(basePath+".type", "type", scope.Type,
 			fmt.Sprintf("invalid scope type (valid: %v)", validTypes), "INVALID_SCOPE_TYPE")
 	}
 }
@@ -984,7 +1001,7 @@ func validateUserScope(scope *types.UserScopeConfig, basePath string, result *Va
 func validateResourceMetadata(metadata *types.ResourceMetadata, basePath string, result *ValidationResult, opts *ValidatorOptions) {
 	// Validate name (default behavior)
 	if metadata.Name == "" {
-		addError(result, basePath+".name", "name", "",
+		result.AddError(basePath+".name", "name", "",
 			"name is required", "REQUIRED_FIELD_MISSING")
 	} else {
 		validateResourceName(metadata.Name, basePath+".name", result, opts)
@@ -997,7 +1014,7 @@ func validateResourceMetadata(metadata *types.ResourceMetadata, basePath string,
 func validateResourceMetadataWithKind(metadata *types.ResourceMetadata, kind types.ResourceKind, basePath string, result *ValidationResult, opts *ValidatorOptions) {
 	// Validate name with context awareness
 	if metadata.Name == "" {
-		addError(result, basePath+".name", "name", "",
+		result.AddError(basePath+".name", "name", "",
 			"name is required", "REQUIRED_FIELD_MISSING")
 	} else {
 		validateResourceNameWithKind(metadata.Name, kind, basePath+".name", result, opts)
@@ -1024,7 +1041,7 @@ func validateMetadataFields(metadata *types.ResourceMetadata, basePath string, r
 			}
 		}
 		if !valid {
-			addError(result, basePath+".deletionPolicy", "deletionPolicy", string(metadata.DeletionPolicy),
+			result.AddError(basePath+".deletionPolicy", "deletionPolicy", string(metadata.DeletionPolicy),
 				fmt.Sprintf("invalid deletion policy (valid: %v)", validPolicies), "INVALID_DELETION_POLICY")
 		}
 	}
@@ -1577,7 +1594,7 @@ func validateSearchIndexManifest(manifest *types.ResourceManifest, basePath stri
 		if specMap, ok := manifest.Spec.(map[string]interface{}); ok {
 			spec = convertToSearchIndexSpec(specMap)
 		} else {
-			addError(result, basePath+".spec", "spec", "",
+			result.AddError(basePath+".spec", "spec", "",
 				"search index spec must be an object", "INVALID_SPEC_TYPE")
 			return
 		}
@@ -1585,39 +1602,39 @@ func validateSearchIndexManifest(manifest *types.ResourceManifest, basePath stri
 
 	// Validate required fields
 	if spec.ProjectName == "" {
-		addError(result, basePath+".spec.projectName", "projectName", "",
+		result.AddError(basePath+".spec.projectName", "projectName", "",
 			"project name is required", "REQUIRED_FIELD_MISSING")
 	}
 
 	if spec.ClusterName == "" {
-		addError(result, basePath+".spec.clusterName", "clusterName", "",
+		result.AddError(basePath+".spec.clusterName", "clusterName", "",
 			"cluster name is required", "REQUIRED_FIELD_MISSING")
 	}
 
 	if spec.DatabaseName == "" {
-		addError(result, basePath+".spec.databaseName", "databaseName", "",
+		result.AddError(basePath+".spec.databaseName", "databaseName", "",
 			"database name is required", "REQUIRED_FIELD_MISSING")
 	}
 
 	if spec.CollectionName == "" {
-		addError(result, basePath+".spec.collectionName", "collectionName", "",
+		result.AddError(basePath+".spec.collectionName", "collectionName", "",
 			"collection name is required", "REQUIRED_FIELD_MISSING")
 	}
 
 	if spec.IndexName == "" {
-		addError(result, basePath+".spec.indexName", "indexName", "",
+		result.AddError(basePath+".spec.indexName", "indexName", "",
 			"index name is required", "REQUIRED_FIELD_MISSING")
 	}
 
 	// Validate index type if provided
 	if spec.IndexType != "" && spec.IndexType != "search" && spec.IndexType != "vectorSearch" {
-		addError(result, basePath+".spec.indexType", "indexType", spec.IndexType,
+		result.AddError(basePath+".spec.indexType", "indexType", spec.IndexType,
 			"index type must be 'search' or 'vectorSearch'", "INVALID_INDEX_TYPE")
 	}
 
 	// Validate definition is provided
 	if spec.Definition == nil {
-		addError(result, basePath+".spec.definition", "definition", "",
+		result.AddError(basePath+".spec.definition", "definition", "",
 			"index definition is required", "REQUIRED_FIELD_MISSING")
 	}
 }
@@ -1630,7 +1647,7 @@ func validateSearchMetricsManifest(manifest *types.ResourceManifest, basePath st
 		if specMap, ok := manifest.Spec.(map[string]interface{}); ok {
 			spec = convertToSearchMetricsSpec(specMap)
 		} else {
-			addError(result, basePath+".spec", "spec", "",
+			result.AddError(basePath+".spec", "spec", "",
 				"search metrics spec must be an object", "INVALID_SPEC_TYPE")
 			return
 		}
@@ -1638,12 +1655,12 @@ func validateSearchMetricsManifest(manifest *types.ResourceManifest, basePath st
 
 	// Validate required fields
 	if spec.ProjectName == "" {
-		addError(result, basePath+".spec.projectName", "projectName", "",
+		result.AddError(basePath+".spec.projectName", "projectName", "",
 			"project name is required", "REQUIRED_FIELD_MISSING")
 	}
 
 	if spec.ClusterName == "" {
-		addError(result, basePath+".spec.clusterName", "clusterName", "",
+		result.AddError(basePath+".spec.clusterName", "clusterName", "",
 			"cluster name is required", "REQUIRED_FIELD_MISSING")
 	}
 
@@ -1653,7 +1670,7 @@ func validateSearchMetricsManifest(manifest *types.ResourceManifest, basePath st
 			"1h": true, "6h": true, "24h": true, "7d": true, "30d": true,
 		}
 		if !validRanges[spec.TimeRange] {
-			addError(result, basePath+".spec.timeRange", "timeRange", spec.TimeRange,
+			result.AddError(basePath+".spec.timeRange", "timeRange", spec.TimeRange,
 				"time range must be one of: 1h, 6h, 24h, 7d, 30d", "INVALID_TIME_RANGE")
 		}
 	}
@@ -1680,7 +1697,7 @@ func validateSearchOptimizationManifest(manifest *types.ResourceManifest, basePa
 		if specMap, ok := manifest.Spec.(map[string]interface{}); ok {
 			spec = convertToSearchOptimizationSpec(specMap)
 		} else {
-			addError(result, basePath+".spec", "spec", "",
+			result.AddError(basePath+".spec", "spec", "",
 				"search optimization spec must be an object", "INVALID_SPEC_TYPE")
 			return
 		}
@@ -1688,12 +1705,12 @@ func validateSearchOptimizationManifest(manifest *types.ResourceManifest, basePa
 
 	// Validate required fields
 	if spec.ProjectName == "" {
-		addError(result, basePath+".spec.projectName", "projectName", "",
+		result.AddError(basePath+".spec.projectName", "projectName", "",
 			"project name is required", "REQUIRED_FIELD_MISSING")
 	}
 
 	if spec.ClusterName == "" {
-		addError(result, basePath+".spec.clusterName", "clusterName", "",
+		result.AddError(basePath+".spec.clusterName", "clusterName", "",
 			"cluster name is required", "REQUIRED_FIELD_MISSING")
 	}
 
@@ -1719,7 +1736,7 @@ func validateSearchQueryValidationManifest(manifest *types.ResourceManifest, bas
 		if specMap, ok := manifest.Spec.(map[string]interface{}); ok {
 			spec = convertToSearchQueryValidationSpec(specMap)
 		} else {
-			addError(result, basePath+".spec", "spec", "",
+			result.AddError(basePath+".spec", "spec", "",
 				"search query validation spec must be an object", "INVALID_SPEC_TYPE")
 			return
 		}
@@ -1727,23 +1744,23 @@ func validateSearchQueryValidationManifest(manifest *types.ResourceManifest, bas
 
 	// Validate required fields
 	if spec.ProjectName == "" {
-		addError(result, basePath+".spec.projectName", "projectName", "",
+		result.AddError(basePath+".spec.projectName", "projectName", "",
 			"project name is required", "REQUIRED_FIELD_MISSING")
 	}
 
 	if spec.ClusterName == "" {
-		addError(result, basePath+".spec.clusterName", "clusterName", "",
+		result.AddError(basePath+".spec.clusterName", "clusterName", "",
 			"cluster name is required", "REQUIRED_FIELD_MISSING")
 	}
 
 	if spec.IndexName == "" {
-		addError(result, basePath+".spec.indexName", "indexName", "",
+		result.AddError(basePath+".spec.indexName", "indexName", "",
 			"index name is required", "REQUIRED_FIELD_MISSING")
 	}
 
 	// Validate query is provided
 	if spec.Query == nil {
-		addError(result, basePath+".spec.query", "query", "",
+		result.AddError(basePath+".spec.query", "query", "",
 			"query is required", "REQUIRED_FIELD_MISSING")
 	}
 
@@ -1769,7 +1786,7 @@ func validateVPCEndpointManifest(manifest *types.ResourceManifest, basePath stri
 		if specMap, ok := manifest.Spec.(map[string]interface{}); ok {
 			spec = convertToVPCEndpointSpec(specMap)
 		} else {
-			addError(result, basePath+".spec", "spec", "",
+			result.AddError(basePath+".spec", "spec", "",
 				"VPC endpoint spec must be an object", "INVALID_SPEC_TYPE")
 			return
 		}
@@ -1777,12 +1794,12 @@ func validateVPCEndpointManifest(manifest *types.ResourceManifest, basePath stri
 
 	// Validate required fields
 	if spec.ProjectName == "" {
-		addError(result, basePath+".spec.projectName", "projectName", "",
+		result.AddError(basePath+".spec.projectName", "projectName", "",
 			"project name is required", "REQUIRED_FIELD_MISSING")
 	}
 
 	if spec.CloudProvider == "" {
-		addError(result, basePath+".spec.cloudProvider", "cloudProvider", "",
+		result.AddError(basePath+".spec.cloudProvider", "cloudProvider", "",
 			"cloud provider is required", "REQUIRED_FIELD_MISSING")
 	} else {
 		// Validate cloud provider is supported
@@ -1792,13 +1809,13 @@ func validateVPCEndpointManifest(manifest *types.ResourceManifest, basePath stri
 			"GCP":   true,
 		}
 		if !validProviders[spec.CloudProvider] {
-			addError(result, basePath+".spec.cloudProvider", "cloudProvider", spec.CloudProvider,
+			result.AddError(basePath+".spec.cloudProvider", "cloudProvider", spec.CloudProvider,
 				"cloud provider must be one of: AWS, AZURE, GCP", "INVALID_CLOUD_PROVIDER")
 		}
 	}
 
 	if spec.Region == "" {
-		addError(result, basePath+".spec.region", "region", "",
+		result.AddError(basePath+".spec.region", "region", "",
 			"region is required", "REQUIRED_FIELD_MISSING")
 	}
 }
@@ -1918,4 +1935,451 @@ func convertToVPCEndpointSpec(specMap map[string]interface{}) types.VPCEndpointS
 	}
 
 	return spec
+}
+
+// validateAlertConfigurationManifest validates an AlertConfiguration resource manifest
+func validateAlertConfigurationManifest(manifest *types.ResourceManifest, basePath string, result *ValidationResult, opts *ValidatorOptions) {
+	spec, ok := manifest.Spec.(types.AlertConfig)
+	if !ok {
+		// Try to convert from map[string]interface{}
+		if specMap, ok := manifest.Spec.(map[string]interface{}); ok {
+			spec = convertToAlertConfigSpec(specMap)
+		} else {
+			result.AddError(basePath, "spec", "",
+				"Invalid AlertConfiguration spec format", "INVALID_SPEC_FORMAT")
+			return
+		}
+	}
+
+	// Validate required fields
+	if spec.EventTypeName == "" {
+		result.AddError(basePath+".spec.eventTypeName", "eventTypeName", "",
+			"EventTypeName is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	if len(spec.Notifications) == 0 {
+		result.AddError(basePath+".spec.notifications", "notifications", "",
+			"At least one notification is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	// Validate notifications
+	for i, notification := range spec.Notifications {
+		notificationPath := fmt.Sprintf("%s.spec.notifications[%d]", basePath, i)
+		validateAlertNotification(&notification, notificationPath, result, opts)
+	}
+
+	// Validate matchers
+	for i, matcher := range spec.Matchers {
+		matcherPath := fmt.Sprintf("%s.spec.matchers[%d]", basePath, i)
+		validateAlertMatcher(&matcher, matcherPath, result, opts)
+	}
+
+	// Validate metric threshold
+	if spec.MetricThreshold != nil {
+		thresholdPath := fmt.Sprintf("%s.spec.metricThreshold", basePath)
+		validateAlertMetricThreshold(spec.MetricThreshold, thresholdPath, result, opts)
+	}
+
+	// Validate general threshold
+	if spec.Threshold != nil {
+		thresholdPath := fmt.Sprintf("%s.spec.threshold", basePath)
+		validateAlertThreshold(spec.Threshold, thresholdPath, result, opts)
+	}
+}
+
+// validateAlertManifest validates an Alert resource manifest (read-only)
+func validateAlertManifest(manifest *types.ResourceManifest, basePath string, result *ValidationResult, opts *ValidatorOptions) {
+	// Alert manifests are read-only, so we just validate the structure
+	spec, ok := manifest.Spec.(types.AlertStatus)
+	if !ok {
+		// Try to convert from map[string]interface{}
+		if specMap, ok := manifest.Spec.(map[string]interface{}); ok {
+			spec = convertToAlertStatusSpec(specMap)
+		} else {
+			result.AddError(basePath, "spec", "",
+				"Invalid Alert spec format", "INVALID_SPEC_FORMAT")
+			return
+		}
+	}
+
+	// Validate required fields for read-only alert status
+	if spec.ID == "" {
+		result.AddError(basePath+".spec.id", "id", "",
+			"ID is required for Alert status", "REQUIRED_FIELD_MISSING")
+	}
+
+	if spec.EventTypeName == "" {
+		result.AddError(basePath+".spec.eventTypeName", "eventTypeName", "",
+			"EventTypeName is required for Alert status", "REQUIRED_FIELD_MISSING")
+	}
+
+	if spec.Status == "" {
+		result.AddError(basePath+".spec.status", "status", "",
+			"Status is required for Alert status", "REQUIRED_FIELD_MISSING")
+	}
+}
+
+// validateAlertNotification validates an alert notification configuration
+func validateAlertNotification(notification *types.AlertNotification, basePath string, result *ValidationResult, opts *ValidatorOptions) {
+	if notification.TypeName == "" {
+		result.AddError(basePath, "typeName", "",
+			"typeName is required", "REQUIRED_FIELD_MISSING")
+		return
+	}
+
+	// Validate type-specific requirements
+	switch notification.TypeName {
+	case "EMAIL":
+		if notification.EmailAddress == "" {
+			result.AddError(basePath, "emailAddress", "",
+				"emailAddress is required for EMAIL notifications", "REQUIRED_FIELD_MISSING")
+		}
+	case "SMS":
+		if notification.MobileNumber == "" {
+			result.AddError(basePath, "mobileNumber", "",
+				"mobileNumber is required for SMS notifications", "REQUIRED_FIELD_MISSING")
+		}
+	case "SLACK":
+		if notification.ApiToken == "" {
+			result.AddError(basePath+".apiToken", "apiToken", "",
+				"apiToken is required for SLACK notifications", "REQUIRED_FIELD_MISSING")
+		}
+		if notification.ChannelName == "" {
+			result.AddError(basePath+".channelName", "channelName", "",
+				"channelName is required for SLACK notifications", "REQUIRED_FIELD_MISSING")
+		}
+	case "PAGER_DUTY":
+		if notification.ServiceKey == "" {
+			result.AddError(basePath+".serviceKey", "serviceKey", "",
+				"serviceKey is required for PAGER_DUTY notifications", "REQUIRED_FIELD_MISSING")
+		}
+	case "OPS_GENIE":
+		if notification.OpsGenieApiKey == "" {
+			result.AddError(basePath+".opsGenieApiKey", "opsGenieApiKey", "",
+				"opsGenieApiKey is required for OPS_GENIE notifications", "REQUIRED_FIELD_MISSING")
+		}
+	case "DATADOG":
+		if notification.DatadogApiKey == "" {
+			result.AddError(basePath+".datadogApiKey", "datadogApiKey", "",
+				"datadogApiKey is required for DATADOG notifications", "REQUIRED_FIELD_MISSING")
+		}
+	case "MICROSOFT_TEAMS":
+		if notification.MicrosoftTeamsWebhookUrl == "" {
+			result.AddError(basePath+".microsoftTeamsWebhookUrl", "microsoftTeamsWebhookUrl", "",
+				"microsoftTeamsWebhookUrl is required for MICROSOFT_TEAMS notifications", "REQUIRED_FIELD_MISSING")
+		}
+	case "WEBHOOK":
+		if notification.WebhookUrl == "" {
+			result.AddError(basePath+".webhookUrl", "webhookUrl", "",
+				"webhookUrl is required for WEBHOOK notifications", "REQUIRED_FIELD_MISSING")
+		}
+	case "TEAM":
+		if notification.TeamId == "" {
+			result.AddError(basePath+".teamId", "teamId", "",
+				"teamId is required for TEAM notifications", "REQUIRED_FIELD_MISSING")
+		}
+	}
+
+	// Validate delay and interval ranges
+	if notification.DelayMin != nil && (*notification.DelayMin < 0 || *notification.DelayMin > 1440) {
+		result.AddError(basePath+".delayMin", "delayMin", fmt.Sprintf("%d", *notification.DelayMin),
+			"delayMin must be between 0 and 1440 minutes", "INVALID_RANGE")
+	}
+
+	if notification.IntervalMin != nil && (*notification.IntervalMin < 5 || *notification.IntervalMin > 1440) {
+		result.AddError(basePath+".intervalMin", "intervalMin", fmt.Sprintf("%d", *notification.IntervalMin),
+			"intervalMin must be between 5 and 1440 minutes", "INVALID_RANGE")
+	}
+}
+
+// validateAlertMatcher validates an alert matcher configuration
+func validateAlertMatcher(matcher *types.AlertMatcher, basePath string, result *ValidationResult, opts *ValidatorOptions) {
+	if matcher.FieldName == "" {
+		result.AddError(basePath+".fieldName", "fieldName", "",
+			"fieldName is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	if matcher.Operator == "" {
+		result.AddError(basePath+".operator", "operator", "",
+			"operator is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	if matcher.Value == "" {
+		result.AddError(basePath+".value", "value", "",
+			"value is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	// Validate operator values
+	validOperators := []string{"EQUALS", "NOT_EQUALS", "CONTAINS", "NOT_CONTAINS", "STARTS_WITH", "ENDS_WITH", "REGEX", "NOT_REGEX"}
+	isValidOperator := false
+	for _, validOp := range validOperators {
+		if matcher.Operator == validOp {
+			isValidOperator = true
+			break
+		}
+	}
+	if !isValidOperator {
+		result.AddError(basePath+".operator", "operator", matcher.Operator,
+			"operator must be one of: "+strings.Join(validOperators, ", "), "INVALID_ENUM_VALUE")
+	}
+}
+
+// validateAlertMetricThreshold validates a metric-based alert threshold
+func validateAlertMetricThreshold(threshold *types.AlertMetricThreshold, basePath string, result *ValidationResult, opts *ValidatorOptions) {
+	if threshold.MetricName == "" {
+		result.AddError(basePath+".metricName", "metricName", "",
+			"metricName is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	if threshold.Operator == "" {
+		result.AddError(basePath+".operator", "operator", "",
+			"operator is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	if threshold.Threshold == nil {
+		result.AddError(basePath+".threshold", "threshold", "",
+			"threshold is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	// Validate operator values
+	validOperators := []string{"LESS_THAN", "GREATER_THAN"}
+	isValidOperator := false
+	for _, validOp := range validOperators {
+		if threshold.Operator == validOp {
+			isValidOperator = true
+			break
+		}
+	}
+	if !isValidOperator {
+		result.AddError(basePath+".operator", "operator", threshold.Operator,
+			"operator must be one of: "+strings.Join(validOperators, ", "), "INVALID_ENUM_VALUE")
+	}
+
+	// Validate mode if provided
+	if threshold.Mode != "" {
+		validModes := []string{"AVERAGE", "TOTAL"}
+		isValidMode := false
+		for _, validMode := range validModes {
+			if threshold.Mode == validMode {
+				isValidMode = true
+				break
+			}
+		}
+		if !isValidMode {
+			result.AddError(basePath+".mode", "mode", threshold.Mode,
+				"mode must be one of: "+strings.Join(validModes, ", "), "INVALID_ENUM_VALUE")
+		}
+	}
+}
+
+// validateAlertThreshold validates a general alert threshold
+func validateAlertThreshold(threshold *types.AlertThreshold, basePath string, result *ValidationResult, opts *ValidatorOptions) {
+	if threshold.Operator == "" {
+		result.AddError(basePath+".operator", "operator", "",
+			"operator is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	if threshold.Threshold == nil {
+		result.AddError(basePath+".threshold", "threshold", "",
+			"threshold is required", "REQUIRED_FIELD_MISSING")
+	}
+
+	// Validate operator values
+	validOperators := []string{"LESS_THAN", "GREATER_THAN"}
+	isValidOperator := false
+	for _, validOp := range validOperators {
+		if threshold.Operator == validOp {
+			isValidOperator = true
+			break
+		}
+	}
+	if !isValidOperator {
+		result.AddError(basePath+".operator", "operator", threshold.Operator,
+			"operator must be one of: "+strings.Join(validOperators, ", "), "INVALID_ENUM_VALUE")
+	}
+}
+
+// convertToAlertConfigSpec converts a map to AlertConfig
+func convertToAlertConfigSpec(specMap map[string]interface{}) types.AlertConfig {
+	spec := types.AlertConfig{}
+
+	if val, ok := specMap["eventTypeName"].(string); ok {
+		spec.EventTypeName = val
+	}
+
+	if val, ok := specMap["enabled"].(bool); ok {
+		spec.Enabled = &val
+	}
+
+	if val, ok := specMap["severityOverride"].(string); ok {
+		spec.SeverityOverride = val
+	}
+
+	// Convert matchers
+	if matchersRaw, ok := specMap["matchers"].([]interface{}); ok {
+		spec.Matchers = make([]types.AlertMatcher, len(matchersRaw))
+		for i, matcherRaw := range matchersRaw {
+			if matcherMap, ok := matcherRaw.(map[string]interface{}); ok {
+				matcher := types.AlertMatcher{}
+				if fieldName, ok := matcherMap["fieldName"].(string); ok {
+					matcher.FieldName = fieldName
+				}
+				if operator, ok := matcherMap["operator"].(string); ok {
+					matcher.Operator = operator
+				}
+				if value, ok := matcherMap["value"].(string); ok {
+					matcher.Value = value
+				}
+				spec.Matchers[i] = matcher
+			}
+		}
+	}
+
+	// Convert notifications
+	if notificationsRaw, ok := specMap["notifications"].([]interface{}); ok {
+		spec.Notifications = make([]types.AlertNotification, len(notificationsRaw))
+		for i, notificationRaw := range notificationsRaw {
+			if notificationMap, ok := notificationRaw.(map[string]interface{}); ok {
+				notification := convertToAlertNotification(notificationMap)
+				spec.Notifications[i] = notification
+			}
+		}
+	}
+
+	// Convert metric threshold
+	if thresholdRaw, ok := specMap["metricThreshold"].(map[string]interface{}); ok {
+		threshold := &types.AlertMetricThreshold{}
+		if metricName, ok := thresholdRaw["metricName"].(string); ok {
+			threshold.MetricName = metricName
+		}
+		if operator, ok := thresholdRaw["operator"].(string); ok {
+			threshold.Operator = operator
+		}
+		if thresholdVal, ok := thresholdRaw["threshold"].(float64); ok {
+			threshold.Threshold = &thresholdVal
+		}
+		if units, ok := thresholdRaw["units"].(string); ok {
+			threshold.Units = units
+		}
+		if mode, ok := thresholdRaw["mode"].(string); ok {
+			threshold.Mode = mode
+		}
+		spec.MetricThreshold = threshold
+	}
+
+	// Convert general threshold
+	if thresholdRaw, ok := specMap["threshold"].(map[string]interface{}); ok {
+		threshold := &types.AlertThreshold{}
+		if operator, ok := thresholdRaw["operator"].(string); ok {
+			threshold.Operator = operator
+		}
+		if thresholdVal, ok := thresholdRaw["threshold"].(float64); ok {
+			threshold.Threshold = &thresholdVal
+		}
+		if units, ok := thresholdRaw["units"].(string); ok {
+			threshold.Units = units
+		}
+		spec.Threshold = threshold
+	}
+
+	return spec
+}
+
+// convertToAlertStatusSpec converts a map to AlertStatus
+func convertToAlertStatusSpec(specMap map[string]interface{}) types.AlertStatus {
+	spec := types.AlertStatus{}
+
+	if val, ok := specMap["id"].(string); ok {
+		spec.ID = val
+	}
+	if val, ok := specMap["alertConfigId"].(string); ok {
+		spec.AlertConfigID = val
+	}
+	if val, ok := specMap["eventTypeName"].(string); ok {
+		spec.EventTypeName = val
+	}
+	if val, ok := specMap["status"].(string); ok {
+		spec.Status = val
+	}
+	if val, ok := specMap["acknowledgingUser"].(string); ok {
+		spec.AcknowledgingUser = val
+	}
+	if val, ok := specMap["metricName"].(string); ok {
+		spec.MetricName = val
+	}
+	if val, ok := specMap["hostnameAndPort"].(string); ok {
+		spec.HostnameAndPort = val
+	}
+	if val, ok := specMap["replicaSetName"].(string); ok {
+		spec.ReplicaSetName = val
+	}
+	if val, ok := specMap["clusterName"].(string); ok {
+		spec.ClusterName = val
+	}
+
+	return spec
+}
+
+// convertToAlertNotification converts a map to AlertNotification
+func convertToAlertNotification(notificationMap map[string]interface{}) types.AlertNotification {
+	notification := types.AlertNotification{}
+
+	if val, ok := notificationMap["typeName"].(string); ok {
+		notification.TypeName = val
+	}
+	if val, ok := notificationMap["delayMin"].(float64); ok {
+		delayMin := int(val)
+		notification.DelayMin = &delayMin
+	}
+	if val, ok := notificationMap["intervalMin"].(float64); ok {
+		intervalMin := int(val)
+		notification.IntervalMin = &intervalMin
+	}
+	if val, ok := notificationMap["emailAddress"].(string); ok {
+		notification.EmailAddress = val
+	}
+	if val, ok := notificationMap["emailEnabled"].(bool); ok {
+		notification.EmailEnabled = &val
+	}
+	if val, ok := notificationMap["smsEnabled"].(bool); ok {
+		notification.SmsEnabled = &val
+	}
+	if val, ok := notificationMap["mobileNumber"].(string); ok {
+		notification.MobileNumber = val
+	}
+	if val, ok := notificationMap["channelName"].(string); ok {
+		notification.ChannelName = val
+	}
+	if val, ok := notificationMap["apiToken"].(string); ok {
+		notification.ApiToken = val
+	}
+	if val, ok := notificationMap["serviceKey"].(string); ok {
+		notification.ServiceKey = val
+	}
+	if val, ok := notificationMap["opsGenieApiKey"].(string); ok {
+		notification.OpsGenieApiKey = val
+	}
+	if val, ok := notificationMap["opsGenieRegion"].(string); ok {
+		notification.OpsGenieRegion = val
+	}
+	if val, ok := notificationMap["datadogApiKey"].(string); ok {
+		notification.DatadogApiKey = val
+	}
+	if val, ok := notificationMap["datadogRegion"].(string); ok {
+		notification.DatadogRegion = val
+	}
+	if val, ok := notificationMap["microsoftTeamsWebhookUrl"].(string); ok {
+		notification.MicrosoftTeamsWebhookUrl = val
+	}
+	if val, ok := notificationMap["webhookUrl"].(string); ok {
+		notification.WebhookUrl = val
+	}
+	if val, ok := notificationMap["webhookSecret"].(string); ok {
+		notification.WebhookSecret = val
+	}
+	if val, ok := notificationMap["teamId"].(string); ok {
+		notification.TeamId = val
+	}
+
+	return notification
 }

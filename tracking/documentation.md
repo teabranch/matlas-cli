@@ -134,3 +134,65 @@ This correction eliminates confusion and aligns documentation with the actual co
 
 ---
 
+## [2025-01-28] Alert System Documentation Update
+
+**Status**: Completed  
+**Developer**: Assistant  
+**Related Issues**: User request to update docs with new alert functionality  
+
+### Summary
+Comprehensive documentation update for the new MongoDB Atlas alerting system, including YAML kinds documentation, CLI command documentation, usage guides, and examples. Added complete alert management and configuration capabilities to the documentation suite.
+
+### Tasks
+- [x] Update YAML kinds documentation to include AlertConfiguration and Alert kinds
+- [x] Add comprehensive alert CLI commands documentation to atlas.md
+- [x] Create dedicated alerts.md documentation page with complete usage guide
+- [x] Update examples documentation to reference alert examples
+- [x] Create dedicated alert examples documentation page
+- [x] Update main index page to feature alerts functionality
+- [x] Add permanent tracking entry for documentation work
+
+### Files Modified
+- `docs/yaml-kinds-reference.md` - Added AlertConfiguration and Alert kinds to supported kinds table and detailed kind documentation
+- `docs/yaml-kinds.md` - Added comprehensive AlertConfiguration and Alert kind documentation with examples
+- `docs/atlas.md` - Added complete alerts section with CLI commands, YAML configuration, and feature documentation
+- `docs/examples.md` - Added alerts & monitoring section to examples categories
+- `docs/examples/alerts.md` - New comprehensive alert examples documentation with usage patterns
+- `docs/alerts.md` - New dedicated alerts documentation page with complete usage guide
+- `docs/index.md` - Added alerts & monitoring feature card and updated examples list
+- `tracking/documentation.md` - This entry documenting the alert documentation work
+
+### Notes
+The alert system documentation covers:
+
+**YAML Kinds Documentation:**
+- AlertConfiguration kind for creating and managing alert rules
+- Alert kind for read-only alert status monitoring
+- Complete field reference and examples for both kinds
+
+**CLI Commands Documentation:**
+- Alert management commands (list, get, acknowledge)
+- Alert configuration management commands (list, get, delete, matcher-fields)
+- Complete command examples with all flags and options
+
+**Usage Documentation:**
+- Comprehensive alerts.md page covering all aspects of alert usage
+- Event types, notification channels, matchers, and thresholds
+- Best practices, troubleshooting, and debugging guidance
+- Integration with infrastructure-as-code workflows
+
+**Examples Documentation:**
+- Dedicated alert examples page with working YAML configurations
+- Basic CPU monitoring, multi-channel notifications, comprehensive monitoring setups
+- Advanced matcher and threshold patterns
+- Environment-specific and escalation patterns
+
+**Feature Integration:**
+- Updated main documentation pages to reference alert functionality
+- Integrated alerts into the overall CLI feature set
+- Cross-referenced with related documentation sections
+
+This documentation update provides complete coverage of the alert system functionality, enabling users to effectively monitor their MongoDB Atlas infrastructure with comprehensive alerting capabilities.
+
+---
+

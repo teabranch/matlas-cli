@@ -54,6 +54,13 @@ permalink: /
   </div>
   
   <div class="card feature">
+    <div class="feature-icon">🚨</div>
+    <h3 class="feature-title">Alerts & Monitoring</h3>
+    <p class="feature-description">Comprehensive alert management and monitoring configuration with multi-channel notifications.</p>
+    <a href="{{ '/alerts/' | relative_url }}" class="btn btn-outline">Learn more</a>
+  </div>
+  
+  <div class="card feature">
     <div class="feature-icon">📚</div>
     <h3 class="feature-title">Examples & Patterns</h3>
     <p class="feature-description">Comprehensive YAML examples and usage patterns for all resource types and infrastructure scenarios.</p>
@@ -127,4 +134,5 @@ Jump-start your infrastructure with our comprehensive [examples collection]({{ '
 - **[User Management]({{ '/examples/users/' | relative_url }})** - Database users and authentication patterns
 - **[Custom Roles]({{ '/examples/roles/' | relative_url }})** - Granular permission management
 - **[Network Access]({{ '/examples/network/' | relative_url }})** - IP allowlisting and security rules
+- **[Alerts & Monitoring]({{ '/examples/alerts/' | relative_url }})** - Alert configurations and notification setups
 - **[Infrastructure Patterns]({{ '/examples/infrastructure/' | relative_url }})** - Complete infrastructure workflows

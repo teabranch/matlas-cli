@@ -448,8 +448,159 @@ matlas infra plan -f vpc-endpoint.yaml --preserve-existing
 matlas infra apply -f vpc-endpoint.yaml --preserve-existing --auto-approve
 ```
 
+## Alerts
+
+MongoDB Atlas alerts provide monitoring and notification capabilities for your Atlas resources. The CLI supports both alert management and alert configuration management.
+
+### Alert Management
+
+Monitor and acknowledge active alerts in your Atlas projects:
+
+```bash
+# List all alerts in a project
+matlas atlas alerts list --project-id <project-id>
+
+# List alerts with pagination
+matlas atlas alerts list --project-id <project-id> --page 2 --limit 10
+
+# Get specific alert details
+matlas atlas alerts get <alert-id> --project-id <project-id>
+
+# Acknowledge an alert
+matlas atlas alerts acknowledge <alert-id> --project-id <project-id>
+
+# Unacknowledge an alert
+matlas atlas alerts acknowledge <alert-id> --project-id <project-id> --unacknowledge
+
+# Output as JSON for automation
+matlas atlas alerts list --project-id <project-id> --output json
+```
+
+### Alert Configuration Management
+
+Create and manage alert configurations for monitoring:
+
+```bash
+# List all alert configurations
+matlas atlas alert-configurations list --project-id <project-id>
+
+# List with pagination
+matlas atlas alert-configurations list --project-id <project-id> --page 2 --limit 10
+
+# Get specific alert configuration details
+matlas atlas alert-configurations get <config-id> --project-id <project-id>
+
+# Delete an alert configuration
+matlas atlas alert-configurations delete <config-id> --project-id <project-id>
+
+# Delete without confirmation prompt
+matlas atlas alert-configurations delete <config-id> --project-id <project-id> --yes
+
+# List available matcher field names for alert rules
+matlas atlas alert-configurations matcher-fields
+
+# Output as JSON for automation
+matlas atlas alert-configurations list --project-id <project-id> --output json
+```
+
+### YAML Configuration
+
+Alerts can be managed declaratively via YAML for infrastructure-as-code workflows:
+
+```yaml
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: monitoring-alerts
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: AlertConfiguration
+    metadata:
+      name: high-cpu-alert
+      labels:
+        severity: high
+        category: performance
+    spec:
+      enabled: true
+      eventTypeName: "HOST_CPU_USAGE_PERCENT"
+      severityOverride: "HIGH"
+      matchers:
+        - fieldName: "HOSTNAME_AND_PORT"
+          operator: "CONTAINS"
+          value: "production"
+      notifications:
+        - typeName: "EMAIL"
+          emailAddress: "alerts@company.com"
+          delayMin: 0
+          intervalMin: 15
+        - typeName: "SLACK"
+          apiToken: "${SLACK_TOKEN}"
+          channelName: "#alerts"
+      metricThreshold:
+        metricName: "CPU_USAGE_PERCENT"
+        operator: "GREATER_THAN"
+        threshold: 80.0
+        units: "PERCENT"
+        mode: "AVERAGE"
+```
+
+Apply the configuration:
+```bash
+# Plan alert changes
+matlas infra plan -f alerts.yaml --preserve-existing
+
+# Apply alert configuration
+matlas infra apply -f alerts.yaml --preserve-existing --auto-approve
+```
+
+### Notification Channels
+
+The CLI supports multiple notification channels:
+
+- **EMAIL** - Direct email notifications
+- **SMS** - Mobile phone text messages  
+- **SLACK** - Slack channel notifications
+- **PAGER_DUTY** - PagerDuty service integration
+- **OPS_GENIE** - OpsGenie alert management
+- **DATADOG** - Datadog monitoring integration
+- **MICROSOFT_TEAMS** - Microsoft Teams webhook
+- **WEBHOOK** - Custom HTTP webhooks
+- **USER** - Atlas user notifications
+- **GROUP** - Project group notifications
+- **TEAM** - Atlas team notifications
+
+### Alert Event Types
+
+Common event types for monitoring:
+
+- **HOST_CPU_USAGE_PERCENT** - CPU usage monitoring
+- **HOST_MEMORY_USAGE_PERCENT** - Memory usage monitoring
+- **HOST_DISK_USAGE_PERCENT** - Disk usage monitoring
+- **CLUSTER_MONGOS_IS_MISSING** - Missing mongos process
+- **CLUSTER_PRIMARY_ELECTED** - Primary election events
+- **DATABASE_CONNECTIONS_PERCENT** - Connection usage monitoring
+- **REPLICATION_LAG** - Replication lag monitoring
+- **CLUSTER_DISK_USAGE_PERCENT** - Cluster disk usage
+
+### Matcher Operators
+
+Target specific resources with matchers:
+
+- **EQUALS** / **NOT_EQUALS** - Exact string matching
+- **CONTAINS** / **NOT_CONTAINS** - Substring matching
+- **STARTS_WITH** / **ENDS_WITH** - Prefix/suffix matching
+- **REGEX** / **NOT_REGEX** - Regular expression matching
+
+### Examples
+
+See the [Alert Examples]({{ '/examples/' | relative_url }}) for:
+- Basic CPU and memory monitoring setups
+- Multi-channel notification configurations
+- Complex matcher and threshold patterns
+
 ## Feature availability
 
 **Updated:** The following features are now available:
 - ✅ **Atlas Search**: All commands (`list`, `create`, `get`, `update`, `delete`) - Full functionality with CLI and YAML support
 - ✅ **VPC Endpoints**: All commands (`list`, `create`, `get`, `update`, `delete`) - Full functionality with CLI and YAML support
+- ✅ **Alerts**: All commands (`list`, `get`, `acknowledge`) and alert configurations (`list`, `get`, `delete`, `matcher-fields`) - Full functionality with CLI and YAML support

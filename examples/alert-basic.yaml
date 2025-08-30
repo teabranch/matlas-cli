@@ -1,0 +1,45 @@
+# Basic Alert Configuration Example
+# This example shows how to create a simple alert configuration for high CPU usage
+# with email notifications.
+
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: basic-alert-config
+  labels:
+    environment: production
+    team: platform
+spec:
+  resources:
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: high-cpu-alert
+        labels:
+          severity: high
+          category: performance
+      spec:
+        enabled: true
+        eventTypeName: "HOST_CPU_USAGE_PERCENT"
+        severityOverride: "HIGH"
+        
+        # Matchers define when this alert should trigger
+        matchers:
+          - fieldName: "HOSTNAME_AND_PORT"
+            operator: "CONTAINS"
+            value: "cluster0"
+        
+        # Notifications define where alerts are sent
+        notifications:
+          - typeName: "EMAIL"
+            emailAddress: "alerts@company.com"
+            delayMin: 0
+            intervalMin: 15
+        
+        # Metric threshold defines the trigger condition
+        metricThreshold:
+          metricName: "CPU_USAGE_PERCENT"
+          operator: "GREATER_THAN"
+          threshold: 80.0
+          units: "PERCENT"
+          mode: "AVERAGE"

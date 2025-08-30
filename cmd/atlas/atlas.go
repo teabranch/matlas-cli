@@ -3,6 +3,7 @@ package atlas
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/teabranch/matlas-cli/cmd/atlas/alerts"
 	"github.com/teabranch/matlas-cli/cmd/atlas/clusters"
 	"github.com/teabranch/matlas-cli/cmd/atlas/network"
 	networkcontainers "github.com/teabranch/matlas-cli/cmd/atlas/network-containers"
@@ -31,6 +32,8 @@ func NewAtlasCmd() *cobra.Command {
 	cmd.AddCommand(networkpeering.NewNetworkPeeringCmd())
 	cmd.AddCommand(networkcontainers.NewNetworkContainersCmd())
 	cmd.AddCommand(search.NewSearchCmd())
+	cmd.AddCommand(alerts.NewAlertsCmd())
+	cmd.AddCommand(alerts.NewAlertConfigurationsCmd())
 
 	return cmd
 }

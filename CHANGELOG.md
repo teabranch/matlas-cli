@@ -1,7 +1,20 @@
 ## [Unreleased]
 
 ### Added
+- **MongoDB Atlas Alerting System**: Complete alert configuration and management system
+- Alert configuration CLI commands (`matlas atlas alert-configurations list/get/delete/matcher-fields`)
+- Alert management CLI commands (`matlas atlas alerts list/get/acknowledge`)
+- AlertConfiguration and Alert YAML kinds for ApplyDocument support
+- 11 notification channel types: EMAIL, SMS, SLACK, PAGER_DUTY, OPS_GENIE, DATADOG, MICROSOFT_TEAMS, WEBHOOK, USER, GROUP, TEAM
+- 8 alert matcher operators: EQUALS, NOT_EQUALS, CONTAINS, NOT_CONTAINS, STARTS_WITH, ENDS_WITH, REGEX, NOT_REGEX
+- Metric-based and general threshold configurations with AVERAGE/TOTAL modes
+- Comprehensive alert validation with field and type checking
+- Alert configuration examples for basic, comprehensive, notification channels, and threshold patterns
+- Alert lifecycle test suite with proper cleanup and baseline integrity verification
 - Advanced Atlas Search features support with CLI and YAML interfaces
+
+### Changed
+- Removed Go module caching from CI pipeline to resolve "Cannot open: File exists" errors on main branch builds
 - Search Index Analyzers configuration and management
 - Faceted Search functionality for string, number, and date facets
 - Autocomplete functionality with fuzzy matching support

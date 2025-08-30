@@ -1,5 +1,7 @@
 package types
 
+import "time"
+
 // DeletionPolicy defines how resources should be handled when removed from configuration
 type DeletionPolicy string
 
@@ -192,6 +194,95 @@ type NetworkAccessConfig struct {
 	Comment          string           `yaml:"comment,omitempty" json:"comment,omitempty" validate:"omitempty,max=80"`
 	DeleteAfterDate  string           `yaml:"deleteAfterDate,omitempty" json:"deleteAfterDate,omitempty" validate:"omitempty,datetime=2006-01-02T15:04:05Z07:00"`
 	DependsOn        []string         `yaml:"dependsOn,omitempty" json:"dependsOn,omitempty" validate:"dive,min=1,max=64"`
+}
+
+// AlertConfig represents a declarative alert configuration
+type AlertConfig struct {
+	Metadata         ResourceMetadata      `yaml:"metadata" json:"metadata" validate:"required"`
+	Enabled          *bool                 `yaml:"enabled,omitempty" json:"enabled,omitempty"`
+	EventTypeName    string                `yaml:"eventTypeName" json:"eventTypeName" validate:"required,min=1,max=100"`
+	Matchers         []AlertMatcher        `yaml:"matchers,omitempty" json:"matchers,omitempty" validate:"dive"`
+	Notifications    []AlertNotification   `yaml:"notifications" json:"notifications" validate:"required,min=1,dive"`
+	MetricThreshold  *AlertMetricThreshold `yaml:"metricThreshold,omitempty" json:"metricThreshold,omitempty" validate:"omitempty"`
+	Threshold        *AlertThreshold       `yaml:"threshold,omitempty" json:"threshold,omitempty" validate:"omitempty"`
+	SeverityOverride string                `yaml:"severityOverride,omitempty" json:"severityOverride,omitempty" validate:"omitempty,oneof=LOW MEDIUM HIGH CRITICAL"`
+	DependsOn        []string              `yaml:"dependsOn,omitempty" json:"dependsOn,omitempty" validate:"dive,min=1,max=64"`
+}
+
+// AlertMatcher represents rules that determine whether MongoDB Cloud checks an object for the alert configuration
+type AlertMatcher struct {
+	FieldName string `yaml:"fieldName" json:"fieldName" validate:"required,min=1,max=100"`
+	Operator  string `yaml:"operator" json:"operator" validate:"required,oneof=EQUALS NOT_EQUALS CONTAINS NOT_CONTAINS STARTS_WITH ENDS_WITH REGEX NOT_REGEX"`
+	Value     string `yaml:"value" json:"value" validate:"required,min=1,max=255"`
+}
+
+// AlertNotification represents notification channels for alerts
+type AlertNotification struct {
+	TypeName                 string   `yaml:"typeName" json:"typeName" validate:"required,oneof=EMAIL SMS SLACK PAGER_DUTY OPS_GENIE DATADOG MICROSOFT_TEAMS HIP_CHAT WEBHOOK USER GROUP ORG TEAM"`
+	DelayMin                 *int     `yaml:"delayMin,omitempty" json:"delayMin,omitempty" validate:"omitempty,min=0,max=1440"`
+	IntervalMin              *int     `yaml:"intervalMin,omitempty" json:"intervalMin,omitempty" validate:"omitempty,min=5,max=1440"`
+	EmailAddress             string   `yaml:"emailAddress,omitempty" json:"emailAddress,omitempty" validate:"omitempty,email"`
+	EmailEnabled             *bool    `yaml:"emailEnabled,omitempty" json:"emailEnabled,omitempty"`
+	SmsEnabled               *bool    `yaml:"smsEnabled,omitempty" json:"smsEnabled,omitempty"`
+	MobileNumber             string   `yaml:"mobileNumber,omitempty" json:"mobileNumber,omitempty" validate:"omitempty,min=10,max=20"`
+	ChannelName              string   `yaml:"channelName,omitempty" json:"channelName,omitempty" validate:"omitempty,min=1,max=80"`
+	ApiToken                 string   `yaml:"apiToken,omitempty" json:"apiToken,omitempty" validate:"omitempty,min=1,max=255"`
+	ServiceKey               string   `yaml:"serviceKey,omitempty" json:"serviceKey,omitempty" validate:"omitempty,min=1,max=255"`
+	OpsGenieApiKey           string   `yaml:"opsGenieApiKey,omitempty" json:"opsGenieApiKey,omitempty" validate:"omitempty,min=1,max=255"`
+	OpsGenieRegion           string   `yaml:"opsGenieRegion,omitempty" json:"opsGenieRegion,omitempty" validate:"omitempty,oneof=US EU"`
+	DatadogApiKey            string   `yaml:"datadogApiKey,omitempty" json:"datadogApiKey,omitempty" validate:"omitempty,min=1,max=255"`
+	DatadogRegion            string   `yaml:"datadogRegion,omitempty" json:"datadogRegion,omitempty" validate:"omitempty,oneof=US EU"`
+	MicrosoftTeamsWebhookUrl string   `yaml:"microsoftTeamsWebhookUrl,omitempty" json:"microsoftTeamsWebhookUrl,omitempty" validate:"omitempty,url"`
+	NotificationToken        string   `yaml:"notificationToken,omitempty" json:"notificationToken,omitempty" validate:"omitempty,min=1,max=255"`
+	RoomName                 string   `yaml:"roomName,omitempty" json:"roomName,omitempty" validate:"omitempty,min=1,max=80"`
+	Region                   string   `yaml:"region,omitempty" json:"region,omitempty" validate:"omitempty,oneof=US EU"`
+	TeamId                   string   `yaml:"teamId,omitempty" json:"teamId,omitempty" validate:"omitempty,len=24,alphanum"`
+	Username                 string   `yaml:"username,omitempty" json:"username,omitempty" validate:"omitempty,min=1,max=80"`
+	VictorOpsApiKey          string   `yaml:"victorOpsApiKey,omitempty" json:"victorOpsApiKey,omitempty" validate:"omitempty,min=1,max=255"`
+	VictorOpsRoutingKey      string   `yaml:"victorOpsRoutingKey,omitempty" json:"victorOpsRoutingKey,omitempty" validate:"omitempty,min=1,max=255"`
+	WebhookSecret            string   `yaml:"webhookSecret,omitempty" json:"webhookSecret,omitempty" validate:"omitempty,min=1,max=255"`
+	WebhookUrl               string   `yaml:"webhookUrl,omitempty" json:"webhookUrl,omitempty" validate:"omitempty,url"`
+	Roles                    []string `yaml:"roles,omitempty" json:"roles,omitempty" validate:"dive,min=1,max=50"`
+}
+
+// AlertMetricThreshold represents metric-based alert thresholds
+type AlertMetricThreshold struct {
+	MetricName string   `yaml:"metricName" json:"metricName" validate:"required,min=1,max=100"`
+	Operator   string   `yaml:"operator" json:"operator" validate:"required,oneof=LESS_THAN GREATER_THAN"`
+	Threshold  *float64 `yaml:"threshold" json:"threshold" validate:"required"`
+	Units      string   `yaml:"units,omitempty" json:"units,omitempty" validate:"omitempty,min=1,max=20"`
+	Mode       string   `yaml:"mode,omitempty" json:"mode,omitempty" validate:"omitempty,oneof=AVERAGE TOTAL"`
+}
+
+// AlertThreshold represents general alert thresholds
+type AlertThreshold struct {
+	Operator  string   `yaml:"operator" json:"operator" validate:"required,oneof=LESS_THAN GREATER_THAN"`
+	Threshold *float64 `yaml:"threshold" json:"threshold" validate:"required"`
+	Units     string   `yaml:"units,omitempty" json:"units,omitempty" validate:"omitempty,min=1,max=20"`
+}
+
+// AlertStatus represents the status of an alert (read-only)
+type AlertStatus struct {
+	ID                string             `yaml:"id" json:"id"`
+	AlertConfigID     string             `yaml:"alertConfigId" json:"alertConfigId"`
+	EventTypeName     string             `yaml:"eventTypeName" json:"eventTypeName"`
+	Status            string             `yaml:"status" json:"status"`
+	AcknowledgedUntil *time.Time         `yaml:"acknowledgedUntil,omitempty" json:"acknowledgedUntil,omitempty"`
+	AcknowledgingUser string             `yaml:"acknowledgingUser,omitempty" json:"acknowledgingUser,omitempty"`
+	Created           *time.Time         `yaml:"created,omitempty" json:"created,omitempty"`
+	Updated           *time.Time         `yaml:"updated,omitempty" json:"updated,omitempty"`
+	LastNotified      *time.Time         `yaml:"lastNotified,omitempty" json:"lastNotified,omitempty"`
+	MetricName        string             `yaml:"metricName,omitempty" json:"metricName,omitempty"`
+	CurrentValue      *AlertCurrentValue `yaml:"currentValue,omitempty" json:"currentValue,omitempty"`
+	HostnameAndPort   string             `yaml:"hostnameAndPort,omitempty" json:"hostnameAndPort,omitempty"`
+	ReplicaSetName    string             `yaml:"replicaSetName,omitempty" json:"replicaSetName,omitempty"`
+	ClusterName       string             `yaml:"clusterName,omitempty" json:"clusterName,omitempty"`
+}
+
+// AlertCurrentValue represents the current value that triggered the alert
+type AlertCurrentValue struct {
+	Number *float64 `yaml:"number,omitempty" json:"number,omitempty"`
+	Units  string   `yaml:"units,omitempty" json:"units,omitempty"`
 }
 
 // ApplyConfig represents the root configuration for declarative operations

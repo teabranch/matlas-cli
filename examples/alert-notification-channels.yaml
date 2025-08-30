@@ -1,0 +1,219 @@
+# Alert Notification Channels Example
+# This example demonstrates all supported notification channel types
+# and their configuration options.
+
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: notification-channels-demo
+  labels:
+    purpose: notification-examples
+spec:
+  resources:
+    # Email Notifications
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: email-notification-alert
+      spec:
+        enabled: true
+        eventTypeName: "HOST_CPU_USAGE_PERCENT"
+        
+        notifications:
+          # Simple email notification
+          - typeName: "EMAIL"
+            emailAddress: "alerts@company.com"
+            delayMin: 0
+            intervalMin: 15
+
+    # SMS Notifications
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: sms-notification-alert
+      spec:
+        enabled: true
+        eventTypeName: "HOST_MEMORY_USAGE_PERCENT"
+        
+        notifications:
+          # SMS notification
+          - typeName: "SMS"
+            mobileNumber: "+1234567890"
+            delayMin: 5
+            intervalMin: 30
+
+    # Slack Notifications
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: slack-notification-alert
+      spec:
+        enabled: true
+        eventTypeName: "CONNECTIONS_PERCENT"
+        
+        notifications:
+          # Slack channel notification
+          - typeName: "SLACK"
+            apiToken: "${SLACK_BOT_TOKEN}"
+            channelName: "#mongodb-alerts"
+            delayMin: 0
+            intervalMin: 10
+
+    # PagerDuty Notifications
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: pagerduty-notification-alert
+      spec:
+        enabled: true
+        eventTypeName: "HOST_DISK_USAGE_PERCENT"
+        
+        notifications:
+          # PagerDuty service notification
+          - typeName: "PAGER_DUTY"
+            serviceKey: "${PAGERDUTY_INTEGRATION_KEY}"
+            region: "US"
+            delayMin: 0
+            intervalMin: 0  # PagerDuty manages its own intervals
+
+    # OpsGenie Notifications
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: opsgenie-notification-alert
+      spec:
+        enabled: true
+        eventTypeName: "REPLICA_SET_MEMBER_LAG_PERCENT_DIFFERENCE"
+        
+        notifications:
+          # OpsGenie notification
+          - typeName: "OPS_GENIE"
+            opsGenieApiKey: "${OPSGENIE_API_KEY}"
+            opsGenieRegion: "EU"
+            delayMin: 2
+            intervalMin: 20
+
+    # Datadog Notifications
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: datadog-notification-alert
+      spec:
+        enabled: true
+        eventTypeName: "QUERY_TARGETING_SCANNED_OBJECTS_PER_RETURNED"
+        
+        notifications:
+          # Datadog integration
+          - typeName: "DATADOG"
+            datadogApiKey: "${DATADOG_API_KEY}"
+            datadogRegion: "US"
+            delayMin: 1
+            intervalMin: 15
+
+    # Microsoft Teams Notifications
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: teams-notification-alert
+      spec:
+        enabled: true
+        eventTypeName: "HOST_NORMALIZED_CPU_IOWAIT"
+        
+        notifications:
+          # Microsoft Teams webhook
+          - typeName: "MICROSOFT_TEAMS"
+            microsoftTeamsWebhookUrl: "${TEAMS_WEBHOOK_URL}"
+            delayMin: 0
+            intervalMin: 25
+
+    # Webhook Notifications
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: webhook-notification-alert
+      spec:
+        enabled: true
+        eventTypeName: "DATABASE_AVERAGE_OBJECT_SIZE"
+        
+        notifications:
+          # Custom webhook
+          - typeName: "WEBHOOK"
+            webhookUrl: "https://api.company.com/webhooks/mongodb-alerts"
+            webhookSecret: "${WEBHOOK_SECRET_KEY}"
+            delayMin: 0
+            intervalMin: 30
+
+    # User Notifications
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: user-notification-alert
+      spec:
+        enabled: true
+        eventTypeName: "CONNECTIONS"
+        
+        notifications:
+          # Specific user notification
+          - typeName: "USER"
+            username: "admin@company.com"
+            emailEnabled: true
+            smsEnabled: false
+            delayMin: 0
+            intervalMin: 20
+
+    # Group Notifications
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: group-notification-alert
+      spec:
+        enabled: true
+        eventTypeName: "HOST_DISK_QUEUE_DEPTH"
+        
+        notifications:
+          # Project group notification
+          - typeName: "GROUP"
+            emailEnabled: true
+            smsEnabled: false
+            roles:
+              - "GROUP_OWNER"
+              - "GROUP_DATA_ACCESS_ADMIN"
+            delayMin: 5
+            intervalMin: 45
+
+    # Organization Notifications
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: org-notification-alert
+      spec:
+        enabled: true
+        eventTypeName: "TICKETS_AVAILABLE_READS"
+        
+        notifications:
+          # Organization-wide notification
+          - typeName: "ORG"
+            emailEnabled: true
+            smsEnabled: true
+            roles:
+              - "ORG_OWNER"
+            delayMin: 0
+            intervalMin: 60
+
+    # Team Notifications
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: team-notification-alert
+      spec:
+        enabled: true
+        eventTypeName: "OPCOUNTER_REPL_DELETE"
+        
+        notifications:
+          # Atlas team notification
+          - typeName: "TEAM"
+            teamId: "${ATLAS_TEAM_ID}"
+            emailEnabled: true
+            smsEnabled: false
+            delayMin: 2
+            intervalMin: 30
