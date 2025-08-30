@@ -1,0 +1,221 @@
+# Comprehensive Alert Configuration Example
+# This example demonstrates advanced alert configurations with multiple notification
+# channels, complex matchers, and different threshold types.
+
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: comprehensive-alert-configs
+  labels:
+    environment: production
+    team: platform
+    purpose: monitoring
+spec:
+  resources:
+    # High Memory Usage Alert with Multiple Notifications
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: high-memory-alert
+        labels:
+          severity: critical
+          category: performance
+          component: memory
+      spec:
+        enabled: true
+        eventTypeName: "HOST_MEMORY_USAGE_PERCENT"
+        severityOverride: "CRITICAL"
+        
+        # Multiple matchers for specific targeting
+        matchers:
+          - fieldName: "HOSTNAME_AND_PORT"
+            operator: "CONTAINS"
+            value: "prod-cluster"
+          - fieldName: "REPLICA_SET_NAME"
+            operator: "EQUALS"
+            value: "rs0"
+        
+        # Multiple notification channels
+        notifications:
+          # Email notification
+          - typeName: "EMAIL"
+            emailAddress: "critical-alerts@company.com"
+            delayMin: 0
+            intervalMin: 5
+          
+          # Slack notification
+          - typeName: "SLACK"
+            apiToken: "${SLACK_API_TOKEN}"
+            channelName: "#alerts-critical"
+            delayMin: 0
+            intervalMin: 10
+          
+          # PagerDuty for critical issues
+          - typeName: "PAGER_DUTY"
+            serviceKey: "${PAGERDUTY_SERVICE_KEY}"
+            region: "US"
+            delayMin: 5
+            intervalMin: 30
+        
+        # Memory threshold
+        metricThreshold:
+          metricName: "MEMORY_USAGE_PERCENT"
+          operator: "GREATER_THAN"
+          threshold: 90.0
+          units: "PERCENT"
+          mode: "AVERAGE"
+
+    # Database Connection Alert
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: connection-limit-alert
+        labels:
+          severity: medium
+          category: connectivity
+      spec:
+        enabled: true
+        eventTypeName: "CONNECTIONS_PERCENT"
+        severityOverride: "MEDIUM"
+        
+        matchers:
+          - fieldName: "CLUSTER_NAME"
+            operator: "STARTS_WITH"
+            value: "production"
+        
+        notifications:
+          # Microsoft Teams notification
+          - typeName: "MICROSOFT_TEAMS"
+            microsoftTeamsWebhookUrl: "${TEAMS_WEBHOOK_URL}"
+            delayMin: 2
+            intervalMin: 20
+          
+          # OpsGenie notification
+          - typeName: "OPS_GENIE"
+            opsGenieApiKey: "${OPSGENIE_API_KEY}"
+            opsGenieRegion: "US"
+            delayMin: 5
+            intervalMin: 15
+        
+        # Connection percentage threshold
+        metricThreshold:
+          metricName: "CONNECTIONS_PERCENT"
+          operator: "GREATER_THAN"
+          threshold: 80.0
+          units: "PERCENT"
+          mode: "TOTAL"
+
+    # Disk Space Alert with Webhook
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: disk-space-alert
+        labels:
+          severity: high
+          category: storage
+      spec:
+        enabled: true
+        eventTypeName: "HOST_DISK_USAGE_PERCENT"
+        
+        matchers:
+          - fieldName: "DISK_PARTITION"
+            operator: "EQUALS"
+            value: "/data"
+        
+        notifications:
+          # Custom webhook notification
+          - typeName: "WEBHOOK"
+            webhookUrl: "https://monitoring.company.com/webhooks/atlas-alerts"
+            webhookSecret: "${WEBHOOK_SECRET}"
+            delayMin: 0
+            intervalMin: 30
+          
+          # SMS notification for urgent issues
+          - typeName: "SMS"
+            mobileNumber: "+1234567890"
+            delayMin: 10
+            intervalMin: 60
+        
+        # Disk usage threshold
+        metricThreshold:
+          metricName: "DISK_USAGE_PERCENT"
+          operator: "GREATER_THAN"
+          threshold: 85.0
+          units: "PERCENT"
+          mode: "AVERAGE"
+
+    # Query Performance Alert
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: slow-query-alert
+        labels:
+          severity: medium
+          category: performance
+          component: queries
+      spec:
+        enabled: true
+        eventTypeName: "QUERY_TARGETING_SCANNED_OBJECTS_PER_RETURNED"
+        
+        matchers:
+          - fieldName: "DATABASE_NAME"
+            operator: "NOT_EQUALS"
+            value: "test"
+        
+        notifications:
+          # Team notification
+          - typeName: "TEAM"
+            teamId: "${ATLAS_TEAM_ID}"
+            emailEnabled: true
+            smsEnabled: false
+            delayMin: 5
+            intervalMin: 45
+        
+        # General threshold for query efficiency
+        threshold:
+          operator: "GREATER_THAN"
+          threshold: 1000.0
+          units: "SCANNED_OBJECTS_PER_RETURNED"
+
+    # Replication Lag Alert
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: replication-lag-alert
+        labels:
+          severity: high
+          category: replication
+      spec:
+        enabled: true
+        eventTypeName: "REPLICA_SET_MEMBER_LAG_PERCENT_DIFFERENCE"
+        
+        matchers:
+          - fieldName: "REPLICA_SET_NAME"
+            operator: "REGEX"
+            value: "^rs[0-9]+$"
+        
+        notifications:
+          # Datadog integration
+          - typeName: "DATADOG"
+            datadogApiKey: "${DATADOG_API_KEY}"
+            datadogRegion: "US"
+            delayMin: 1
+            intervalMin: 10
+          
+          # Organization-level notification
+          - typeName: "ORG"
+            emailEnabled: true
+            smsEnabled: false
+            roles:
+              - "ORG_OWNER"
+              - "ORG_MEMBER"
+            delayMin: 0
+            intervalMin: 30
+        
+        # Replication lag threshold
+        metricThreshold:
+          metricName: "REPLICA_SET_MEMBER_LAG_PERCENT_DIFFERENCE"
+          operator: "GREATER_THAN"
+          threshold: 5.0
+          units: "PERCENT"
+          mode: "AVERAGE"

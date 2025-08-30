@@ -45,6 +45,7 @@ COMMANDS:
     roles       Run database roles lifecycle live tests (creates real custom roles)
     network     Run network access lifecycle live tests
     projects    Run projects lifecycle live tests (creates real project)
+    alerts      Run alerts lifecycle live tests (creates real alert configurations)
     search-cli  Run Atlas Search CLI command tests (creates real search indexes)
     search-advanced Run Atlas Search advanced features tests (YAML-only: analyzers, facets, autocomplete, etc.)
     search-missing Run missing search operations tests (metrics, optimization, query validation)
@@ -85,6 +86,7 @@ EXAMPLES:
     $0 roles                # Run live database roles lifecycle tests
     $0 network              # Run live network lifecycle tests
     $0 projects             # Run live projects lifecycle tests
+    $0 alerts               # Run live alerts lifecycle tests
     $0 search-cli           # Run Atlas Search CLI command tests (basic operations only)
     $0 search-advanced      # Run Atlas Search advanced features tests (YAML-only)
     $0 search-missing       # Run missing search operations tests (metrics, optimization, validation)
@@ -170,22 +172,22 @@ main() {
     
     case "$command" in
         unit|integration)
-            run_test_type "$command" "${args[@]}"
+            run_test_type "$command" "${args[@]+"${args[@]}"}"
             ;;
         e2e)
             print_info "ℹ️  NOTE: E2E tests manage their own network/user resources independently"
             if [[ "$include_clusters" == "true" ]]; then
                 print_warning "⚠️  Including real cluster tests - this may incur costs!"
-                run_test_type "$command" --include-clusters "${args[@]}"
+                run_test_type "$command" --include-clusters "${args[@]+"${args[@]}"}"
             else
-                run_test_type "$command" "${args[@]}"
+                run_test_type "$command" "${args[@]+"${args[@]}"}"
             fi
             ;;
         cluster)
             print_info "Running cluster lifecycle tests..."
             print_warning "⚠️  WARNING: Creates real Atlas clusters and may incur costs!"
             print_success "✓ SAFE MODE: Tests use --preserve-existing to protect existing clusters"
-            if "$SCRIPT_DIR/test/cluster-lifecycle.sh" "${args[@]}"; then
+            if "$SCRIPT_DIR/test/cluster-lifecycle.sh" "${args[@]+"${args[@]}"}"; then
                 print_success "Cluster lifecycle tests passed"
             else
                 print_error "Cluster lifecycle tests failed"
@@ -196,7 +198,7 @@ main() {
             print_info "Running ultra-safe cluster lifecycle tests..."
             print_success "✓ ULTRA-SAFE MODE: Dedicated safe script with explicit --preserve-existing"
             print_info "ℹ️  This script is specifically designed to never delete existing resources"
-            if "$SCRIPT_DIR/test/cluster-lifecycle-safe.sh" "${args[@]}"; then
+            if "$SCRIPT_DIR/test/cluster-lifecycle-safe.sh" "${args[@]+"${args[@]}"}"; then
                 print_success "Ultra-safe cluster lifecycle tests passed"
             else
                 print_error "Ultra-safe cluster lifecycle tests failed"
@@ -218,7 +220,7 @@ main() {
             print_info "Running discovery lifecycle tests..."
             print_info "ℹ️  NOTE: Requires existing Atlas cluster - does NOT create/delete clusters"
             print_info "Tests: Project discovery, ApplyDocument conversion, incremental discovery, resource-specific discovery"
-            if "$SCRIPT_DIR/test/discovery-lifecycle.sh" "${args[@]}"; then
+            if "$SCRIPT_DIR/test/discovery-lifecycle.sh" "${args[@]+"${args[@]}"}"; then
                 print_success "Discovery lifecycle tests passed"
             else
                 print_error "Discovery lifecycle tests failed"
@@ -228,7 +230,7 @@ main() {
         users)
             print_info "Running users lifecycle tests (live)..."
             print_info "ℹ️  NOTE: Requires existing Atlas cluster - does NOT create/delete clusters"
-            if "$SCRIPT_DIR/test/users-lifecycle.sh" "${args[@]}"; then
+            if "$SCRIPT_DIR/test/users-lifecycle.sh" "${args[@]+"${args[@]}"}"; then
                 print_success "Users lifecycle tests passed"
             else
                 print_error "Users lifecycle tests failed"
@@ -240,7 +242,7 @@ main() {
             print_warning "⚠️  WARNING: Creates real Atlas custom database roles!"
             print_success "✓ SAFE MODE: Uses --preserve-existing and isolated test databases"
             print_info "ℹ️  Creates roles only in test-specific databases with unique names"
-            if "$SCRIPT_DIR/test/database-roles-lifecycle.sh" "${args[@]}"; then
+            if "$SCRIPT_DIR/test/database-roles-lifecycle.sh" "${args[@]+"${args[@]}"}"; then
                 print_success "Database roles lifecycle tests passed"
             else
                 print_error "Database roles lifecycle tests failed"
@@ -250,7 +252,7 @@ main() {
         network)
             print_info "Running network lifecycle tests (live)..."
             print_info "ℹ️  NOTE: Only manages network access rules - does NOT affect clusters"
-            if "$SCRIPT_DIR/test/network-lifecycle.sh" "${args[@]}"; then
+            if "$SCRIPT_DIR/test/network-lifecycle.sh" "${args[@]+"${args[@]}"}"; then
                 print_success "Network lifecycle tests passed"
             else
                 print_error "Network lifecycle tests failed"
@@ -260,10 +262,23 @@ main() {
         projects)
             print_info "Running projects lifecycle tests (live)..."
             print_warning "⚠️  WARNING: Creates and deletes a real Atlas project!"
-            if "$SCRIPT_DIR/test/projects-lifecycle.sh" "${args[@]}"; then
+            if "$SCRIPT_DIR/test/projects-lifecycle.sh" "${args[@]+"${args[@]}"}"; then
                 print_success "Projects lifecycle tests passed"
             else
                 print_error "Projects lifecycle tests failed"
+                return 1
+            fi
+            ;;
+        alerts)
+            print_info "Running alerts lifecycle tests (live)..."
+            print_warning "⚠️  WARNING: Creates real Atlas alert configurations!"
+            print_success "✓ SAFE MODE: Uses test-specific names and comprehensive cleanup"
+            print_info "ℹ️  Tests alert configuration CRUD operations, alert listing, and acknowledgment"
+            print_info "Tests: CLI commands, YAML support, notification channels, error handling"
+            if "$SCRIPT_DIR/test/alerts-lifecycle.sh" "${args[@]+"${args[@]}"}"; then
+                print_success "Alerts lifecycle tests passed"
+            else
+                print_error "Alerts lifecycle tests failed"
                 return 1
             fi
             ;;
@@ -273,7 +288,7 @@ main() {
             print_success "✓ SAFE MODE: Uses test-specific names and comprehensive cleanup"
             print_info "ℹ️  Tests basic Atlas Search CLI commands (list, create, get, update, delete)"
             print_info "ℹ️  NOTE: Advanced features (analyzers, facets, etc.) tested separately via YAML"
-            if "$SCRIPT_DIR/test/atlas-search-cli.sh" "${args[@]}"; then
+            if "$SCRIPT_DIR/test/atlas-search-cli.sh" "${args[@]+"${args[@]}"}"; then
                 print_success "Atlas Search CLI tests passed"
             else
                 print_error "Atlas Search CLI tests failed"
@@ -286,7 +301,7 @@ main() {
             print_success "✓ SAFE MODE: Uses --preserve-existing flag to protect existing resources"
             print_info "ℹ️  Tests YAML-based advanced features: analyzers, facets, autocomplete, highlighting, synonyms, fuzzy search"
             print_info "ℹ️  NOTE: CLI commands for advanced features removed due to Atlas Admin API limitations"
-            if "$SCRIPT_DIR/test/search-advanced-features.sh" "${args[@]}"; then
+            if "$SCRIPT_DIR/test/search-advanced-features.sh" "${args[@]+"${args[@]}"}"; then
                 print_success "Atlas Search advanced features tests passed"
             else
                 print_error "Atlas Search advanced features tests failed"
@@ -298,7 +313,7 @@ main() {
             print_warning "⚠️  WARNING: Creates real Atlas search indexes for testing new operations!"
             print_info "ℹ️  Tests the 3 missing search operations: metrics, optimization, query validation"
             print_info "Tests: CLI commands, YAML support, error handling, output formats"
-            if "$SCRIPT_DIR/test/search-missing-operations.sh" "${args[@]}"; then
+            if "$SCRIPT_DIR/test/search-missing-operations.sh" "${args[@]+"${args[@]}"}"; then
                 print_success "Missing search operations tests passed"
             else
                 print_error "Missing search operations tests failed"
@@ -308,7 +323,7 @@ main() {
         applydoc)
             print_info "Running ApplyDocument format tests..."
             print_info "Testing comprehensive ApplyDocument YAML format coverage"
-            if "$SCRIPT_DIR/test/applydocument-test.sh" "${args[@]}"; then
+            if "$SCRIPT_DIR/test/applydocument-test.sh" "${args[@]+"${args[@]}"}"; then
                 print_success "ApplyDocument format tests passed"
             else
                 print_error "ApplyDocument format tests failed"
@@ -320,7 +335,7 @@ main() {
             print_info "ℹ️  NOTE: VALIDATION-ONLY tests - no Atlas API calls are made"
             print_info "Tests: Search/VPC YAML validation, schema compliance, multi-resource documents"
             print_success "✓ COMPLETELY SAFE: No real Atlas resources created or destroyed"
-            if "$SCRIPT_DIR/test/lifecycle-validation.sh" "${args[@]}"; then
+            if "$SCRIPT_DIR/test/lifecycle-validation.sh" "${args[@]+"${args[@]}"}"; then
                 print_success "Lifecycle validation tests passed"
             else
                 print_error "Lifecycle validation tests failed"
@@ -330,7 +345,7 @@ main() {
         config)
             print_info "Running configuration command tests..."
             print_info "Testing: validate, template generation, experimental commands, error handling"
-            if "$SCRIPT_DIR/test/config-test.sh" "${args[@]}"; then
+            if "$SCRIPT_DIR/test/config-test.sh" "${args[@]+"${args[@]}"}"; then
                 print_success "Configuration command tests passed"
             else
                 print_error "Configuration command tests failed"
@@ -342,7 +357,7 @@ main() {
             print_info "ℹ️  NOTE: Tests search index CLI and YAML functionality with existing cluster"
             print_info "Tests: Search index list, create validation, YAML configuration, error handling"
             print_success "✓ SAFE MODE: Tests preserve existing search indexes"
-            if "$SCRIPT_DIR/test/search-lifecycle.sh" "${args[@]}"; then
+            if "$SCRIPT_DIR/test/search-lifecycle.sh" "${args[@]+"${args[@]}"}"; then
                 print_success "Atlas Search lifecycle tests passed"
             else
                 print_error "Atlas Search lifecycle tests failed"
@@ -355,7 +370,7 @@ main() {
             print_info "ℹ️  NOTE: Tests complete search index lifecycle with existing cluster"
             print_info "Tests: List baseline, create indexes, verify creation, get details, delete indexes, verify cleanup"
             print_success "✓ SAFE MODE: Cluster state preserved, only search indexes affected"
-            if "$SCRIPT_DIR/test/search-e2e.sh" "${args[@]}"; then
+            if "$SCRIPT_DIR/test/search-e2e.sh" "${args[@]+"${args[@]}"}"; then
                 print_success "Atlas Search E2E tests passed"
             else
                 print_error "Atlas Search E2E tests failed"
@@ -377,24 +392,25 @@ main() {
         comprehensive)
             local failed=0
             print_info "Running comprehensive test suite (all test types)..."
-            run_test_type "unit" "${args[@]}" || ((failed++))
-            run_test_type "integration" "${args[@]}" || ((failed++))
-            run_test_type "e2e" "${args[@]}" || ((failed++))
+            run_test_type "unit" "${args[@]+"${args[@]}"}" || ((failed++))
+            run_test_type "integration" "${args[@]+"${args[@]}"}" || ((failed++))
+            run_test_type "e2e" "${args[@]+"${args[@]}"}" || ((failed++))
             
             print_warning "⚠️  Including ApplyDocument, discovery, config, and cluster tests - CLUSTER TESTS CREATE/DELETE REAL CLUSTERS!"
             print_success "✓ SAFE MODE: Cluster tests use --preserve-existing to protect existing clusters"
             print_info "ℹ️  Database and discovery tests require existing cluster but do NOT create/delete clusters"
             print_info "ℹ️  Config and lifecycle validation tests are safe and do not require external resources"
-            "$SCRIPT_DIR/test/applydocument-test.sh" "${args[@]}" || ((failed++))
-            "$SCRIPT_DIR/test/config-test.sh" "${args[@]}" || ((failed++))
-            "$SCRIPT_DIR/test/lifecycle-validation.sh" "${args[@]}" || ((failed++))
-            "$SCRIPT_DIR/test/discovery-lifecycle.sh" "${args[@]}" || ((failed++))
-            "$SCRIPT_DIR/test/database-operations.sh" "${args[@]}" || ((failed++))
-            "$SCRIPT_DIR/test/search-lifecycle.sh" "${args[@]}" || ((failed++))
-            "$SCRIPT_DIR/test/search-e2e.sh" "${args[@]}" || ((failed++))
-            "$SCRIPT_DIR/test/search-missing-operations.sh" "${args[@]}" || ((failed++))
-            "$SCRIPT_DIR/test/vpc-endpoints-lifecycle.sh" "${args[@]}" || ((failed++))
-            "$SCRIPT_DIR/test/cluster-lifecycle.sh" "${args[@]}" || ((failed++))
+            "$SCRIPT_DIR/test/applydocument-test.sh" "${args[@]+"${args[@]}"}" || ((failed++))
+            "$SCRIPT_DIR/test/config-test.sh" "${args[@]+"${args[@]}"}" || ((failed++))
+            "$SCRIPT_DIR/test/lifecycle-validation.sh" "${args[@]+"${args[@]}"}" || ((failed++))
+            "$SCRIPT_DIR/test/discovery-lifecycle.sh" "${args[@]+"${args[@]}"}" || ((failed++))
+            "$SCRIPT_DIR/test/database-operations.sh" "${args[@]+"${args[@]}"}" || ((failed++))
+            "$SCRIPT_DIR/test/search-lifecycle.sh" "${args[@]+"${args[@]}"}" || ((failed++))
+            "$SCRIPT_DIR/test/search-e2e.sh" "${args[@]+"${args[@]}"}" || ((failed++))
+            "$SCRIPT_DIR/test/search-missing-operations.sh" "${args[@]+"${args[@]}"}" || ((failed++))
+            "$SCRIPT_DIR/test/vpc-endpoints-lifecycle.sh" "${args[@]+"${args[@]}"}" || ((failed++))
+            "$SCRIPT_DIR/test/alerts-lifecycle.sh" "${args[@]+"${args[@]}"}" || ((failed++))
+            "$SCRIPT_DIR/test/cluster-lifecycle.sh" "${args[@]+"${args[@]}"}" || ((failed++))
             
             if [[ $failed -eq 0 ]]; then
                 print_success "All comprehensive tests passed!"
@@ -406,14 +422,14 @@ main() {
             ;;
         all)
             local failed=0
-            run_test_type "unit" "${args[@]}" || ((failed++))
-            run_test_type "integration" "${args[@]}" || ((failed++))
+            run_test_type "unit" "${args[@]+"${args[@]}"}" || ((failed++))
+            run_test_type "integration" "${args[@]+"${args[@]}"}" || ((failed++))
             
             if [[ "$include_clusters" == "true" ]]; then
                 print_warning "⚠️  Including real cluster tests - this may incur costs!"
-                run_test_type "e2e" --include-clusters "${args[@]}" || ((failed++))
+                run_test_type "e2e" --include-clusters "${args[@]+"${args[@]}"}" || ((failed++))
             else
-                run_test_type "e2e" "${args[@]}" || ((failed++))
+                run_test_type "e2e" "${args[@]+"${args[@]}"}" || ((failed++))
             fi
             
             if [[ $failed -eq 0 ]]; then
@@ -425,7 +441,7 @@ main() {
             fi
             ;;
         clean)
-            "$SCRIPT_DIR/utils/clean.sh" "${args[@]}"
+            "$SCRIPT_DIR/utils/clean.sh" "${args[@]+"${args[@]}"}"
             ;;
         help|-h|--help)
             show_usage

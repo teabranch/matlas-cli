@@ -1,0 +1,278 @@
+# Alert Thresholds and Matchers Example
+# This example demonstrates different threshold types and matcher configurations
+# for fine-grained alert targeting.
+
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: thresholds-and-matchers-demo
+  labels:
+    purpose: threshold-examples
+spec:
+  resources:
+    # Metric Threshold Examples
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: cpu-metric-threshold
+        labels:
+          type: metric-threshold
+      spec:
+        enabled: true
+        eventTypeName: "HOST_CPU_USAGE_PERCENT"
+        
+        # Target specific hosts using matchers
+        matchers:
+          - fieldName: "HOSTNAME_AND_PORT"
+            operator: "CONTAINS"
+            value: "primary"
+          - fieldName: "CLUSTER_NAME"
+            operator: "EQUALS"
+            value: "production-cluster"
+        
+        notifications:
+          - typeName: "EMAIL"
+            emailAddress: "performance-alerts@company.com"
+        
+        # Metric threshold with average mode
+        metricThreshold:
+          metricName: "CPU_USAGE_PERCENT"
+          operator: "GREATER_THAN"
+          threshold: 75.0
+          units: "PERCENT"
+          mode: "AVERAGE"
+
+    # Memory Threshold with Total Mode
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: memory-total-threshold
+        labels:
+          type: metric-threshold
+      spec:
+        enabled: true
+        eventTypeName: "HOST_MEMORY_USAGE"
+        
+        matchers:
+          - fieldName: "REPLICA_SET_NAME"
+            operator: "STARTS_WITH"
+            value: "shard"
+        
+        notifications:
+          - typeName: "SLACK"
+            apiToken: "${SLACK_API_TOKEN}"
+            channelName: "#infrastructure"
+        
+        # Memory threshold in GB with total mode
+        metricThreshold:
+          metricName: "MEMORY_USAGE"
+          operator: "GREATER_THAN"
+          threshold: 16.0
+          units: "GIGABYTES"
+          mode: "TOTAL"
+
+    # General Threshold Examples
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: connection-general-threshold
+        labels:
+          type: general-threshold
+      spec:
+        enabled: true
+        eventTypeName: "CONNECTIONS"
+        
+        matchers:
+          - fieldName: "PORT"
+            operator: "EQUALS"
+            value: "27017"
+        
+        notifications:
+          - typeName: "PAGER_DUTY"
+            serviceKey: "${PAGERDUTY_SERVICE_KEY}"
+            region: "US"
+        
+        # Simple threshold without metric-specific configuration
+        threshold:
+          operator: "GREATER_THAN"
+          threshold: 1000.0
+          units: "CONNECTIONS"
+
+    # Complex Matcher Examples
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: complex-matchers-example
+        labels:
+          type: complex-matchers
+      spec:
+        enabled: true
+        eventTypeName: "HOST_DISK_USAGE_PERCENT"
+        
+        # Multiple matchers with different operators
+        matchers:
+          # Include production clusters
+          - fieldName: "CLUSTER_NAME"
+            operator: "CONTAINS"
+            value: "prod"
+          
+          # Exclude test environments
+          - fieldName: "HOSTNAME_AND_PORT"
+            operator: "NOT_CONTAINS"
+            value: "test"
+          
+          # Target specific disk partitions
+          - fieldName: "DISK_PARTITION"
+            operator: "STARTS_WITH"
+            value: "/data"
+          
+          # Use regex for complex hostname patterns
+          - fieldName: "HOSTNAME_AND_PORT"
+            operator: "REGEX"
+            value: "^prod-mongo-[0-9]+-shard[0-9]+.*"
+        
+        notifications:
+          - typeName: "MICROSOFT_TEAMS"
+            microsoftTeamsWebhookUrl: "${TEAMS_WEBHOOK_URL}"
+        
+        metricThreshold:
+          metricName: "DISK_USAGE_PERCENT"
+          operator: "GREATER_THAN"
+          threshold: 80.0
+          units: "PERCENT"
+          mode: "AVERAGE"
+
+    # Database-Specific Alert
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: database-specific-alert
+        labels:
+          type: database-targeting
+      spec:
+        enabled: true
+        eventTypeName: "DATABASE_COLLECTION_COUNT"
+        
+        matchers:
+          # Target specific database
+          - fieldName: "DATABASE_NAME"
+            operator: "EQUALS"
+            value: "production_app"
+          
+          # Exclude system collections
+          - fieldName: "COLLECTION_NAME"
+            operator: "NOT_STARTS_WITH"
+            value: "system."
+        
+        notifications:
+          - typeName: "WEBHOOK"
+            webhookUrl: "https://monitoring.company.com/database-alerts"
+            webhookSecret: "${DB_WEBHOOK_SECRET}"
+        
+        threshold:
+          operator: "GREATER_THAN"
+          threshold: 10000.0
+          units: "COLLECTIONS"
+
+    # Query Performance Alert with Regex Matchers
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: query-performance-regex
+        labels:
+          type: query-performance
+      spec:
+        enabled: true
+        eventTypeName: "QUERY_TARGETING_SCANNED_OBJECTS_PER_RETURNED"
+        
+        matchers:
+          # Match multiple database patterns
+          - fieldName: "DATABASE_NAME"
+            operator: "REGEX"
+            value: "^(app|user|analytics)_.*"
+          
+          # Exclude specific collections
+          - fieldName: "COLLECTION_NAME"
+            operator: "NOT_REGEX"
+            value: ".*(log|temp|cache).*"
+        
+        notifications:
+          - typeName: "DATADOG"
+            datadogApiKey: "${DATADOG_API_KEY}"
+            datadogRegion: "US"
+        
+        metricThreshold:
+          metricName: "SCANNED_OBJECTS_PER_RETURNED"
+          operator: "GREATER_THAN"
+          threshold: 100.0
+          units: "RATIO"
+          mode: "AVERAGE"
+
+    # Network I/O Alert with Ends With Matcher
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: network-io-alert
+        labels:
+          type: network-performance
+      spec:
+        enabled: true
+        eventTypeName: "HOST_NETWORK_BYTES_IN"
+        
+        matchers:
+          # Target hosts ending with specific pattern
+          - fieldName: "HOSTNAME_AND_PORT"
+            operator: "ENDS_WITH"
+            value: ":27017"
+          
+          # Include only specific cluster types
+          - fieldName: "CLUSTER_NAME"
+            operator: "CONTAINS"
+            value: "sharded"
+        
+        notifications:
+          - typeName: "OPS_GENIE"
+            opsGenieApiKey: "${OPSGENIE_API_KEY}"
+            opsGenieRegion: "US"
+        
+        metricThreshold:
+          metricName: "NETWORK_BYTES_IN"
+          operator: "GREATER_THAN"
+          threshold: 1073741824.0  # 1GB in bytes
+          units: "BYTES"
+          mode: "TOTAL"
+
+    # Replication Alert with Not Equals Matcher
+    - apiVersion: matlas.mongodb.com/v1
+      kind: AlertConfiguration
+      metadata:
+        name: replication-secondary-alert
+        labels:
+          type: replication-monitoring
+      spec:
+        enabled: true
+        eventTypeName: "REPLICA_SET_MEMBER_LAG_PERCENT_DIFFERENCE"
+        
+        matchers:
+          # Target only secondary members
+          - fieldName: "REPLICA_SET_MEMBER_STATE"
+            operator: "NOT_EQUALS"
+            value: "PRIMARY"
+          
+          # Exclude arbiters
+          - fieldName: "REPLICA_SET_MEMBER_STATE"
+            operator: "NOT_EQUALS"
+            value: "ARBITER"
+        
+        notifications:
+          - typeName: "TEAM"
+            teamId: "${ATLAS_DBA_TEAM_ID}"
+            emailEnabled: true
+            smsEnabled: true
+        
+        metricThreshold:
+          metricName: "REPLICA_SET_MEMBER_LAG_PERCENT_DIFFERENCE"
+          operator: "GREATER_THAN"
+          threshold: 10.0
+          units: "PERCENT"
+          mode: "AVERAGE"

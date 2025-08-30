@@ -28,6 +28,8 @@ const (
 	KindSearchOptimization    ResourceKind = "SearchOptimization"
 	KindSearchQueryValidation ResourceKind = "SearchQueryValidation"
 	KindVPCEndpoint           ResourceKind = "VPCEndpoint"
+	KindAlert                 ResourceKind = "Alert"
+	KindAlertConfiguration    ResourceKind = "AlertConfiguration"
 	KindApplyDocument         ResourceKind = "ApplyDocument"
 )
 
@@ -275,6 +277,24 @@ type DatabaseUserManifest struct {
 	Kind       ResourceKind        `yaml:"kind" json:"kind"`
 	Metadata   ResourceMetadata    `yaml:"metadata" json:"metadata"`
 	Spec       DatabaseUserSpec    `yaml:"spec" json:"spec"`
+	Status     *ResourceStatusInfo `yaml:"status,omitempty" json:"status,omitempty"`
+}
+
+// AlertConfigurationManifest represents an alert configuration resource manifest
+type AlertConfigurationManifest struct {
+	APIVersion APIVersion          `yaml:"apiVersion" json:"apiVersion"`
+	Kind       ResourceKind        `yaml:"kind" json:"kind"`
+	Metadata   ResourceMetadata    `yaml:"metadata" json:"metadata"`
+	Spec       AlertConfig         `yaml:"spec" json:"spec"`
+	Status     *ResourceStatusInfo `yaml:"status,omitempty" json:"status,omitempty"`
+}
+
+// AlertManifest represents an alert resource manifest (read-only)
+type AlertManifest struct {
+	APIVersion APIVersion          `yaml:"apiVersion" json:"apiVersion"`
+	Kind       ResourceKind        `yaml:"kind" json:"kind"`
+	Metadata   ResourceMetadata    `yaml:"metadata" json:"metadata"`
+	Spec       AlertStatus         `yaml:"spec" json:"spec"`
 	Status     *ResourceStatusInfo `yaml:"status,omitempty" json:"status,omitempty"`
 }
 

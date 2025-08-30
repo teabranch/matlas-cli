@@ -85,6 +85,13 @@ Advanced Atlas features
 - VPC endpoint setups
 - Vector search for AI applications
 
+### [Alerts & Monitoring]({{ '/examples/alerts/' | relative_url }})
+Atlas alert configurations for monitoring and notifications
+- Basic CPU and memory monitoring
+- Multi-channel notification setups (Email, Slack, PagerDuty)
+- Complex matcher and threshold patterns
+- Comprehensive alert configurations
+
 ## Best Practices
 
 ### ApplyDocument vs Standalone Files

@@ -24,6 +24,8 @@ This reference covers all supported YAML kinds in matlas configuration files. Ea
 | `SearchMetrics` | Search index performance metrics and analytics | `v1alpha1` |
 | `SearchOptimization` | Search index optimization analysis | `v1alpha1` |
 | `SearchQueryValidation` | Search query validation and testing | `v1alpha1` |
+| `AlertConfiguration` | Atlas alert configuration for monitoring | `v1` |
+| `Alert` | Atlas alert status and details (read-only) | `v1` |
 | `VPCEndpoint` | Private endpoint for VPC peering | `v1` |
 | `ApplyDocument` | Multi-resource document containing multiple kinds | `v1` |
 
@@ -199,6 +201,49 @@ spec:
     - syntax
     - fields
     - performance
+```
+
+## AlertConfiguration Kind
+
+```yaml
+apiVersion: v1
+kind: AlertConfiguration
+metadata:
+  name: high-cpu-alert
+spec:
+  enabled: true
+  eventTypeName: "HOST_CPU_USAGE_PERCENT"
+  severityOverride: "HIGH"      # Optional: LOW, MEDIUM, HIGH, CRITICAL
+  matchers:
+    - fieldName: "HOSTNAME_AND_PORT"
+      operator: "CONTAINS"       # EQUALS, NOT_EQUALS, CONTAINS, etc.
+      value: "production"
+  notifications:
+    - typeName: "EMAIL"
+      emailAddress: "alerts@company.com"
+      delayMin: 0
+      intervalMin: 15
+    - typeName: "SLACK"
+      apiToken: "${SLACK_TOKEN}"
+      channelName: "#alerts"
+  metricThreshold:
+    metricName: "CPU_USAGE_PERCENT"
+    operator: "GREATER_THAN"
+    threshold: 80.0
+    units: "PERCENT"
+    mode: "AVERAGE"             # AVERAGE or TOTAL
+```
+
+## Alert Kind (Read-Only)
+
+```yaml
+apiVersion: v1
+kind: Alert
+metadata:
+  name: alert-status
+spec:
+  projectName: "my-project"
+  alertId: "507f1f77bcf86cd799439011"  # Optional: specific alert ID
 ```
 
 ## VPCEndpoint Kind
