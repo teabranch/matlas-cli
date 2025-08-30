@@ -34,7 +34,7 @@ func NewSearchCmd() *cobra.Command {
 	cmd.AddCommand(newCreateCmd())
 	cmd.AddCommand(newUpdateCmd())
 	cmd.AddCommand(newDeleteCmd())
-	
+
 	// Advanced search features are supported via YAML configuration only
 	// CLI commands removed as they returned placeholder data due to Atlas API limitations
 	// For search metrics, optimization, and query validation, use YAML ApplyDocument support
@@ -650,17 +650,17 @@ func convertToSearchIndexDefinition(rawDefinition map[string]interface{}) (*admi
 			for _, syn := range synonymsSlice {
 				if synMap, ok := syn.(map[string]interface{}); ok {
 					var mapping admin.SearchSynonymMappingDefinition
-					
+
 					// Set analyzer
 					if analyzer, ok := synMap["analyzer"].(string); ok {
 						mapping.SetAnalyzer(analyzer)
 					}
-					
+
 					// Set name
 					if name, ok := synMap["name"].(string); ok {
 						mapping.SetName(name)
 					}
-					
+
 					// Set source
 					if source, ok := synMap["source"].(map[string]interface{}); ok {
 						var synonymSource admin.SynonymSource
@@ -669,7 +669,7 @@ func convertToSearchIndexDefinition(rawDefinition map[string]interface{}) (*admi
 						}
 						mapping.SetSource(synonymSource)
 					}
-					
+
 					synonymMappings = append(synonymMappings, mapping)
 				}
 			}

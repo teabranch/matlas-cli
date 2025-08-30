@@ -1063,12 +1063,12 @@ func (e *AtlasExecutor) createSearchIndex(ctx context.Context, operation *Planne
 		if err != nil {
 			return fmt.Errorf("failed to convert search definition: %w", err)
 		}
-		
+
 		// Enhance definition with advanced features
 		if err := enhanceDefinitionWithAdvancedFeatures(definition, &searchManifest.Spec); err != nil {
 			return fmt.Errorf("failed to enhance definition with advanced features: %w", err)
 		}
-		
+
 		indexRequest.SetDefinition(*definition)
 	}
 
@@ -1857,7 +1857,7 @@ func enhanceDefinitionWithAdvancedFeatures(definition *admin.BaseSearchIndexCrea
 			if fieldsMap == nil {
 				fieldsMap = make(map[string]interface{})
 			}
-			
+
 			// Add facet configurations
 			for _, facet := range spec.Facets {
 				fieldConfig, exists := fieldsMap[facet.Field]
@@ -1868,7 +1868,7 @@ func enhanceDefinitionWithAdvancedFeatures(definition *admin.BaseSearchIndexCrea
 				if !ok {
 					fieldMap = make(map[string]interface{})
 				}
-				
+
 				facetConfig := map[string]interface{}{
 					"type": facet.Type,
 				}
@@ -1881,11 +1881,11 @@ func enhanceDefinitionWithAdvancedFeatures(definition *admin.BaseSearchIndexCrea
 				if facet.Default != nil {
 					facetConfig["default"] = *facet.Default
 				}
-				
+
 				fieldMap["facet"] = facetConfig
 				fieldsMap[facet.Field] = fieldMap
 			}
-			
+
 			// Add autocomplete configurations
 			for _, autocomplete := range spec.Autocomplete {
 				fieldConfig, exists := fieldsMap[autocomplete.Field]
@@ -1896,7 +1896,7 @@ func enhanceDefinitionWithAdvancedFeatures(definition *admin.BaseSearchIndexCrea
 				if !ok {
 					fieldMap = make(map[string]interface{})
 				}
-				
+
 				autocompleteConfig := map[string]interface{}{}
 				if autocomplete.MaxEdits > 0 {
 					autocompleteConfig["maxEdits"] = autocomplete.MaxEdits
@@ -1907,11 +1907,11 @@ func enhanceDefinitionWithAdvancedFeatures(definition *admin.BaseSearchIndexCrea
 				if autocomplete.FuzzyMaxEdits > 0 {
 					autocompleteConfig["fuzzyMaxEdits"] = autocomplete.FuzzyMaxEdits
 				}
-				
+
 				fieldMap["autocomplete"] = autocompleteConfig
 				fieldsMap[autocomplete.Field] = fieldMap
 			}
-			
+
 			// Add highlighting configurations
 			for _, highlighting := range spec.Highlighting {
 				fieldConfig, exists := fieldsMap[highlighting.Field]
@@ -1922,7 +1922,7 @@ func enhanceDefinitionWithAdvancedFeatures(definition *admin.BaseSearchIndexCrea
 				if !ok {
 					fieldMap = make(map[string]interface{})
 				}
-				
+
 				highlightConfig := map[string]interface{}{}
 				if highlighting.MaxCharsToExamine > 0 {
 					highlightConfig["maxCharsToExamine"] = highlighting.MaxCharsToExamine
@@ -1930,11 +1930,11 @@ func enhanceDefinitionWithAdvancedFeatures(definition *admin.BaseSearchIndexCrea
 				if highlighting.MaxNumPassages > 0 {
 					highlightConfig["maxNumPassages"] = highlighting.MaxNumPassages
 				}
-				
+
 				fieldMap["highlight"] = highlightConfig
 				fieldsMap[highlighting.Field] = fieldMap
 			}
-			
+
 			// Add fuzzy search configurations
 			for _, fuzzy := range spec.FuzzySearch {
 				fieldConfig, exists := fieldsMap[fuzzy.Field]
@@ -1945,7 +1945,7 @@ func enhanceDefinitionWithAdvancedFeatures(definition *admin.BaseSearchIndexCrea
 				if !ok {
 					fieldMap = make(map[string]interface{})
 				}
-				
+
 				fuzzyConfig := map[string]interface{}{}
 				if fuzzy.MaxEdits > 0 {
 					fuzzyConfig["maxEdits"] = fuzzy.MaxEdits
@@ -1956,11 +1956,11 @@ func enhanceDefinitionWithAdvancedFeatures(definition *admin.BaseSearchIndexCrea
 				if fuzzy.MaxExpansions > 0 {
 					fuzzyConfig["maxExpansions"] = fuzzy.MaxExpansions
 				}
-				
+
 				fieldMap["fuzzy"] = fuzzyConfig
 				fieldsMap[fuzzy.Field] = fieldMap
 			}
-			
+
 			definition.Mappings.SetFields(fieldsMap)
 		}
 	}
@@ -1979,7 +1979,7 @@ func enhanceDefinitionWithAdvancedFeatures(definition *admin.BaseSearchIndexCrea
 			synonymMap["explicit"] = synonym.Explicit
 			synonyms[i] = synonymMap
 		}
-		
+
 		// Synonyms are typically added at the root level of the definition
 		// Note: This may need adjustment based on actual Atlas Search API requirements
 	}
@@ -2253,11 +2253,11 @@ func (e *AtlasExecutor) executeSearchOptimization(ctx context.Context, operation
 		}
 
 		analysisResults = map[string]interface{}{
-			"cluster":     optimizationManifest.Spec.ClusterName,
-			"indexes":     analyses,
-			"analyzed":    len(analyses),
-			"analyzeAll":  optimizationManifest.Spec.AnalyzeAll,
-			"categories":  optimizationManifest.Spec.Categories,
+			"cluster":    optimizationManifest.Spec.ClusterName,
+			"indexes":    analyses,
+			"analyzed":   len(analyses),
+			"analyzeAll": optimizationManifest.Spec.AnalyzeAll,
+			"categories": optimizationManifest.Spec.Categories,
 		}
 	}
 

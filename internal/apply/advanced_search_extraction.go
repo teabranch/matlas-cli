@@ -104,7 +104,7 @@ func (d *AtlasStateDiscovery) extractFieldFacet(fieldName string, fieldMap map[s
 			facet := &types.FacetConfig{
 				Field: fieldName,
 			}
-			
+
 			if facetType, ok := facetMap["type"].(string); ok {
 				facet.Type = facetType
 			}
@@ -118,7 +118,7 @@ func (d *AtlasStateDiscovery) extractFieldFacet(fieldName string, fieldMap map[s
 			if defaultVal, ok := facetMap["default"].(string); ok {
 				facet.Default = &defaultVal
 			}
-			
+
 			return facet
 		}
 	}
@@ -153,7 +153,7 @@ func (d *AtlasStateDiscovery) extractFieldAutocomplete(fieldName string, fieldMa
 			autoComplete := &types.AutocompleteConfig{
 				Field: fieldName,
 			}
-			
+
 			if maxEdits, ok := autocompleteMap["maxEdits"].(float64); ok {
 				autoComplete.MaxEdits = int(maxEdits)
 			}
@@ -163,7 +163,7 @@ func (d *AtlasStateDiscovery) extractFieldAutocomplete(fieldName string, fieldMa
 			if fuzzyMaxEdits, ok := autocompleteMap["fuzzyMaxEdits"].(float64); ok {
 				autoComplete.FuzzyMaxEdits = int(fuzzyMaxEdits)
 			}
-			
+
 			return autoComplete
 		}
 	}
@@ -198,14 +198,14 @@ func (d *AtlasStateDiscovery) extractFieldHighlighting(fieldName string, fieldMa
 			highlight := &types.HighlightingConfig{
 				Field: fieldName,
 			}
-			
+
 			if maxChars, ok := highlightMap["maxCharsToExamine"].(float64); ok {
 				highlight.MaxCharsToExamine = int(maxChars)
 			}
 			if maxPassages, ok := highlightMap["maxNumPassages"].(float64); ok {
 				highlight.MaxNumPassages = int(maxPassages)
 			}
-			
+
 			return highlight
 		}
 	}
@@ -276,7 +276,7 @@ func (d *AtlasStateDiscovery) extractFieldFuzzy(fieldName string, fieldMap map[s
 			fuzzyConfig := &types.FuzzyConfig{
 				Field: fieldName,
 			}
-			
+
 			if maxEdits, ok := fuzzyMap["maxEdits"].(float64); ok {
 				fuzzyConfig.MaxEdits = int(maxEdits)
 			}
@@ -286,7 +286,7 @@ func (d *AtlasStateDiscovery) extractFieldFuzzy(fieldName string, fieldMap map[s
 			if maxExpansions, ok := fuzzyMap["maxExpansions"].(float64); ok {
 				fuzzyConfig.MaxExpansions = int(maxExpansions)
 			}
-			
+
 			return fuzzyConfig
 		}
 	}

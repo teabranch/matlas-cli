@@ -36,7 +36,7 @@ func TestNewSearchCmd_VisibleAndSubcommands(t *testing.T) {
 	for _, c := range cmd.Commands() {
 		found[c.Use] = true
 	}
-	
+
 	// Basic search index management commands (these work with Atlas Admin API)
 	// Note: advanced operations (metrics, optimize, validate-query) removed due to Atlas API limitations
 	// These operations are now supported via YAML ApplyDocument only

@@ -1828,7 +1828,7 @@ func convertToSearchIndexSpec(specMap map[string]interface{}) types.SearchIndexS
 	if val, ok := specMap["definition"]; ok {
 		if definitionMap, ok := val.(map[string]interface{}); ok {
 			spec.Definition = definitionMap
-			
+
 			// Extract advanced search features from definition
 			if analyzersRaw, ok := definitionMap["analyzers"]; ok {
 				if analyzersMap, ok := analyzersRaw.(map[string]interface{}); ok {

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"gopkg.in/yaml.v3"
 	"github.com/teabranch/matlas-cli/internal/config"
+	"gopkg.in/yaml.v3"
 )
 
 // AdvancedSearchFormatter handles formatting for advanced search features
@@ -151,13 +151,18 @@ func (f *AdvancedSearchFormatter) formatAnalyzersYAML(analyzers []map[string]int
 		"count":     len(analyzers),
 	}
 	encoder := yaml.NewEncoder(f.writer)
-	defer encoder.Close()
+	defer func() {
+		if err := encoder.Close(); err != nil {
+			// Log error but don't override the main return value
+			_ = err
+		}
+	}()
 	return encoder.Encode(output)
 }
 
 func (f *AdvancedSearchFormatter) formatAnalyzersTable(analyzers []map[string]interface{}) error {
 	if len(analyzers) == 0 {
-		fmt.Fprintln(f.writer, "No analyzers found.")
+		_, _ = fmt.Fprintln(f.writer, "No analyzers found.")
 		return nil
 	}
 
@@ -193,13 +198,18 @@ func (f *AdvancedSearchFormatter) formatFacetsYAML(facets []map[string]interface
 		"count":  len(facets),
 	}
 	encoder := yaml.NewEncoder(f.writer)
-	defer encoder.Close()
+	defer func() {
+		if err := encoder.Close(); err != nil {
+			// Log error but don't override the main return value
+			_ = err
+		}
+	}()
 	return encoder.Encode(output)
 }
 
 func (f *AdvancedSearchFormatter) formatFacetsTable(facets []map[string]interface{}) error {
 	if len(facets) == 0 {
-		fmt.Fprintln(f.writer, "No facet configurations found.")
+		_, _ = fmt.Fprintln(f.writer, "No facet configurations found.")
 		return nil
 	}
 
@@ -235,13 +245,18 @@ func (f *AdvancedSearchFormatter) formatAutocompleteYAML(autocompletes []map[str
 		"count":        len(autocompletes),
 	}
 	encoder := yaml.NewEncoder(f.writer)
-	defer encoder.Close()
+	defer func() {
+		if err := encoder.Close(); err != nil {
+			// Log error but don't override the main return value
+			_ = err
+		}
+	}()
 	return encoder.Encode(output)
 }
 
 func (f *AdvancedSearchFormatter) formatAutocompleteTable(autocompletes []map[string]interface{}) error {
 	if len(autocompletes) == 0 {
-		fmt.Fprintln(f.writer, "No autocomplete configurations found.")
+		_, _ = fmt.Fprintln(f.writer, "No autocomplete configurations found.")
 		return nil
 	}
 
@@ -277,13 +292,18 @@ func (f *AdvancedSearchFormatter) formatHighlightingYAML(highlighting []map[stri
 		"count":        len(highlighting),
 	}
 	encoder := yaml.NewEncoder(f.writer)
-	defer encoder.Close()
+	defer func() {
+		if err := encoder.Close(); err != nil {
+			// Log error but don't override the main return value
+			_ = err
+		}
+	}()
 	return encoder.Encode(output)
 }
 
 func (f *AdvancedSearchFormatter) formatHighlightingTable(highlighting []map[string]interface{}) error {
 	if len(highlighting) == 0 {
-		fmt.Fprintln(f.writer, "No highlighting configurations found.")
+		_, _ = fmt.Fprintln(f.writer, "No highlighting configurations found.")
 		return nil
 	}
 
@@ -319,13 +339,18 @@ func (f *AdvancedSearchFormatter) formatSynonymsYAML(synonyms []map[string]inter
 		"count":    len(synonyms),
 	}
 	encoder := yaml.NewEncoder(f.writer)
-	defer encoder.Close()
+	defer func() {
+		if err := encoder.Close(); err != nil {
+			// Log error but don't override the main return value
+			_ = err
+		}
+	}()
 	return encoder.Encode(output)
 }
 
 func (f *AdvancedSearchFormatter) formatSynonymsTable(synonyms []map[string]interface{}) error {
 	if len(synonyms) == 0 {
-		fmt.Fprintln(f.writer, "No synonym configurations found.")
+		_, _ = fmt.Fprintln(f.writer, "No synonym configurations found.")
 		return nil
 	}
 
@@ -361,13 +386,18 @@ func (f *AdvancedSearchFormatter) formatFuzzyYAML(fuzzy []map[string]interface{}
 		"count": len(fuzzy),
 	}
 	encoder := yaml.NewEncoder(f.writer)
-	defer encoder.Close()
+	defer func() {
+		if err := encoder.Close(); err != nil {
+			// Log error but don't override the main return value
+			_ = err
+		}
+	}()
 	return encoder.Encode(output)
 }
 
 func (f *AdvancedSearchFormatter) formatFuzzyTable(fuzzy []map[string]interface{}) error {
 	if len(fuzzy) == 0 {
-		fmt.Fprintln(f.writer, "No fuzzy search configurations found.")
+		_, _ = fmt.Fprintln(f.writer, "No fuzzy search configurations found.")
 		return nil
 	}
 
@@ -396,34 +426,39 @@ func (f *AdvancedSearchFormatter) formatMetricsJSON(metrics map[string]interface
 
 func (f *AdvancedSearchFormatter) formatMetricsYAML(metrics map[string]interface{}) error {
 	encoder := yaml.NewEncoder(f.writer)
-	defer encoder.Close()
+	defer func() {
+		if err := encoder.Close(); err != nil {
+			// Log error but don't override the main return value
+			_ = err
+		}
+	}()
 	return encoder.Encode(metrics)
 }
 
 func (f *AdvancedSearchFormatter) formatMetricsTable(metrics map[string]interface{}) error {
-	fmt.Fprintln(f.writer, "Search Index Metrics")
-	fmt.Fprintln(f.writer, strings.Repeat("=", 50))
+	_, _ = fmt.Fprintln(f.writer, "Search Index Metrics")
+	_, _ = fmt.Fprintln(f.writer, strings.Repeat("=", 50))
 
 	// Basic metrics
 	if indexName, ok := metrics["indexName"]; ok {
-		fmt.Fprintf(f.writer, "Index Name: %v\n", indexName)
+		_, _ = fmt.Fprintf(f.writer, "Index Name: %v\n", indexName)
 	}
 	if queryCount, ok := metrics["queryCount"]; ok {
-		fmt.Fprintf(f.writer, "Total Queries: %v\n", queryCount)
+		_, _ = fmt.Fprintf(f.writer, "Total Queries: %v\n", queryCount)
 	}
 	if avgQueryTime, ok := metrics["avgQueryTime"]; ok {
-		fmt.Fprintf(f.writer, "Average Query Time: %v ms\n", avgQueryTime)
+		_, _ = fmt.Fprintf(f.writer, "Average Query Time: %v ms\n", avgQueryTime)
 	}
 	if indexSize, ok := metrics["indexSize"]; ok {
-		fmt.Fprintf(f.writer, "Index Size: %v\n", indexSize)
+		_, _ = fmt.Fprintf(f.writer, "Index Size: %v\n", indexSize)
 	}
 
 	// Performance metrics
 	if perf, ok := metrics["performance"]; ok {
 		if perfMap, ok := perf.(map[string]interface{}); ok {
-			fmt.Fprintln(f.writer, "\nPerformance Metrics:")
+			_, _ = fmt.Fprintln(f.writer, "\nPerformance Metrics:")
 			for key, value := range perfMap {
-				fmt.Fprintf(f.writer, "  %s: %v\n", key, value)
+				_, _ = fmt.Fprintf(f.writer, "  %s: %v\n", key, value)
 			}
 		}
 	}
@@ -440,30 +475,35 @@ func (f *AdvancedSearchFormatter) formatOptimizationJSON(report map[string]inter
 
 func (f *AdvancedSearchFormatter) formatOptimizationYAML(report map[string]interface{}) error {
 	encoder := yaml.NewEncoder(f.writer)
-	defer encoder.Close()
+	defer func() {
+		if err := encoder.Close(); err != nil {
+			// Log error but don't override the main return value
+			_ = err
+		}
+	}()
 	return encoder.Encode(report)
 }
 
 func (f *AdvancedSearchFormatter) formatOptimizationTable(report map[string]interface{}) error {
-	fmt.Fprintln(f.writer, "Search Index Optimization Report")
-	fmt.Fprintln(f.writer, strings.Repeat("=", 50))
+	_, _ = fmt.Fprintln(f.writer, "Search Index Optimization Report")
+	_, _ = fmt.Fprintln(f.writer, strings.Repeat("=", 50))
 
 	if indexName, ok := report["indexName"]; ok {
-		fmt.Fprintf(f.writer, "Index Name: %v\n", indexName)
+		_, _ = fmt.Fprintf(f.writer, "Index Name: %v\n", indexName)
 	}
 
 	if score, ok := report["optimizationScore"]; ok {
-		fmt.Fprintf(f.writer, "Optimization Score: %v/100\n", score)
+		_, _ = fmt.Fprintf(f.writer, "Optimization Score: %v/100\n", score)
 	}
 
 	if recommendations, ok := report["recommendations"]; ok {
 		if recList, ok := recommendations.([]interface{}); ok {
-			fmt.Fprintln(f.writer, "\nRecommendations:")
+			_, _ = fmt.Fprintln(f.writer, "\nRecommendations:")
 			for i, rec := range recList {
 				if recMap, ok := rec.(map[string]interface{}); ok {
-					fmt.Fprintf(f.writer, "%d. %v\n", i+1, recMap["title"])
+					_, _ = fmt.Fprintf(f.writer, "%d. %v\n", i+1, recMap["title"])
 					if desc, ok := recMap["description"]; ok {
-						fmt.Fprintf(f.writer, "   %v\n", desc)
+						_, _ = fmt.Fprintf(f.writer, "   %v\n", desc)
 					}
 				}
 			}
@@ -482,36 +522,41 @@ func (f *AdvancedSearchFormatter) formatValidationJSON(result map[string]interfa
 
 func (f *AdvancedSearchFormatter) formatValidationYAML(result map[string]interface{}) error {
 	encoder := yaml.NewEncoder(f.writer)
-	defer encoder.Close()
+	defer func() {
+		if err := encoder.Close(); err != nil {
+			// Log error but don't override the main return value
+			_ = err
+		}
+	}()
 	return encoder.Encode(result)
 }
 
 func (f *AdvancedSearchFormatter) formatValidationTable(result map[string]interface{}) error {
-	fmt.Fprintln(f.writer, "Validation Results")
-	fmt.Fprintln(f.writer, strings.Repeat("=", 30))
+	_, _ = fmt.Fprintln(f.writer, "Validation Results")
+	_, _ = fmt.Fprintln(f.writer, strings.Repeat("=", 30))
 
 	if valid, ok := result["valid"]; ok {
 		status := "FAIL"
 		if validBool, ok := valid.(bool); ok && validBool {
 			status = "PASS"
 		}
-		fmt.Fprintf(f.writer, "Status: %s\n", status)
+		_, _ = fmt.Fprintf(f.writer, "Status: %s\n", status)
 	}
 
 	if errors, ok := result["errors"]; ok {
 		if errorList, ok := errors.([]interface{}); ok && len(errorList) > 0 {
-			fmt.Fprintln(f.writer, "\nErrors:")
+			_, _ = fmt.Fprintln(f.writer, "\nErrors:")
 			for _, err := range errorList {
-				fmt.Fprintf(f.writer, "  • %v\n", err)
+				_, _ = fmt.Fprintf(f.writer, "  • %v\n", err)
 			}
 		}
 	}
 
 	if warnings, ok := result["warnings"]; ok {
 		if warnList, ok := warnings.([]interface{}); ok && len(warnList) > 0 {
-			fmt.Fprintln(f.writer, "\nWarnings:")
+			_, _ = fmt.Fprintln(f.writer, "\nWarnings:")
 			for _, warn := range warnList {
-				fmt.Fprintf(f.writer, "  • %v\n", warn)
+				_, _ = fmt.Fprintf(f.writer, "  • %v\n", warn)
 			}
 		}
 	}

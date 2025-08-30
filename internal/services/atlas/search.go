@@ -289,10 +289,10 @@ func (s *AdvancedSearchService) GetSearchMetrics(ctx context.Context, projectID,
 		"clusterName": clusterName,
 		"timeRange":   timeRange,
 		"metrics": map[string]interface{}{
-			"queryCount":    "1000",
-			"avgQueryTime":  "50",
-			"indexSize":     "2.5GB",
-			"errorRate":     "0.1%",
+			"queryCount":   "1000",
+			"avgQueryTime": "50",
+			"indexSize":    "2.5GB",
+			"errorRate":    "0.1%",
 		},
 	}
 
@@ -388,12 +388,12 @@ func (s *AdvancedSearchService) extractAnalyzersFromDefinition(index *admin.Sear
 		// TODO: Extract analyzer information from the definition structure
 		// The GetAnalyzerOk() and GetSearchAnalyzerOk() methods are not available in the current SDK version
 		// Once the Atlas SDK provides proper analyzer access methods, this should be updated
-		
+
 		// For now, return placeholder analyzer information if the index has a definition
 		analyzers = append(analyzers, map[string]interface{}{
 			"name":        "default",
 			"type":        "standard",
-			"status":      "active", 
+			"status":      "active",
 			"description": "Default analyzer extracted from index definition",
 		})
 	}
@@ -408,7 +408,7 @@ func (s *AdvancedSearchService) extractFacetsFromDefinition(index *admin.SearchI
 	if defPtr, ok := index.GetLatestDefinitionOk(); ok && defPtr != nil {
 		// TODO: Parse the definition to extract facet configurations
 		// This would require understanding the actual structure of the Atlas Search definition
-		
+
 		// Placeholder facet information
 		facets = append(facets, map[string]interface{}{
 			"field":       "category",
@@ -424,8 +424,8 @@ func (s *AdvancedSearchService) extractFacetsFromDefinition(index *admin.SearchI
 func (s *AdvancedSearchService) analyzeIndexDefinition(index *admin.SearchIndexResponse) map[string]interface{} {
 	analysis := map[string]interface{}{
 		"indexName":         index.GetName(),
-		"status":           index.GetStatus(),
-		"type":             index.GetType(),
+		"status":            index.GetStatus(),
+		"type":              index.GetType(),
 		"optimizationScore": 75, // Placeholder score
 		"recommendations": []map[string]interface{}{
 			{

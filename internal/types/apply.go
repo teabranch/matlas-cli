@@ -18,17 +18,17 @@ const (
 type ResourceKind string
 
 const (
-	KindProject              ResourceKind = "Project"
-	KindCluster              ResourceKind = "Cluster"
-	KindDatabaseUser         ResourceKind = "DatabaseUser"
-	KindDatabaseRole         ResourceKind = "DatabaseRole"
-	KindNetworkAccess        ResourceKind = "NetworkAccess"
-	KindSearchIndex          ResourceKind = "SearchIndex"
-	KindSearchMetrics        ResourceKind = "SearchMetrics"
-	KindSearchOptimization   ResourceKind = "SearchOptimization"
+	KindProject               ResourceKind = "Project"
+	KindCluster               ResourceKind = "Cluster"
+	KindDatabaseUser          ResourceKind = "DatabaseUser"
+	KindDatabaseRole          ResourceKind = "DatabaseRole"
+	KindNetworkAccess         ResourceKind = "NetworkAccess"
+	KindSearchIndex           ResourceKind = "SearchIndex"
+	KindSearchMetrics         ResourceKind = "SearchMetrics"
+	KindSearchOptimization    ResourceKind = "SearchOptimization"
 	KindSearchQueryValidation ResourceKind = "SearchQueryValidation"
-	KindVPCEndpoint          ResourceKind = "VPCEndpoint"
-	KindApplyDocument        ResourceKind = "ApplyDocument"
+	KindVPCEndpoint           ResourceKind = "VPCEndpoint"
+	KindApplyDocument         ResourceKind = "ApplyDocument"
 )
 
 // ResourceStatus represents the current status of a resource.
@@ -134,14 +134,14 @@ type SearchIndexSpec struct {
 	IndexType      string                 `yaml:"indexType,omitempty" json:"indexType,omitempty"` // "search" or "vectorSearch"
 	Definition     map[string]interface{} `yaml:"definition" json:"definition"`
 	DependsOn      []string               `yaml:"dependsOn,omitempty" json:"dependsOn,omitempty"`
-	
+
 	// Advanced search features
-	Analyzers      []AnalyzerConfig       `yaml:"analyzers,omitempty" json:"analyzers,omitempty"`
-	Facets         []FacetConfig          `yaml:"facets,omitempty" json:"facets,omitempty"`
-	Autocomplete   []AutocompleteConfig   `yaml:"autocomplete,omitempty" json:"autocomplete,omitempty"`
-	Highlighting   []HighlightingConfig   `yaml:"highlighting,omitempty" json:"highlighting,omitempty"`
-	Synonyms       []SynonymConfig        `yaml:"synonyms,omitempty" json:"synonyms,omitempty"`
-	FuzzySearch    []FuzzyConfig          `yaml:"fuzzySearch,omitempty" json:"fuzzySearch,omitempty"`
+	Analyzers    []AnalyzerConfig     `yaml:"analyzers,omitempty" json:"analyzers,omitempty"`
+	Facets       []FacetConfig        `yaml:"facets,omitempty" json:"facets,omitempty"`
+	Autocomplete []AutocompleteConfig `yaml:"autocomplete,omitempty" json:"autocomplete,omitempty"`
+	Highlighting []HighlightingConfig `yaml:"highlighting,omitempty" json:"highlighting,omitempty"`
+	Synonyms     []SynonymConfig      `yaml:"synonyms,omitempty" json:"synonyms,omitempty"`
+	FuzzySearch  []FuzzyConfig        `yaml:"fuzzySearch,omitempty" json:"fuzzySearch,omitempty"`
 }
 
 // AnalyzerConfig represents custom analyzer configuration
@@ -155,26 +155,26 @@ type AnalyzerConfig struct {
 
 // FacetConfig represents faceted search configuration
 type FacetConfig struct {
-	Field       string `yaml:"field" json:"field"`
-	Type        string `yaml:"type" json:"type"` // string, number, date
-	NumBuckets  *int   `yaml:"numBuckets,omitempty" json:"numBuckets,omitempty"`
-	Boundaries  []interface{} `yaml:"boundaries,omitempty" json:"boundaries,omitempty"`
-	Default     *string `yaml:"default,omitempty" json:"default,omitempty"`
+	Field      string        `yaml:"field" json:"field"`
+	Type       string        `yaml:"type" json:"type"` // string, number, date
+	NumBuckets *int          `yaml:"numBuckets,omitempty" json:"numBuckets,omitempty"`
+	Boundaries []interface{} `yaml:"boundaries,omitempty" json:"boundaries,omitempty"`
+	Default    *string       `yaml:"default,omitempty" json:"default,omitempty"`
 }
 
 // AutocompleteConfig represents autocomplete configuration
 type AutocompleteConfig struct {
-	Field        string `yaml:"field" json:"field"`
-	MaxEdits     int    `yaml:"maxEdits,omitempty" json:"maxEdits,omitempty"`
-	PrefixLength int    `yaml:"prefixLength,omitempty" json:"prefixLength,omitempty"`
-	FuzzyMaxEdits int   `yaml:"fuzzyMaxEdits,omitempty" json:"fuzzyMaxEdits,omitempty"`
+	Field         string `yaml:"field" json:"field"`
+	MaxEdits      int    `yaml:"maxEdits,omitempty" json:"maxEdits,omitempty"`
+	PrefixLength  int    `yaml:"prefixLength,omitempty" json:"prefixLength,omitempty"`
+	FuzzyMaxEdits int    `yaml:"fuzzyMaxEdits,omitempty" json:"fuzzyMaxEdits,omitempty"`
 }
 
 // HighlightingConfig represents highlighting configuration
 type HighlightingConfig struct {
-	Field              string `yaml:"field" json:"field"`
-	MaxCharsToExamine  int    `yaml:"maxCharsToExamine,omitempty" json:"maxCharsToExamine,omitempty"`
-	MaxNumPassages     int    `yaml:"maxNumPassages,omitempty" json:"maxNumPassages,omitempty"`
+	Field             string `yaml:"field" json:"field"`
+	MaxCharsToExamine int    `yaml:"maxCharsToExamine,omitempty" json:"maxCharsToExamine,omitempty"`
+	MaxNumPassages    int    `yaml:"maxNumPassages,omitempty" json:"maxNumPassages,omitempty"`
 }
 
 // SynonymConfig represents synonym configuration
@@ -214,11 +214,11 @@ type SearchMetricsSpec struct {
 
 // SearchOptimizationManifest represents a search optimization resource manifest
 type SearchOptimizationManifest struct {
-	APIVersion APIVersion                `yaml:"apiVersion" json:"apiVersion"`
-	Kind       ResourceKind              `yaml:"kind" json:"kind"`
-	Metadata   ResourceMetadata          `yaml:"metadata" json:"metadata"`
-	Spec       SearchOptimizationSpec    `yaml:"spec" json:"spec"`
-	Status     *ResourceStatusInfo       `yaml:"status,omitempty" json:"status,omitempty"`
+	APIVersion APIVersion             `yaml:"apiVersion" json:"apiVersion"`
+	Kind       ResourceKind           `yaml:"kind" json:"kind"`
+	Metadata   ResourceMetadata       `yaml:"metadata" json:"metadata"`
+	Spec       SearchOptimizationSpec `yaml:"spec" json:"spec"`
+	Status     *ResourceStatusInfo    `yaml:"status,omitempty" json:"status,omitempty"`
 }
 
 // SearchOptimizationSpec represents the specification for search optimization
@@ -233,11 +233,11 @@ type SearchOptimizationSpec struct {
 
 // SearchQueryValidationManifest represents a search query validation resource manifest
 type SearchQueryValidationManifest struct {
-	APIVersion APIVersion                   `yaml:"apiVersion" json:"apiVersion"`
-	Kind       ResourceKind                 `yaml:"kind" json:"kind"`
-	Metadata   ResourceMetadata             `yaml:"metadata" json:"metadata"`
-	Spec       SearchQueryValidationSpec    `yaml:"spec" json:"spec"`
-	Status     *ResourceStatusInfo          `yaml:"status,omitempty" json:"status,omitempty"`
+	APIVersion APIVersion                `yaml:"apiVersion" json:"apiVersion"`
+	Kind       ResourceKind              `yaml:"kind" json:"kind"`
+	Metadata   ResourceMetadata          `yaml:"metadata" json:"metadata"`
+	Spec       SearchQueryValidationSpec `yaml:"spec" json:"spec"`
+	Status     *ResourceStatusInfo       `yaml:"status,omitempty" json:"status,omitempty"`
 }
 
 // SearchQueryValidationSpec represents the specification for search query validation
