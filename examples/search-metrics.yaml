@@ -1,0 +1,42 @@
+# Search Metrics Example
+# Retrieves performance metrics and analytics for Atlas Search indexes
+
+apiVersion: matlas.mongodb.com/v1alpha1
+kind: SearchMetrics
+metadata:
+  name: ecommerce-search-metrics
+  labels:
+    environment: production
+    team: search
+spec:
+  projectName: your-project-id
+  clusterName: your-cluster-name
+  
+  # Optional: specific index name (omit to get metrics for all indexes)
+  indexName: products-search-index
+  
+  # Time range for metrics
+  timeRange: 24h  # Options: 1h, 6h, 24h, 7d, 30d
+  
+  # Types of metrics to retrieve
+  metrics:
+    - query       # Query-related metrics (count, patterns)
+    - performance # Performance metrics (latency, throughput)
+    - usage       # Usage metrics (index size, storage)
+
+---
+# Multi-index metrics example
+apiVersion: matlas.mongodb.com/v1alpha1
+kind: SearchMetrics
+metadata:
+  name: cluster-wide-metrics
+  labels:
+    scope: cluster-wide
+spec:
+  projectName: your-project-id
+  clusterName: your-cluster-name
+  # No indexName specified = metrics for all indexes
+  timeRange: 7d
+  metrics:
+    - query
+    - performance

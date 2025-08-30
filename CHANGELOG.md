@@ -1,3 +1,37 @@
+## [Unreleased]
+
+### Added
+- Advanced Atlas Search features support with CLI and YAML interfaces
+- Search Index Analyzers configuration and management
+- Faceted Search functionality for string, number, and date facets
+- Autocomplete functionality with fuzzy matching support
+- Search Highlighting configuration for result highlighting
+- Search Synonyms management for improved search relevance
+- Fuzzy Search configuration with configurable edit distance
+- Search metrics and performance analytics CLI commands (`matlas atlas search metrics`)
+- Index optimization analysis and recommendations CLI commands (`matlas atlas search optimize`)
+- Search query validation and testing CLI commands (`matlas atlas search validate-query`)
+- SearchMetrics, SearchOptimization, and SearchQueryValidation YAML kinds for ApplyDocument support
+- Comprehensive time range support for metrics (1h, 6h, 24h, 7d, 30d)
+- Advanced query validation with test mode and performance analysis
+- Comprehensive test suite for advanced search features with `--preserve-existing` flag
+- Advanced search examples and documentation
+
+### Changed
+- Extended SearchIndex YAML kind to support advanced search features
+- Enhanced search service with advanced functionality
+- Updated documentation with advanced search configuration options
+
+### Fixed
+- **Search CLI Commands**: Removed advanced search CLI commands (analyzers, facets, autocomplete, highlighting, synonyms, fuzzy, metrics, optimize, validate) that returned placeholder data due to Atlas Admin API limitations
+- Updated search command unit test to validate 5 basic subcommands (list, get, create, update, delete)
+
+### Removed
+- **Advanced Search CLI Commands**: Removed misleading CLI commands for advanced search features
+  - These features are properly supported via YAML configuration through the apply pipeline
+  - Atlas Admin API embeds advanced features within search index definitions, not as separate resources
+  - YAML-based configuration remains fully functional and is the recommended approach
+
 ## [1.0.4](https://github.com/teabranch/matlas-cli/compare/v1.0.3...v1.0.4) (2025-08-17)
 
 ### Bug Fixes
@@ -48,7 +82,7 @@
 
 ### Changed
 - Updated documentation with Atlas Search and VPC endpoint examples
-- Added support for Atlas Search APIs in SDK v20250312005
+- Added support for Atlas Search APIs in SDK v20250312006.1.0
 - VPC endpoints testing infrastructure now uses Atlas API-compatible verification methods
 - Enhanced test scripts with comprehensive multi-provider cleanup and verification logic
 

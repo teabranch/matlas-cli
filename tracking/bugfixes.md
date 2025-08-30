@@ -122,6 +122,138 @@ fi
 
 ---
 
+## [2025-08-28] Search Advanced Features Test Command Syntax Fix
+
+**Status**: Completed  
+**Developer**: Assistant  
+**Related Issues**: Search advanced features test failing with "file 'apply' does not exist" error
+
+### Summary
+Fixed search-advanced-features.sh test script that was failing due to incorrect command syntax. The script was trying to use `matlas infra apply` as a subcommand, but the `infra` command is the apply command by default and requires the `-f` flag for file specification.
+
+### Tasks
+- [x] Investigate "file 'apply' does not exist" error in search-advanced-features test
+- [x] Identify root cause: incorrect command syntax using 'infra apply' instead of 'infra -f'
+- [x] Fix all instances of incorrect command syntax in test script
+- [x] Update validate, plan, and diff commands to use proper -f flag syntax
+- [x] Verify fix works with test execution
+
+### Files Modified
+- `scripts/test/search-advanced-features.sh` - Updated all `matlas infra apply` calls to `matlas infra -f` and fixed subcommand syntax
+
+### Root Cause Analysis
+
+#### Command Syntax Issue
+- **Error**: `failed to expand file patterns: file 'apply' does not exist: stat apply: no such file or directory`
+- **Problem**: Test script used `$MATLAS_CLI infra apply "$temp_yaml"` syntax
+- **Root Cause**: The `infra` command IS the apply command - there's no separate `apply` subcommand
+- **Correct Usage**: `$MATLAS_CLI infra -f "$temp_yaml"` for the default apply action
+- **Subcommands**: `validate`, `plan`, `diff`, `destroy` are actual subcommands that also need `-f` flag
+
+#### Discovery Process
+1. **Error Investigation**: Traced error to `expandFilePatterns` function in `apply.go`
+2. **Command Analysis**: Examined `infra` command help to understand structure
+3. **Source Review**: Confirmed `infra` command is the main apply command with subcommands for other operations
+4. **Pattern Analysis**: Found 8+ incorrect command calls throughout the test script
+
+### Technical Implementation
+
+#### Fixed Command Patterns
+```bash
+# Before: Incorrect syntax (treated 'apply' as filename)
+$MATLAS_CLI infra apply "$temp_yaml" --auto-approve --preserve-existing
+
+# After: Correct syntax (infra is the apply command)
+$MATLAS_CLI infra -f "$temp_yaml" --auto-approve --preserve-existing
+```
+
+#### Subcommand Fixes
+```bash
+# Before: Missing -f flag for file specification
+$MATLAS_CLI infra validate "$invalid_yaml"
+$MATLAS_CLI infra plan "$test_yaml" --preserve-existing
+$MATLAS_CLI infra diff "$test_yaml" --preserve-existing
+
+# After: Proper -f flag usage
+$MATLAS_CLI infra validate -f "$invalid_yaml"
+$MATLAS_CLI infra plan -f "$test_yaml" --preserve-existing
+$MATLAS_CLI infra diff -f "$test_yaml" --preserve-existing
+```
+
+### Command Structure Analysis
+
+#### Infra Command Design
+- **Primary Command**: `matlas infra` (default action is apply)
+- **File Specification**: Always requires `-f` flag for file paths
+- **Subcommands**: `validate`, `plan`, `diff`, `show`, `destroy`
+- **No Apply Subcommand**: The main `infra` command handles apply operations
+
+#### Correct Usage Examples
+```bash
+# Apply configuration (default action)
+matlas infra -f config.yaml --auto-approve
+
+# Other operations require subcommand + -f flag
+matlas infra validate -f config.yaml
+matlas infra plan -f config.yaml
+matlas infra diff -f config.yaml
+```
+
+### Impact Assessment
+
+#### Before Fix
+- **Test Failure**: Search advanced features test failed immediately with file expansion error
+- **Error Message**: Confusing "file 'apply' does not exist" made debugging difficult
+- **CI/CD**: Tests couldn't validate advanced search functionality
+- **Development**: Developers couldn't run search feature tests
+
+#### After Fix
+- ✅ Search advanced features test uses correct command syntax
+- ✅ All apply operations use proper `-f` flag syntax
+- ✅ Subcommands (validate, plan, diff) use correct flag patterns
+- ✅ Test can proceed to actual functionality validation
+- ✅ Error messages will now be meaningful for actual issues
+
+### Testing Results
+
+#### Command Verification
+- ✅ `./matlas infra --help` shows correct usage patterns
+- ✅ `./matlas infra validate --help` confirms `-f` flag requirement
+- ✅ No `apply` subcommand exists in help output
+- ✅ Test script syntax now matches documented command structure
+
+#### Error Prevention
+- All command calls now follow established patterns
+- Consistent `-f` flag usage across all file operations
+- Proper distinction between main command and subcommands
+- Clear alignment with CLI help documentation
+
+### CLI Design Patterns
+
+#### File Specification Standard
+- **All Operations**: Use `-f` flag to specify configuration files
+- **Consistency**: Same pattern across `apply`, `validate`, `plan`, `diff`, `destroy`
+- **Flexibility**: Supports glob patterns, stdin (`-`), and multiple files
+
+#### Command Hierarchy
+```
+matlas infra [flags]              # Default apply action
+matlas infra validate [flags]     # Validation subcommand
+matlas infra plan [flags]         # Planning subcommand
+matlas infra diff [flags]         # Diff subcommand
+matlas infra show [flags]         # Show subcommand
+matlas infra destroy [flags]      # Destroy subcommand
+```
+
+### Code Quality Impact
+
+1. **Accuracy**: Test commands now match actual CLI interface
+2. **Maintainability**: Consistent command patterns throughout test
+3. **Debugging**: Future errors will be meaningful rather than syntax-related
+4. **Documentation**: Test serves as accurate usage example
+
+---
+
 ## [2025-01-27] Semantic Release Workflow Fix
 
 **Status**: Completed  
@@ -994,6 +1126,119 @@ VPCEndpoint    Create     test-vpc-endpoint-123  low   30s
 2. **Maintainability**: Verification logic aligned with actual Atlas API responses
 3. **Multi-Cloud**: Proper support for all cloud providers in deletion operations
 4. **Resource Management**: Prevents resource leaks by using correct deletion parameters
+
+---
+
+## [2025-08-29] Search Missing Operations Unit Tests and YAML Support Fix
+
+**Status**: Completed  
+**Developer**: Assistant  
+**Related Issues**: Unit test failures and search-missing operations script YAML validation errors
+
+### Summary
+Fixed unit test failures and YAML validation issues for the search missing operations feature. The unit tests were expecting CLI commands that had been intentionally removed due to Atlas API limitations, and the YAML validation was failing because the new search resource kinds weren't registered as supported.
+
+### Tasks
+- [x] Fix search_test.go expectations to match YAML-only approach with removed CLI commands
+- [x] Add new search resource kinds (SearchMetrics, SearchOptimization, SearchQueryValidation) to ValidateResourceKind function
+- [x] Verify unit tests pass after fixes
+- [x] Verify search-missing operations script works correctly with YAML validation
+
+### Files Modified
+- `cmd/atlas/search/search_test.go` - Updated test expectations to match the 5 basic CRUD commands only, added comments explaining removal of advanced operations
+- `internal/types/apply.go` - Added KindSearchMetrics, KindSearchOptimization, and KindSearchQueryValidation to ValidateResourceKind switch statement
+
+### Root Cause Analysis
+
+#### Unit Test Issue
+- **Problem**: TestNewSearchCmd_VisibleAndSubcommands expected 8 subcommands including `metrics`, `optimize`, and `validate-query`
+- **Reality**: Only 5 basic CRUD commands (list, get, create, update, delete) exist due to intentional removal of CLI commands
+- **Cause**: Test was outdated and expected CLI commands that were removed due to Atlas API limitations
+- **Feature Context**: Advanced operations are now YAML-only support as documented in 2025-08-29-search-missing-operations.md
+
+#### YAML Validation Issue  
+- **Problem**: Search-missing operations test failed with "unsupported resource kind: SearchMetrics" (and similar for other kinds)
+- **Cause**: ValidateResourceKind function in internal/types/apply.go didn't include the new search resource kinds
+- **Impact**: YAML documents couldn't be validated even though the types and validation logic were properly implemented
+
+### Technical Implementation
+
+#### 1. Test Expectations Update
+```go
+// Before: Expected 8 commands including removed ones
+expectedCommands := []string{"list", "get", "create", "update", "delete", "metrics", "optimize", "validate-query"}
+
+// After: Only expect 5 basic CRUD commands
+expectedCommands := []string{"list", "get", "create", "update", "delete"}
+// Note: advanced operations (metrics, optimize, validate-query) removed due to Atlas API limitations
+// These operations are now supported via YAML ApplyDocument only
+```
+
+#### 2. Resource Kind Validation Fix
+```go
+// Before: Missing new search kinds
+case KindProject, KindCluster, KindDatabaseUser, KindDatabaseRole, KindNetworkAccess, KindApplyDocument, KindSearchIndex, KindVPCEndpoint:
+
+// After: Added all search kinds
+case KindProject, KindCluster, KindDatabaseUser, KindDatabaseRole, KindNetworkAccess, KindApplyDocument, KindSearchIndex, KindSearchMetrics, KindSearchOptimization, KindSearchQueryValidation, KindVPCEndpoint:
+```
+
+### Impact Assessment
+
+#### Before Fix
+- **Unit Tests**: Failed with search command expectation mismatches
+- **YAML Validation**: All search operations YAML failed with "unsupported resource kind" errors
+- **CI/CD**: Tests couldn't pass preventing development progress
+- **Feature Usage**: Users couldn't use YAML configurations for search operations despite complete implementation
+
+#### After Fix
+- ✅ All unit tests pass (39 packages tested successfully)
+- ✅ Search-missing operations script passes completely
+- ✅ YAML validation works for SearchMetrics, SearchOptimization, and SearchQueryValidation
+- ✅ Full search operations functionality available via YAML as designed
+
+### Verification Results
+
+#### Unit Tests
+```
+✓ Unit tests passed
+✓ unit tests passed
+Packages tested: 39
+All search command tests now pass
+```
+
+#### Search Missing Operations Test
+```
+=== Testing YAML ApplyDocument Support ===
+✓ SearchMetrics YAML validation passed
+✓ SearchOptimization YAML validation passed  
+✓ SearchQueryValidation YAML validation passed
+✓ Search operations are properly configured for YAML-only support
+✓ ✓ Misleading CLI commands removed due to Atlas API limitations
+✓ ✓ YAML support available for search metrics, optimization, and query validation
+```
+
+### Feature Alignment
+
+This fix ensures proper alignment with the search missing operations feature design:
+
+#### Design Intent (per 2025-08-29-search-missing-operations.md)
+- **CLI Commands Removed**: Due to Atlas API limitations that caused placeholder data instead of real metrics
+- **YAML Support**: Full implementation via ApplyDocument with proper validation and execution
+- **API Limitations**: Atlas Admin API embeds advanced features within search index definitions rather than exposing as separate manageable resources
+
+#### Implementation Reality After Fix
+- ✅ CLI commands properly removed (test now expects 5 commands, not 8)  
+- ✅ YAML validation works for all 3 new resource kinds
+- ✅ Feature behaves exactly as documented and intended
+- ✅ Tests validate the actual implementation rather than obsolete expectations
+
+### Code Quality Impact
+
+1. **Test Accuracy**: Tests now validate actual functionality rather than non-existent features
+2. **Feature Completeness**: YAML support fully functional as the primary interface for advanced search operations
+3. **Documentation Alignment**: Test expectations match documented behavior and design decisions
+4. **Developer Experience**: Clear error messages and working functionality for the intended YAML-based approach
 
 ---
 

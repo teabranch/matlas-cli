@@ -6,7 +6,7 @@ import (
 
 	atlasclient "github.com/teabranch/matlas-cli/internal/clients/atlas"
 	"github.com/teabranch/matlas-cli/internal/logging"
-	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
 )
 
 // ClustersService wraps Clusters API operations we support (read-only for now).

@@ -1,0 +1,62 @@
+# Search Optimization Example
+# Analyzes Atlas Search indexes and provides optimization recommendations
+
+apiVersion: matlas.mongodb.com/v1alpha1
+kind: SearchOptimization
+metadata:
+  name: products-index-optimization
+  labels:
+    environment: production
+    optimization-type: performance
+spec:
+  projectName: your-project-id
+  clusterName: your-cluster-name
+  
+  # Optional: specific index name (omit to analyze all indexes)
+  indexName: products-search-index
+  
+  # Enable detailed analysis (may take longer)
+  analyzeAll: true
+  
+  # Categories of optimization to analyze
+  categories:
+    - performance  # Performance optimizations
+    - mappings     # Field mapping recommendations
+    - analyzers    # Analyzer optimization suggestions
+    - facets       # Facet configuration improvements
+    - synonyms     # Synonym mapping optimizations
+
+---
+# Cluster-wide optimization analysis
+apiVersion: matlas.mongodb.com/v1alpha1
+kind: SearchOptimization
+metadata:
+  name: cluster-optimization-analysis
+  labels:
+    scope: cluster-wide
+    priority: high
+spec:
+  projectName: your-project-id
+  clusterName: your-cluster-name
+  # No indexName specified = analyze all indexes
+  analyzeAll: false  # Quick analysis for all indexes
+  categories:
+    - performance
+    - mappings
+
+---
+# Focused analyzer optimization
+apiVersion: matlas.mongodb.com/v1alpha1
+kind: SearchOptimization
+metadata:
+  name: analyzer-optimization
+  labels:
+    focus: analyzers
+spec:
+  projectName: your-project-id
+  clusterName: your-cluster-name
+  indexName: text-heavy-index
+  analyzeAll: true
+  categories:
+    - analyzers
+    - performance

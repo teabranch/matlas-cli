@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/teabranch/matlas-cli/internal/types"
-	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312006.1.0/admin"
 )
 
 // Mock implementations for testing

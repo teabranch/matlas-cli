@@ -99,11 +99,11 @@ var (
 )
 
 // Execute runs the matlas root command.
-func Execute(version, commit, date, builtBy string) {
+func Execute(version, commit, buildTime, builtBy string) {
 	// Set build information
 	appVersion = version
 	appCommit = commit
-	appDate = date
+	appDate = buildTime
 	appBuiltBy = builtBy
 	// Use enhanced error handling with recovery
 	err := cli.HandleWithRecovery("root_execution", func() error {

@@ -44,7 +44,7 @@ require (
 	github.com/go-playground/validator/v10 v10.27.0
 	github.com/stretchr/testify v1.10.0
 	github.com/subosito/gotenv v1.6.0
-	go.mongodb.org/atlas-sdk/v20250312005 v20250312005.0.0
+	go.mongodb.org/atlas-sdk/v20250312006 v20250312006.1.0
 	go.mongodb.org/mongo-driver v1.17.4
 	golang.org/x/term v0.33.0
 	gopkg.in/yaml.v3 v3.0.1

@@ -5,12 +5,12 @@ import "github.com/teabranch/matlas-cli/cmd"
 
 // Build-time variables (set via -ldflags)
 var (
-	version = "dev"
-	commit  = "unknown"
-	date    = "unknown"
-	builtBy = "manual"
+	version   = "dev"
+	commit    = "unknown"
+	buildTime = "unknown"
+	builtBy   = "manual"
 )
 
 func main() {
-	cmd.Execute(version, commit, date, builtBy)
+	cmd.Execute(version, commit, buildTime, builtBy)
 }

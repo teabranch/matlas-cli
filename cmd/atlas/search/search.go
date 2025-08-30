@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"go.mongodb.org/atlas-sdk/v20250312005/admin"
+	"go.mongodb.org/atlas-sdk/v20250312006/admin"
 
 	"github.com/teabranch/matlas-cli/internal/cli"
 	"github.com/teabranch/matlas-cli/internal/config"
@@ -28,12 +28,16 @@ func NewSearchCmd() *cobra.Command {
 		Aliases: []string{"search-index", "search-indexes"},
 	}
 
-	// Keep subcommands registered but keep parent hidden; each command returns a clear, consistent message.
+	// Basic search index CRUD operations - these work with Atlas Admin API
 	cmd.AddCommand(newListCmd())
 	cmd.AddCommand(newGetCmd())
 	cmd.AddCommand(newCreateCmd())
 	cmd.AddCommand(newUpdateCmd())
 	cmd.AddCommand(newDeleteCmd())
+
+	// Advanced search features are supported via YAML configuration only
+	// CLI commands removed as they returned placeholder data due to Atlas API limitations
+	// For search metrics, optimization, and query validation, use YAML ApplyDocument support
 
 	return cmd
 }
@@ -636,6 +640,40 @@ func convertToSearchIndexDefinition(rawDefinition map[string]interface{}) (*admi
 	if searchAnalyzer, ok := rawDefinition["searchAnalyzer"]; ok {
 		if searchAnalyzerStr, ok := searchAnalyzer.(string); ok {
 			definition.SetSearchAnalyzer(searchAnalyzerStr)
+		}
+	}
+
+	// Convert synonyms if present (for advanced search features)
+	if synonyms, ok := rawDefinition["synonyms"]; ok {
+		if synonymsSlice, ok := synonyms.([]interface{}); ok {
+			var synonymMappings []admin.SearchSynonymMappingDefinition
+			for _, syn := range synonymsSlice {
+				if synMap, ok := syn.(map[string]interface{}); ok {
+					var mapping admin.SearchSynonymMappingDefinition
+
+					// Set analyzer
+					if analyzer, ok := synMap["analyzer"].(string); ok {
+						mapping.SetAnalyzer(analyzer)
+					}
+
+					// Set name
+					if name, ok := synMap["name"].(string); ok {
+						mapping.SetName(name)
+					}
+
+					// Set source
+					if source, ok := synMap["source"].(map[string]interface{}); ok {
+						var synonymSource admin.SynonymSource
+						if collection, ok := source["collection"].(string); ok {
+							synonymSource.SetCollection(collection)
+						}
+						mapping.SetSource(synonymSource)
+					}
+
+					synonymMappings = append(synonymMappings, mapping)
+				}
+			}
+			definition.SetSynonyms(synonymMappings)
 		}
 	}
 

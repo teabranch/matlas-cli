@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"go.mongodb.org/atlas-sdk/v20250312005/admin"
+	"go.mongodb.org/atlas-sdk/v20250312006/admin"
 	"gopkg.in/yaml.v3"
 
 	"github.com/teabranch/matlas-cli/internal/cli"

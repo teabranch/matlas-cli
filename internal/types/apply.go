@@ -18,14 +18,17 @@ const (
 type ResourceKind string
 
 const (
-	KindProject       ResourceKind = "Project"
-	KindCluster       ResourceKind = "Cluster"
-	KindDatabaseUser  ResourceKind = "DatabaseUser"
-	KindDatabaseRole  ResourceKind = "DatabaseRole"
-	KindNetworkAccess ResourceKind = "NetworkAccess"
-	KindSearchIndex   ResourceKind = "SearchIndex"
-	KindVPCEndpoint   ResourceKind = "VPCEndpoint"
-	KindApplyDocument ResourceKind = "ApplyDocument"
+	KindProject               ResourceKind = "Project"
+	KindCluster               ResourceKind = "Cluster"
+	KindDatabaseUser          ResourceKind = "DatabaseUser"
+	KindDatabaseRole          ResourceKind = "DatabaseRole"
+	KindNetworkAccess         ResourceKind = "NetworkAccess"
+	KindSearchIndex           ResourceKind = "SearchIndex"
+	KindSearchMetrics         ResourceKind = "SearchMetrics"
+	KindSearchOptimization    ResourceKind = "SearchOptimization"
+	KindSearchQueryValidation ResourceKind = "SearchQueryValidation"
+	KindVPCEndpoint           ResourceKind = "VPCEndpoint"
+	KindApplyDocument         ResourceKind = "ApplyDocument"
 )
 
 // ResourceStatus represents the current status of a resource.
@@ -131,6 +134,121 @@ type SearchIndexSpec struct {
 	IndexType      string                 `yaml:"indexType,omitempty" json:"indexType,omitempty"` // "search" or "vectorSearch"
 	Definition     map[string]interface{} `yaml:"definition" json:"definition"`
 	DependsOn      []string               `yaml:"dependsOn,omitempty" json:"dependsOn,omitempty"`
+
+	// Advanced search features
+	Analyzers    []AnalyzerConfig     `yaml:"analyzers,omitempty" json:"analyzers,omitempty"`
+	Facets       []FacetConfig        `yaml:"facets,omitempty" json:"facets,omitempty"`
+	Autocomplete []AutocompleteConfig `yaml:"autocomplete,omitempty" json:"autocomplete,omitempty"`
+	Highlighting []HighlightingConfig `yaml:"highlighting,omitempty" json:"highlighting,omitempty"`
+	Synonyms     []SynonymConfig      `yaml:"synonyms,omitempty" json:"synonyms,omitempty"`
+	FuzzySearch  []FuzzyConfig        `yaml:"fuzzySearch,omitempty" json:"fuzzySearch,omitempty"`
+}
+
+// AnalyzerConfig represents custom analyzer configuration
+type AnalyzerConfig struct {
+	Name         string                 `yaml:"name" json:"name"`
+	Type         string                 `yaml:"type" json:"type"` // standard, keyword, simple, whitespace, language, custom
+	CharFilters  []interface{}          `yaml:"charFilters,omitempty" json:"charFilters,omitempty"`
+	Tokenizer    map[string]interface{} `yaml:"tokenizer,omitempty" json:"tokenizer,omitempty"`
+	TokenFilters []interface{}          `yaml:"tokenFilters,omitempty" json:"tokenFilters,omitempty"`
+}
+
+// FacetConfig represents faceted search configuration
+type FacetConfig struct {
+	Field      string        `yaml:"field" json:"field"`
+	Type       string        `yaml:"type" json:"type"` // string, number, date
+	NumBuckets *int          `yaml:"numBuckets,omitempty" json:"numBuckets,omitempty"`
+	Boundaries []interface{} `yaml:"boundaries,omitempty" json:"boundaries,omitempty"`
+	Default    *string       `yaml:"default,omitempty" json:"default,omitempty"`
+}
+
+// AutocompleteConfig represents autocomplete configuration
+type AutocompleteConfig struct {
+	Field         string `yaml:"field" json:"field"`
+	MaxEdits      int    `yaml:"maxEdits,omitempty" json:"maxEdits,omitempty"`
+	PrefixLength  int    `yaml:"prefixLength,omitempty" json:"prefixLength,omitempty"`
+	FuzzyMaxEdits int    `yaml:"fuzzyMaxEdits,omitempty" json:"fuzzyMaxEdits,omitempty"`
+}
+
+// HighlightingConfig represents highlighting configuration
+type HighlightingConfig struct {
+	Field             string `yaml:"field" json:"field"`
+	MaxCharsToExamine int    `yaml:"maxCharsToExamine,omitempty" json:"maxCharsToExamine,omitempty"`
+	MaxNumPassages    int    `yaml:"maxNumPassages,omitempty" json:"maxNumPassages,omitempty"`
+}
+
+// SynonymConfig represents synonym configuration
+type SynonymConfig struct {
+	Name     string   `yaml:"name" json:"name"`
+	Input    []string `yaml:"input" json:"input"`
+	Output   string   `yaml:"output,omitempty" json:"output,omitempty"`
+	Explicit bool     `yaml:"explicit,omitempty" json:"explicit,omitempty"`
+}
+
+// FuzzyConfig represents fuzzy search configuration
+type FuzzyConfig struct {
+	Field         string `yaml:"field" json:"field"`
+	MaxEdits      int    `yaml:"maxEdits,omitempty" json:"maxEdits,omitempty"`
+	PrefixLength  int    `yaml:"prefixLength,omitempty" json:"prefixLength,omitempty"`
+	MaxExpansions int    `yaml:"maxExpansions,omitempty" json:"maxExpansions,omitempty"`
+}
+
+// SearchMetricsManifest represents a search metrics resource manifest
+type SearchMetricsManifest struct {
+	APIVersion APIVersion          `yaml:"apiVersion" json:"apiVersion"`
+	Kind       ResourceKind        `yaml:"kind" json:"kind"`
+	Metadata   ResourceMetadata    `yaml:"metadata" json:"metadata"`
+	Spec       SearchMetricsSpec   `yaml:"spec" json:"spec"`
+	Status     *ResourceStatusInfo `yaml:"status,omitempty" json:"status,omitempty"`
+}
+
+// SearchMetricsSpec represents the specification for search metrics
+type SearchMetricsSpec struct {
+	ProjectName string   `yaml:"projectName" json:"projectName"`
+	ClusterName string   `yaml:"clusterName" json:"clusterName"`
+	IndexName   *string  `yaml:"indexName,omitempty" json:"indexName,omitempty"`
+	TimeRange   string   `yaml:"timeRange,omitempty" json:"timeRange,omitempty"` // 1h, 6h, 24h, 7d, 30d
+	Metrics     []string `yaml:"metrics,omitempty" json:"metrics,omitempty"`     // query, performance, usage
+	DependsOn   []string `yaml:"dependsOn,omitempty" json:"dependsOn,omitempty"`
+}
+
+// SearchOptimizationManifest represents a search optimization resource manifest
+type SearchOptimizationManifest struct {
+	APIVersion APIVersion             `yaml:"apiVersion" json:"apiVersion"`
+	Kind       ResourceKind           `yaml:"kind" json:"kind"`
+	Metadata   ResourceMetadata       `yaml:"metadata" json:"metadata"`
+	Spec       SearchOptimizationSpec `yaml:"spec" json:"spec"`
+	Status     *ResourceStatusInfo    `yaml:"status,omitempty" json:"status,omitempty"`
+}
+
+// SearchOptimizationSpec represents the specification for search optimization
+type SearchOptimizationSpec struct {
+	ProjectName string   `yaml:"projectName" json:"projectName"`
+	ClusterName string   `yaml:"clusterName" json:"clusterName"`
+	IndexName   *string  `yaml:"indexName,omitempty" json:"indexName,omitempty"`
+	AnalyzeAll  bool     `yaml:"analyzeAll,omitempty" json:"analyzeAll,omitempty"`
+	Categories  []string `yaml:"categories,omitempty" json:"categories,omitempty"` // performance, mappings, analyzers, etc.
+	DependsOn   []string `yaml:"dependsOn,omitempty" json:"dependsOn,omitempty"`
+}
+
+// SearchQueryValidationManifest represents a search query validation resource manifest
+type SearchQueryValidationManifest struct {
+	APIVersion APIVersion                `yaml:"apiVersion" json:"apiVersion"`
+	Kind       ResourceKind              `yaml:"kind" json:"kind"`
+	Metadata   ResourceMetadata          `yaml:"metadata" json:"metadata"`
+	Spec       SearchQueryValidationSpec `yaml:"spec" json:"spec"`
+	Status     *ResourceStatusInfo       `yaml:"status,omitempty" json:"status,omitempty"`
+}
+
+// SearchQueryValidationSpec represents the specification for search query validation
+type SearchQueryValidationSpec struct {
+	ProjectName string                 `yaml:"projectName" json:"projectName"`
+	ClusterName string                 `yaml:"clusterName" json:"clusterName"`
+	IndexName   string                 `yaml:"indexName" json:"indexName"`
+	Query       map[string]interface{} `yaml:"query" json:"query"`
+	TestMode    bool                   `yaml:"testMode,omitempty" json:"testMode,omitempty"`
+	Validate    []string               `yaml:"validate,omitempty" json:"validate,omitempty"` // syntax, fields, performance
+	DependsOn   []string               `yaml:"dependsOn,omitempty" json:"dependsOn,omitempty"`
 }
 
 // VPCEndpointManifest represents a VPC endpoint resource manifest
@@ -322,7 +440,7 @@ func ValidateAPIVersion(version APIVersion) error {
 // ValidateResourceKind validates the resource kind
 func ValidateResourceKind(kind ResourceKind) error {
 	switch kind {
-	case KindProject, KindCluster, KindDatabaseUser, KindDatabaseRole, KindNetworkAccess, KindApplyDocument, KindSearchIndex, KindVPCEndpoint:
+	case KindProject, KindCluster, KindDatabaseUser, KindDatabaseRole, KindNetworkAccess, KindApplyDocument, KindSearchIndex, KindSearchMetrics, KindSearchOptimization, KindSearchQueryValidation, KindVPCEndpoint:
 		return nil
 	default:
 		return fmt.Errorf("unsupported resource kind: %s", kind)

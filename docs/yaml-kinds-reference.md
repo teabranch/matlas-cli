@@ -21,6 +21,9 @@ This reference covers all supported YAML kinds in matlas configuration files. Ea
 | `DatabaseRole` | Custom database role (direct MongoDB connection required) | `v1` |
 | `NetworkAccess` | IP access list entry | `v1` |
 | `SearchIndex` | Atlas Search index configuration | `v1` |
+| `SearchMetrics` | Search index performance metrics and analytics | `v1alpha1` |
+| `SearchOptimization` | Search index optimization analysis | `v1alpha1` |
+| `SearchQueryValidation` | Search query validation and testing | `v1alpha1` |
 | `VPCEndpoint` | Private endpoint for VPC peering | `v1` |
 | `ApplyDocument` | Multi-resource document containing multiple kinds | `v1` |
 
@@ -136,6 +139,66 @@ spec:
         title:
           type: "string"
           analyzer: "standard"
+```
+
+## SearchMetrics Kind
+
+```yaml
+apiVersion: matlas.mongodb.com/v1alpha1
+kind: SearchMetrics
+metadata:
+  name: search-metrics
+spec:
+  projectName: "my-project"
+  clusterName: "my-cluster"
+  indexName: "products-search"      # Optional: omit for all indexes
+  timeRange: "24h"                  # 1h, 6h, 24h, 7d, 30d
+  metrics:                          # Optional: types of metrics
+    - query
+    - performance
+    - usage
+```
+
+## SearchOptimization Kind
+
+```yaml
+apiVersion: matlas.mongodb.com/v1alpha1
+kind: SearchOptimization
+metadata:
+  name: search-optimization
+spec:
+  projectName: "my-project"
+  clusterName: "my-cluster"
+  indexName: "products-search"      # Optional: omit for all indexes
+  analyzeAll: true                  # Enable detailed analysis
+  categories:                       # Optional: analysis categories
+    - performance
+    - mappings
+    - analyzers
+    - facets
+    - synonyms
+```
+
+## SearchQueryValidation Kind
+
+```yaml
+apiVersion: matlas.mongodb.com/v1alpha1
+kind: SearchQueryValidation
+metadata:
+  name: query-validation
+spec:
+  projectName: "my-project"
+  clusterName: "my-cluster"
+  indexName: "products-search"
+  testMode: true                    # Enable detailed analysis
+  query:                           # Search query to validate
+    text:
+      query: "wireless headphones"
+      path: "title"
+  validate:                        # Optional: validation types
+    - syntax
+    - fields
+    - performance
 ```
 
 ## VPCEndpoint Kind

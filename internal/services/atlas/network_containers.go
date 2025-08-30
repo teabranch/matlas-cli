@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	atlasclient "github.com/teabranch/matlas-cli/internal/clients/atlas"
-	admin "go.mongodb.org/atlas-sdk/v20250312005/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
 )
 
 // NetworkContainersService provides CRUD operations for Atlas Network Containers.

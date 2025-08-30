@@ -1,0 +1,57 @@
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: advanced-search-features-example
+  labels:
+    example: advanced-search
+    collection: products
+resources:
+  - apiVersion: matlas.mongodb.com/v1
+    kind: SearchIndex
+    metadata:
+      name: products-advanced-search
+      labels:
+        type: advanced-search
+        collection: products
+        features: "analyzers,facets,autocomplete,highlighting,synonyms,fuzzy"
+    spec:
+      projectName: "your-project-id"
+      clusterName: "your-cluster-name"
+      databaseName: "ecommerce"
+      collectionName: "products"
+      indexName: "products-advanced-search"
+      indexType: "search"
+      definition:
+        # Basic field mappings for text search
+        mappings:
+          dynamic: false
+          fields:
+            title:
+              type: string
+              analyzer: "lucene.standard"
+              searchAnalyzer: "lucene.standard"
+            title_autocomplete:
+              type: autocomplete
+              analyzer: "lucene.standard"
+            description:
+              type: string
+              analyzer: "lucene.standard"
+            category:
+              type: stringFacet
+            brand:
+              type: stringFacet
+            price:
+              type: numberFacet
+            rating:
+              type: numberFacet
+            created_date:
+              type: dateFacet
+            tags:
+              type: string
+              analyzer: "lucene.keyword"
+            
+        # Note: Custom analyzers require code changes to be rebuilt
+        # Currently using built-in lucene analyzers until binary is updated
+        # The custom analyzer support has been implemented in the code but needs rebuilding
+
+
