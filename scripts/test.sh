@@ -46,6 +46,7 @@ COMMANDS:
     network     Run network access lifecycle live tests
     projects    Run projects lifecycle live tests (creates real project)
     alerts      Run alerts lifecycle live tests (creates real alert configurations)
+    backup      Run backup features tests (creates real clusters with backup configurations)
     search-cli  Run Atlas Search CLI command tests (creates real search indexes)
     search-advanced Run Atlas Search advanced features tests (YAML-only: analyzers, facets, autocomplete, etc.)
     search-missing Run missing search operations tests (metrics, optimization, query validation)
@@ -87,6 +88,7 @@ EXAMPLES:
     $0 network              # Run live network lifecycle tests
     $0 projects             # Run live projects lifecycle tests
     $0 alerts               # Run live alerts lifecycle tests
+    $0 backup               # Run backup features tests (creates real clusters)
     $0 search-cli           # Run Atlas Search CLI command tests (basic operations only)
     $0 search-advanced      # Run Atlas Search advanced features tests (YAML-only)
     $0 search-missing       # Run missing search operations tests (metrics, optimization, validation)
@@ -282,6 +284,19 @@ main() {
                 return 1
             fi
             ;;
+        backup)
+            print_info "Running backup features tests (live)..."
+            print_warning "⚠️  WARNING: Creates real Atlas clusters with backup configurations!"
+            print_success "✓ SAFE MODE: Uses test-specific names and comprehensive cleanup"
+            print_info "ℹ️  Tests backup feature implementation: continuous backup, PIT recovery, cross-region backup"
+            print_info "Tests: CLI commands (--backup, --pit), YAML support (backupEnabled, pitEnabled), multi-region configs"
+            if "$SCRIPT_DIR/test/backup-features.sh" "${args[@]+"${args[@]}"}"; then
+                print_success "Backup features tests passed"
+            else
+                print_error "Backup features tests failed"
+                return 1
+            fi
+            ;;
         search-cli)
             print_info "Running Atlas Search CLI command tests (live)..."
             print_warning "⚠️  WARNING: Creates real Atlas search indexes for CLI testing!"
@@ -410,6 +425,7 @@ main() {
             "$SCRIPT_DIR/test/search-missing-operations.sh" "${args[@]+"${args[@]}"}" || ((failed++))
             "$SCRIPT_DIR/test/vpc-endpoints-lifecycle.sh" "${args[@]+"${args[@]}"}" || ((failed++))
             "$SCRIPT_DIR/test/alerts-lifecycle.sh" "${args[@]+"${args[@]}"}" || ((failed++))
+            "$SCRIPT_DIR/test/backup-features.sh" "${args[@]+"${args[@]}"}" || ((failed++))
             "$SCRIPT_DIR/test/cluster-lifecycle.sh" "${args[@]+"${args[@]}"}" || ((failed++))
             
             if [[ $failed -eq 0 ]]; then

@@ -49,6 +49,11 @@ func (d *AtlasStateDiscovery) convertClusterToManifest(cluster *admin.ClusterDes
 		spec.BackupEnabled = backupEnabled
 	}
 
+	// Set PIT enabled if available
+	if pitEnabled := cluster.PitEnabled; pitEnabled != nil {
+		spec.PitEnabled = pitEnabled
+	}
+
 	return types.ClusterManifest{
 		APIVersion: types.APIVersionV1,
 		Kind:       types.KindCluster,

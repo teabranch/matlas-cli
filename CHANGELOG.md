@@ -1,6 +1,14 @@
 ## [Unreleased]
 
 ### Added
+- **Comprehensive Backup Features**: Complete backup and Point-in-Time Recovery implementation
+- Point-in-Time Recovery (PIT) support with proper validation workflow
+- CLI backup management (`--backup` and `--pit` flags for cluster create/update)
+- YAML backup configuration (`backupEnabled` and `pitEnabled` fields)
+- Cross-field validation ensuring PIT requires backup to be enabled
+- Backup workflow validation preventing PIT during cluster creation
+- Comprehensive backup test suite with CLI and YAML validation testing
+- Cross-region backup support via multi-region cluster configurations
 - **MongoDB Atlas Alerting System**: Complete alert configuration and management system
 - Alert configuration CLI commands (`matlas atlas alert-configurations list/get/delete/matcher-fields`)
 - Alert management CLI commands (`matlas atlas alerts list/get/acknowledge`)

@@ -1,0 +1,64 @@
+---
+# Example: Search Metrics - Will Fail with Clear Error
+# This demonstrates how unsupported operations fail with informative error messages
+apiVersion: matlas.mongodb.com/v1
+kind: SearchMetrics
+metadata:
+  name: example-search-metrics
+  labels:
+    env: dev
+    team: search-team
+spec:
+  projectName: "MyProject"
+  clusterName: "MyCluster"
+  indexName: "products_search"  # Optional - omit to get metrics for all indexes
+  timeRange: "24h"              # 1h, 6h, 24h, 7d, 30d
+  metrics:
+    - query
+    - performance
+    - usage
+  dependsOn: []
+
+---
+# Example: Search Optimization Analysis - Will Fail with Clear Error  
+apiVersion: matlas.mongodb.com/v1
+kind: SearchOptimization
+metadata:
+  name: example-search-optimization
+  labels:
+    env: dev
+    team: search-team
+spec:
+  projectName: "MyProject"
+  clusterName: "MyCluster"
+  indexName: "products_search"  # Optional - omit to analyze all indexes
+  categories:
+    - performance
+    - mappings
+    - analyzers
+  dependsOn: []
+
+---
+# Example: Search Query Validation - Will Fail with Clear Error
+apiVersion: matlas.mongodb.com/v1
+kind: SearchQueryValidation
+metadata:
+  name: example-query-validation
+  labels:
+    env: dev
+    team: search-team
+spec:
+  projectName: "MyProject"
+  clusterName: "MyCluster"
+  indexName: "products_search"
+  query:
+    $search:
+      text:
+        query: "laptop gaming"
+        path: ["title", "description"]
+  validate:
+    - syntax
+    - performance
+    - coverage
+  testMode: true
+  dependsOn: []

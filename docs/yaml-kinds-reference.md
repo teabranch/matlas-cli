@@ -77,12 +77,42 @@ spec:
   region: "us-east-1"
   instanceSize: "M30"
   diskSizeGB: 40
-  backupEnabled: true
+  
+  # Backup Configuration
+  backupEnabled: true           # Enable continuous cloud backup
+  pitEnabled: true              # Enable Point-in-Time Recovery (requires backupEnabled: true)
+  
   mongodbVersion: "7.0"
   clusterType: "REPLICASET"
   tags:
     purpose: "production-workload"
 ```
+
+### Backup Features
+
+**Continuous Backup**
+- `backupEnabled: true` - Enables continuous cloud backup
+- Available for M10+ clusters
+- Provides automated snapshots and restore capabilities
+
+**Point-in-Time Recovery (PIT)**
+- `pitEnabled: true` - Enables point-in-time recovery
+- **Requires** `backupEnabled: true` (validation enforced)
+- Allows recovery to any specific moment in time
+- Only available after cluster is created and backup is active
+
+**Cross-Region Backup**
+- Achieved through multi-region cluster configuration
+- Use `replicationSpecs` with multiple `regionConfigs`
+- Provides geographic backup redundancy
+
+### Backup Validation Rules
+
+The system enforces the following validation rules:
+
+1. **PIT requires backup**: Setting `pitEnabled: true` without `backupEnabled: true` will fail validation
+2. **Free tier limitation**: Backup is not available for M0 (free tier) clusters
+3. **Instance size requirement**: Backup requires M10+ instance sizes
 
 ## DatabaseUser Kind
 

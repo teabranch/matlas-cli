@@ -470,8 +470,7 @@ func runCreateSearchIndex(cmd *cobra.Command, projectID, clusterName, databaseNa
 }
 
 func runUpdateSearchIndex(cmd *cobra.Command, projectID, clusterName, indexID, indexFile string) error {
-	// Similar implementation structure as list, but for updating an index
-	return fmt.Errorf("atlas search API not yet available in SDK - see 'matlas atlas search list --help' for alternatives")
+	return fmt.Errorf("search index update operation not supported: Atlas Admin API does not provide index update endpoints. Create a new index with the updated configuration instead")
 }
 
 func runDeleteSearchIndex(cmd *cobra.Command, projectID, clusterName, indexID, indexName string, force bool) error {

@@ -724,6 +724,17 @@ func validateCrossFieldRules(config *types.ApplyConfig, result *ValidationResult
 		}
 	}
 
+	// Rule: PIT recovery requires backup to be enabled
+	for i, cluster := range config.Spec.Clusters {
+		if cluster.PitEnabled != nil && *cluster.PitEnabled {
+			if cluster.BackupEnabled == nil || !*cluster.BackupEnabled {
+				path := fmt.Sprintf("spec.clusters[%d]", i)
+				addError(result, path+".pitEnabled", "pitEnabled", "true",
+					"Point-in-Time Recovery requires backup to be enabled. Set backupEnabled: true", "PIT_REQUIRES_BACKUP")
+			}
+		}
+	}
+
 	// Rule: Database users with admin roles should have auth database set to admin
 	for i, user := range config.Spec.DatabaseUsers {
 		hasAdminRole := false
@@ -1331,8 +1342,31 @@ func validateCrossResourceDependencies(config *types.ApplyConfig, result *Valida
 	validateBusinessLogicRules(config, result, opts)
 }
 
+// validateClusterPITRequirements validates that PIT requires backup to be enabled for cluster resources
+func validateClusterPITRequirements(doc *types.ApplyDocument, result *ValidationResult, opts *ValidatorOptions) {
+	for i, resource := range doc.Resources {
+		if resource.Kind == types.KindCluster && resource.Spec != nil {
+			if specMap, ok := resource.Spec.(map[string]interface{}); ok {
+				pitEnabled, pitExists := specMap["pitEnabled"].(bool)
+				backupEnabled, backupExists := specMap["backupEnabled"].(bool)
+				
+				if pitExists && pitEnabled {
+					if !backupExists || !backupEnabled {
+						path := fmt.Sprintf("resources[%d].spec", i)
+						addError(result, path+".pitEnabled", "pitEnabled", "true",
+							"Point-in-Time Recovery requires backup to be enabled. Set backupEnabled: true", "PIT_REQUIRES_BACKUP")
+					}
+				}
+			}
+		}
+	}
+}
+
 // validateCrossDocumentDependencies validates dependencies across multiple resources in a document
 func validateCrossDocumentDependencies(doc *types.ApplyDocument, result *ValidationResult, opts *ValidatorOptions) {
+	// Validate PIT requirements across cluster resources
+	validateClusterPITRequirements(doc, result, opts)
+	
 	// Check for resource name conflicts across the document
 	resourceNames := make(map[string][]string)
 

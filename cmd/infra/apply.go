@@ -828,6 +828,9 @@ func convertToClusterSpec(spec interface{}) types.ClusterSpec {
 		if backupEnabled, ok := specMap["backupEnabled"].(bool); ok {
 			clusterSpec.BackupEnabled = &backupEnabled
 		}
+		if pitEnabled, ok := specMap["pitEnabled"].(bool); ok {
+			clusterSpec.PitEnabled = &pitEnabled
+		}
 		if tierType, ok := specMap["tierType"].(string); ok {
 			clusterSpec.TierType = tierType
 		}

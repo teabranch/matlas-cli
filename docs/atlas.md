@@ -153,7 +153,93 @@ Use `matlas atlas network-containers <command> --help` for detailed flag informa
 
 ## Clusters
 
-**Note:** Cluster management is primarily handled through the [infrastructure workflows](/infra/). Use `matlas discover` and `matlas infra` commands for cluster operations.
+Manage MongoDB Atlas clusters directly via CLI commands.
+
+### List clusters
+```bash
+matlas atlas clusters list --project-id <id>
+```
+
+### Get cluster details
+```bash
+matlas atlas clusters describe <cluster-name> --project-id <id>
+```
+
+### Create cluster
+```bash
+# Basic cluster creation
+matlas atlas clusters create <cluster-name> --project-id <id> --tier M10 --provider AWS --region US_EAST_1
+
+# Create cluster with backup enabled
+matlas atlas clusters create <cluster-name> --project-id <id> --tier M10 --provider AWS --region US_EAST_1 --backup
+
+# Create cluster with advanced options
+matlas atlas clusters create <cluster-name> \
+  --project-id <id> \
+  --tier M30 \
+  --provider AWS \
+  --region US_EAST_1 \
+  --disk-size 40 \
+  --mongodb-version 7.0 \
+  --backup \
+  --tag environment=production \
+  --tag team=backend
+```
+
+### Update cluster configuration
+```bash
+# Update cluster tier
+matlas atlas clusters update <cluster-name> --project-id <id> --tier M20
+
+# Update disk size
+matlas atlas clusters update <cluster-name> --project-id <id> --disk-size 80
+
+# Enable/disable backup
+matlas atlas clusters update <cluster-name> --project-id <id> --backup
+
+# Enable Point-in-Time Recovery (requires backup to be enabled first)
+matlas atlas clusters update <cluster-name> --project-id <id> --pit
+
+# Update multiple settings
+matlas atlas clusters update <cluster-name> \
+  --project-id <id> \
+  --tier M40 \
+  --disk-size 100 \
+  --backup \
+  --pit \
+  --tag owner=platform-team
+```
+
+### Delete cluster
+```bash
+matlas atlas clusters delete <cluster-name> --project-id <id> [--yes]
+```
+
+### Backup Features
+
+**Important**: Point-in-Time Recovery cannot be enabled during cluster creation. Use the following workflow:
+
+```bash
+# ❌ This will fail
+matlas atlas clusters create my-cluster --pit
+
+# ✅ Correct workflow
+# Step 1: Create cluster with backup
+matlas atlas clusters create my-cluster --project-id <id> --backup --tier M10 --provider AWS --region US_EAST_1
+
+# Step 2: Wait for cluster to be ready
+matlas atlas clusters describe my-cluster --project-id <id>
+
+# Step 3: Enable Point-in-Time Recovery
+matlas atlas clusters update my-cluster --project-id <id> --pit
+```
+
+**Backup Features:**
+- **Continuous Backup** (`--backup`): Automated snapshots and restore capabilities
+- **Point-in-Time Recovery** (`--pit`): Recovery to any specific moment in time (requires backup)
+- **Cross-Region Backup**: Use multi-region cluster configurations (see YAML examples)
+
+**Note:** For complex cluster configurations with multi-region setups, use [infrastructure workflows](/infra/) with YAML configurations.
 
 ## Atlas Search
 
