@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	atlasclient "github.com/teabranch/matlas-cli/internal/clients/atlas"
+	"github.com/teabranch/matlas-cli/internal/logging"
 	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
 )
 
@@ -229,11 +230,15 @@ func stringValue(s *string) string {
 // AdvancedSearchService provides operations for advanced search features
 type AdvancedSearchService struct {
 	searchService *SearchService
+	logger        *logging.Logger
 }
 
 // NewAdvancedSearchService creates a new AdvancedSearchService instance
 func NewAdvancedSearchService(searchService *SearchService) *AdvancedSearchService {
-	return &AdvancedSearchService{searchService: searchService}
+	return &AdvancedSearchService{
+		searchService: searchService,
+		logger:        logging.Default(),
+	}
 }
 
 // GetSearchAnalyzers retrieves analyzer information for a search index
@@ -242,19 +247,14 @@ func (s *AdvancedSearchService) GetSearchAnalyzers(ctx context.Context, projectI
 		return nil, fmt.Errorf("projectID, clusterName, and indexName are required")
 	}
 
-	// Get the search index definition to extract analyzer information
-	indexes, err := s.searchService.ListSearchIndexes(ctx, projectID, clusterName, nil, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list search indexes: %w", err)
-	}
+	// Log the limitation
+	s.logger.Error("Search analyzer extraction operation not supported by Atlas Admin API",
+		"project_id", projectID,
+		"cluster_name", clusterName,
+		"index_name", indexName,
+		"reason", "Atlas SDK does not expose analyzer details from index definitions")
 
-	for _, index := range indexes {
-		if index.GetName() == indexName {
-			return s.extractAnalyzersFromDefinition(&index), nil
-		}
-	}
-
-	return nil, fmt.Errorf("search index %q not found", indexName)
+	return nil, fmt.Errorf("search analyzer extraction operation not supported: Atlas SDK does not expose analyzer details from index definitions. For analyzer configuration, use the Atlas UI at https://cloud.mongodb.com")
 }
 
 // GetSearchFacets retrieves facet configuration for a search index
@@ -263,19 +263,14 @@ func (s *AdvancedSearchService) GetSearchFacets(ctx context.Context, projectID, 
 		return nil, fmt.Errorf("projectID, clusterName, and indexName are required")
 	}
 
-	// Get the search index definition to extract facet information
-	indexes, err := s.searchService.ListSearchIndexes(ctx, projectID, clusterName, nil, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list search indexes: %w", err)
-	}
+	// Log the limitation
+	s.logger.Error("Search facet extraction operation not supported by Atlas Admin API",
+		"project_id", projectID,
+		"cluster_name", clusterName,
+		"index_name", indexName,
+		"reason", "Atlas SDK does not expose facet details from index definitions")
 
-	for _, index := range indexes {
-		if index.GetName() == indexName {
-			return s.extractFacetsFromDefinition(&index), nil
-		}
-	}
-
-	return nil, fmt.Errorf("search index %q not found", indexName)
+	return nil, fmt.Errorf("search facet extraction operation not supported: Atlas SDK does not expose facet details from index definitions. For facet configuration, use the Atlas UI at https://cloud.mongodb.com")
 }
 
 // GetSearchMetrics retrieves performance metrics for search indexes
@@ -284,23 +279,13 @@ func (s *AdvancedSearchService) GetSearchMetrics(ctx context.Context, projectID,
 		return nil, fmt.Errorf("projectID and clusterName are required")
 	}
 
-	// Placeholder implementation - would need to call Atlas monitoring APIs
-	metrics := map[string]interface{}{
-		"clusterName": clusterName,
-		"timeRange":   timeRange,
-		"metrics": map[string]interface{}{
-			"queryCount":   "1000",
-			"avgQueryTime": "50",
-			"indexSize":    "2.5GB",
-			"errorRate":    "0.1%",
-		},
-	}
+	// Log the limitation
+	s.logger.Error("Search metrics operation not supported by Atlas Admin API",
+		"project_id", projectID,
+		"cluster_name", clusterName,
+		"reason", "Atlas Admin API does not expose real-time metrics endpoints")
 
-	if indexName != nil {
-		metrics["indexName"] = *indexName
-	}
-
-	return metrics, nil
+	return nil, fmt.Errorf("search metrics operation not supported: Atlas Admin API does not provide real-time metrics endpoints. For real metrics, use the Atlas UI at https://cloud.mongodb.com")
 }
 
 // AnalyzeSearchIndex provides performance analysis for a search index
@@ -309,19 +294,14 @@ func (s *AdvancedSearchService) AnalyzeSearchIndex(ctx context.Context, projectI
 		return nil, fmt.Errorf("projectID, clusterName, and indexName are required")
 	}
 
-	// Get the search index definition for analysis
-	indexes, err := s.searchService.ListSearchIndexes(ctx, projectID, clusterName, nil, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list search indexes: %w", err)
-	}
+	// Log the limitation
+	s.logger.Error("Search index analysis operation not supported by Atlas Admin API",
+		"project_id", projectID,
+		"cluster_name", clusterName,
+		"index_name", indexName,
+		"reason", "Atlas Admin API does not provide index optimization analysis")
 
-	for _, index := range indexes {
-		if index.GetName() == indexName {
-			return s.analyzeIndexDefinition(&index), nil
-		}
-	}
-
-	return nil, fmt.Errorf("search index %q not found", indexName)
+	return nil, fmt.Errorf("search index analysis operation not supported: Atlas Admin API does not provide optimization analysis endpoints. For real optimization insights, use Atlas Performance Advisor in the Atlas UI")
 }
 
 // ValidateSearchQuery validates a search query against an index
@@ -330,21 +310,14 @@ func (s *AdvancedSearchService) ValidateSearchQuery(ctx context.Context, project
 		return nil, fmt.Errorf("projectID, clusterName, and indexName are required")
 	}
 
-	// Placeholder implementation - would need to validate query syntax
-	result := map[string]interface{}{
-		"valid":    true,
-		"errors":   []string{},
-		"warnings": []string{},
-		"query":    query,
-	}
+	// Log the limitation
+	s.logger.Error("Search query validation operation not supported by Atlas Admin API",
+		"project_id", projectID,
+		"cluster_name", clusterName,
+		"index_name", indexName,
+		"reason", "Atlas Admin API does not provide query validation endpoints")
 
-	// Basic query validation
-	if query == nil {
-		result["valid"] = false
-		result["errors"] = []string{"Query cannot be empty"}
-	}
-
-	return result, nil
+	return nil, fmt.Errorf("search query validation operation not supported: Atlas Admin API does not provide query validation endpoints. For real query validation, test queries directly in Atlas UI or MongoDB Compass")
 }
 
 // ValidateSearchIndex validates a search index configuration
@@ -378,73 +351,5 @@ func (s *AdvancedSearchService) ValidateSearchIndex(ctx context.Context, project
 	return result, nil
 }
 
-// Helper methods for extracting information from index definitions
-
-func (s *AdvancedSearchService) extractAnalyzersFromDefinition(index *admin.SearchIndexResponse) []map[string]interface{} {
-	analyzers := []map[string]interface{}{}
-
-	// Extract analyzer information from the index definition
-	if defPtr, ok := index.GetLatestDefinitionOk(); ok && defPtr != nil {
-		// TODO: Extract analyzer information from the definition structure
-		// The GetAnalyzerOk() and GetSearchAnalyzerOk() methods are not available in the current SDK version
-		// Once the Atlas SDK provides proper analyzer access methods, this should be updated
-
-		// For now, return placeholder analyzer information if the index has a definition
-		analyzers = append(analyzers, map[string]interface{}{
-			"name":        "default",
-			"type":        "standard",
-			"status":      "active",
-			"description": "Default analyzer extracted from index definition",
-		})
-	}
-
-	return analyzers
-}
-
-func (s *AdvancedSearchService) extractFacetsFromDefinition(index *admin.SearchIndexResponse) []map[string]interface{} {
-	facets := []map[string]interface{}{}
-
-	// Extract facet information from the index definition
-	if defPtr, ok := index.GetLatestDefinitionOk(); ok && defPtr != nil {
-		// TODO: Parse the definition to extract facet configurations
-		// This would require understanding the actual structure of the Atlas Search definition
-
-		// Placeholder facet information
-		facets = append(facets, map[string]interface{}{
-			"field":       "category",
-			"type":        "string",
-			"status":      "active",
-			"description": "String facet for category field",
-		})
-	}
-
-	return facets
-}
-
-func (s *AdvancedSearchService) analyzeIndexDefinition(index *admin.SearchIndexResponse) map[string]interface{} {
-	analysis := map[string]interface{}{
-		"indexName":         index.GetName(),
-		"status":            index.GetStatus(),
-		"type":              index.GetType(),
-		"optimizationScore": 75, // Placeholder score
-		"recommendations": []map[string]interface{}{
-			{
-				"title":       "Consider adding specific field mappings",
-				"description": "Dynamic mapping can impact performance for large datasets",
-				"priority":    "medium",
-			},
-			{
-				"title":       "Review analyzer configuration",
-				"description": "Custom analyzers may improve search relevance",
-				"priority":    "low",
-			},
-		},
-		"performance": map[string]interface{}{
-			"estimatedSize": "Unknown",
-			"fieldCount":    "Dynamic",
-			"complexity":    "Medium",
-		},
-	}
-
-	return analysis
-}
+// All helper methods that returned placeholder data have been removed.
+// Advanced search features that are not supported by the Atlas Admin API now return proper errors.
