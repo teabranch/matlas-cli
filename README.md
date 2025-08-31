@@ -1,3 +1,5 @@
+[![Deploy Documentation](https://github.com/teabranch/matlas-cli/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/teabranch/matlas-cli/actions/workflows/docs.yml)
+[![Release](https://github.com/teabranch/matlas-cli/actions/workflows/release.yml/badge.svg)](https://github.com/teabranch/matlas-cli/actions/workflows/release.yml)
 ## 🚀 matlas — one CLI for Atlas and MongoDB
 
 > 🌟 **The unified, Go-powered CLI that bridges MongoDB Atlas management and database operations**
