@@ -439,6 +439,16 @@ func (f *AdvancedSearchFormatter) formatMetricsTable(metrics map[string]interfac
 	_, _ = fmt.Fprintln(f.writer, "Search Index Metrics")
 	_, _ = fmt.Fprintln(f.writer, strings.Repeat("=", 50))
 
+	// Show placeholder warning prominently if present
+	if warning, ok := metrics["_warning"].(string); ok {
+		_, _ = fmt.Fprintln(f.writer, "⚠️  WARNING: PLACEHOLDER DATA")
+		_, _ = fmt.Fprintf(f.writer, "   %s\n", warning)
+		if note, ok := metrics["_note"].(string); ok {
+			_, _ = fmt.Fprintf(f.writer, "   %s\n", note)
+		}
+		_, _ = fmt.Fprintln(f.writer, strings.Repeat("-", 50))
+	}
+
 	// Basic metrics
 	if indexName, ok := metrics["indexName"]; ok {
 		_, _ = fmt.Fprintf(f.writer, "Index Name: %v\n", indexName)
@@ -458,7 +468,9 @@ func (f *AdvancedSearchFormatter) formatMetricsTable(metrics map[string]interfac
 		if perfMap, ok := perf.(map[string]interface{}); ok {
 			_, _ = fmt.Fprintln(f.writer, "\nPerformance Metrics:")
 			for key, value := range perfMap {
-				_, _ = fmt.Fprintf(f.writer, "  %s: %v\n", key, value)
+				if key != "placeholder" { // Skip placeholder markers in display
+					_, _ = fmt.Fprintf(f.writer, "  %s: %v\n", key, value)
+				}
 			}
 		}
 	}
