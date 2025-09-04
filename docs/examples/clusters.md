@@ -288,6 +288,177 @@ resources:
 ```
 {% endraw %}
 
+## cluster-backup-comprehensive.yaml
+
+Comprehensive backup features demonstration including continuous backup, point-in-time recovery, and cross-region backup configurations.
+
+{% raw %}
+```yaml
+# Comprehensive Backup Features Example
+# This example demonstrates all backup features: continuous backup, point-in-time recovery, and cross-region backup
+
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: backup-features-comprehensive
+  labels:
+    purpose: backup-demo
+    environment: production
+  annotations:
+    description: "Comprehensive backup features demonstration"
+    documentation: "Shows continuous backup, PIT recovery, and cross-region configurations"
+resources:
+  # Basic backup-enabled cluster
+  - apiVersion: matlas.mongodb.com/v1
+    kind: Cluster
+    metadata:
+      name: backup-basic-cluster
+      labels:
+        backup: enabled
+        tier: standard
+        environment: production
+    spec:
+      projectName: "Backup Demo Project"
+      provider: AWS
+      region: US_EAST_1
+      instanceSize: M10
+      diskSizeGB: 20
+      mongodbVersion: "7.0"
+      
+      # Continuous backup configuration
+      backupEnabled: true
+      
+      tags:
+        - key: BackupPolicy
+          value: Standard
+        - key: Environment
+          value: Production
+
+  # Point-in-Time Recovery enabled cluster
+  - apiVersion: matlas.mongodb.com/v1
+    kind: Cluster
+    metadata:
+      name: backup-pit-cluster
+      labels:
+        backup: enabled
+        pit: enabled
+        tier: advanced
+        criticality: high
+    spec:
+      projectName: "Backup Demo Project"
+      provider: AWS
+      region: US_EAST_1
+      instanceSize: M20
+      diskSizeGB: 40
+      mongodbVersion: "7.0"
+      
+      # Advanced backup configuration with Point-in-Time Recovery
+      backupEnabled: true
+      pitEnabled: true       # Requires backupEnabled: true
+      
+      # Enhanced storage for PIT workloads
+      autoscaling:
+        diskGBEnabled: true
+        computeEnabled: false
+      
+      tags:
+        - key: BackupPolicy
+          value: PointInTime
+        - key: Environment
+          value: Production
+        - key: DataCriticality
+          value: High
+
+  # Cross-region backup cluster (via multi-region configuration)
+  - apiVersion: matlas.mongodb.com/v1
+    kind: Cluster
+    metadata:
+      name: backup-cross-region-cluster
+      labels:
+        backup: enabled
+        regions: multi
+        geographic-redundancy: enabled
+        disaster-recovery: enabled
+    spec:
+      projectName: "Backup Demo Project"
+      provider: AWS
+      clusterType: REPLICASET
+      mongodbVersion: "7.0"
+      
+      # Backup enabled for cross-region redundancy
+      backupEnabled: true
+      
+      # Multi-region configuration for geographic backup redundancy
+      replicationSpecs:
+        - numShards: 1
+          regionConfigs:
+            # Primary region - US East
+            - electableNodes: 3
+              priority: 7
+              readOnlyNodes: 0
+              analyticsNodes: 0
+              providerName: AWS
+              regionName: US_EAST_1
+              instanceSize: M30
+              
+            # Backup region - US West (geographic separation)
+            - electableNodes: 2
+              priority: 6
+              readOnlyNodes: 1
+              analyticsNodes: 0
+              providerName: AWS
+              regionName: US_WEST_2
+              instanceSize: M20
+              
+            # International backup region - Europe
+            - electableNodes: 2
+              priority: 5
+              readOnlyNodes: 1
+              analyticsNodes: 0
+              providerName: AWS
+              regionName: EU_WEST_1
+              instanceSize: M20
+      
+      tags:
+        - key: BackupPolicy
+          value: CrossRegion
+        - key: Environment
+          value: Production
+        - key: DisasterRecovery
+          value: Global
+
+  # Development cluster with backup disabled (cost optimization)
+  - apiVersion: matlas.mongodb.com/v1
+    kind: Cluster
+    metadata:
+      name: backup-dev-cluster
+      labels:
+        backup: disabled
+        tier: basic
+        environment: development
+        cost-optimized: "true"
+    spec:
+      projectName: "Backup Demo Project"
+      provider: AWS
+      region: US_EAST_1
+      instanceSize: M10
+      diskSizeGB: 10
+      mongodbVersion: "7.0"
+      
+      # Backup disabled for development to reduce costs
+      backupEnabled: false
+      # Note: pitEnabled cannot be true when backupEnabled is false
+      
+      tags:
+        - key: BackupPolicy
+          value: None
+        - key: Environment
+          value: Development
+        - key: CostOptimization
+          value: Enabled
+```
+{% endraw %}
+
 ## Usage Examples
 
 ### Environment Variables
@@ -296,7 +467,7 @@ Set required environment variables before applying:
 
 ```bash
 export CLUSTER_ADMIN_PASSWORD='SecureAdminPass123!'
-export BACKUP_USER_PASSWORD='SecureBackupPass123!'
+export BACKUP_ADMIN_PASSWORD='SecureBackupPass123!'
 ```
 
 ### Development Workflow
@@ -326,6 +497,44 @@ matlas infra plan -f cluster-multiregion.yaml --show-dependencies
 matlas infra apply -f cluster-multiregion.yaml --auto-approve
 ```
 
+### Backup Features Workflow
+
+```bash
+# Deploy backup-enabled clusters
+matlas infra validate -f cluster-backup-comprehensive.yaml
+matlas infra apply -f cluster-backup-comprehensive.yaml
+
+# CLI backup management (alternative to YAML)
+# Create cluster with backup first
+matlas atlas clusters create my-cluster --backup --tier M10 --provider AWS --region US_EAST_1
+
+# Enable Point-in-Time Recovery after cluster is ready
+# Note: PIT cannot be enabled during cluster creation
+matlas atlas clusters update my-cluster --pit
+
+# Check backup status
+matlas atlas clusters describe my-cluster --output json | jq '.backupEnabled, .pitEnabled'
+```
+
+### Point-in-Time Recovery Workflow
+
+**Important**: PIT recovery must be enabled AFTER cluster creation, not during creation.
+
+```bash
+# ❌ This will fail - PIT cannot be enabled during creation
+matlas atlas clusters create my-cluster --pit
+
+# ✅ Correct workflow
+# Step 1: Create cluster with backup
+matlas atlas clusters create my-cluster --backup --tier M10 --provider AWS --region US_EAST_1
+
+# Step 2: Wait for cluster to be ready (check status)
+matlas atlas clusters describe my-cluster
+
+# Step 3: Enable PIT via update
+matlas atlas clusters update my-cluster --pit
+```
+
 ## Key Features Demonstrated
 
 ### Basic Cluster (Development)
@@ -342,6 +551,13 @@ matlas infra apply -f cluster-multiregion.yaml --auto-approve
 - **Resource tagging** for management and billing
 - **Multiple environments** in single document
 
+### Backup Features (cluster-backup-comprehensive.yaml)
+- **Continuous backup** for automated snapshots
+- **Point-in-Time Recovery** for precise data recovery
+- **Cross-region backup** via multi-region cluster topology
+- **Cost optimization** examples for development environments
+- **Backup validation** with enforced configuration rules
+
 ### Multi-Region Cluster (Global)
 - **Geographic distribution** across US, Europe, and Asia
 - **Priority-based replica** configuration
@@ -356,6 +572,14 @@ matlas infra apply -f cluster-multiregion.yaml --auto-approve
 - Disable **backups** for non-critical workloads
 - Enable **autoscaling** to handle variable loads
 - Use **appropriate instance sizes** for workload requirements
+
+### Backup Strategy
+- **Always enable backup** for production clusters (`backupEnabled: true`)
+- **Enable PIT recovery** for critical data (`pitEnabled: true`)
+- **Use multi-region clusters** for geographic backup redundancy
+- **Validate backup configuration** before applying changes
+- **Test restore procedures** regularly to ensure backup integrity
+- **Consider backup costs** when planning cluster configurations
 
 ### Security
 - Always enable **encryption at rest** for production

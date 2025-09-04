@@ -107,6 +107,7 @@ type ClusterSpec struct {
 	InstanceSize     string             `yaml:"instanceSize" json:"instanceSize"`
 	DiskSizeGB       *float64           `yaml:"diskSizeGB,omitempty" json:"diskSizeGB,omitempty"`
 	BackupEnabled    *bool              `yaml:"backupEnabled,omitempty" json:"backupEnabled,omitempty"`
+	PitEnabled       *bool              `yaml:"pitEnabled,omitempty" json:"pitEnabled,omitempty"`
 	TierType         string             `yaml:"tierType,omitempty" json:"tierType,omitempty"`
 	MongoDBVersion   string             `yaml:"mongodbVersion,omitempty" json:"mongodbVersion,omitempty"`
 	ClusterType      string             `yaml:"clusterType,omitempty" json:"clusterType,omitempty"`

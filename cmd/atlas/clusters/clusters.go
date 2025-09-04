@@ -32,6 +32,7 @@ type CreateClusterOptions struct {
 	DiskIOPS                     int
 	EBSVolumeType                string
 	BackupEnabled                bool
+	PitEnabled                   bool
 	MongoDBVersion               string
 	ClusterType                  string
 	NumShards                    int
@@ -157,6 +158,7 @@ func newCreateCmd() *cobra.Command {
 	var region string
 	var diskSizeGB int
 	var backupEnabled bool
+	var pitEnabled bool
 
 	// MongoDB version and cluster type
 	var mongoDBVersion string
@@ -261,6 +263,11 @@ including autoscaling, encryption, multi-region deployment, and more.`,
     --tag team=backend \
     --tag cost-center=engineering`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Validate PIT flag usage - PIT cannot be enabled during cluster creation
+			if pitEnabled {
+				return fmt.Errorf("Point-in-Time Recovery (--pit) cannot be enabled during cluster creation. Please create the cluster with --backup first, then use 'matlas atlas clusters update' to enable PIT")
+			}
+
 			// Parse tags from CLI
 			parsedTags, err := parseTagsFromStrings(tags)
 			if err != nil {
@@ -277,6 +284,7 @@ including autoscaling, encryption, multi-region deployment, and more.`,
 				DiskIOPS:                     diskIOPS,
 				EBSVolumeType:                ebsVolumeType,
 				BackupEnabled:                backupEnabled,
+				PitEnabled:                   false, // Never enable PIT during creation
 				MongoDBVersion:               mongoDBVersion,
 				ClusterType:                  clusterType,
 				NumShards:                    numShards,
@@ -320,6 +328,7 @@ including autoscaling, encryption, multi-region deployment, and more.`,
 
 	// Backup
 	cmd.Flags().BoolVar(&backupEnabled, "backup", true, "Enable continuous cloud backup")
+	cmd.Flags().BoolVar(&pitEnabled, "pit", false, "Enable point-in-time recovery (only for updates - not supported during cluster creation)")
 
 	// Autoscaling
 	cmd.Flags().BoolVar(&autoScalingEnabled, "autoscaling", false, "Enable cluster tier autoscaling")
@@ -361,6 +370,7 @@ func newUpdateCmd() *cobra.Command {
 	var tier string
 	var diskSizeGB int
 	var backupEnabled bool
+	var pitEnabled bool
 	var tagStrings []string
 	var clearTags bool
 
@@ -384,7 +394,7 @@ func newUpdateCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid tag format: %w", err)
 			}
-			return runUpdateCluster(cmd, projectID, clusterName, tier, diskSizeGB, backupEnabled, cmd.Flags().Lookup("backup").Changed, tags, clearTags)
+			return runUpdateCluster(cmd, projectID, clusterName, tier, diskSizeGB, backupEnabled, cmd.Flags().Lookup("backup").Changed, pitEnabled, cmd.Flags().Lookup("pit").Changed, tags, clearTags)
 		},
 	}
 
@@ -392,10 +402,158 @@ func newUpdateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&tier, "tier", "", "New cluster tier")
 	cmd.Flags().IntVar(&diskSizeGB, "disk-size", 0, "New disk size in GB")
 	cmd.Flags().BoolVar(&backupEnabled, "backup", false, "Enable/update backup settings")
+	cmd.Flags().BoolVar(&pitEnabled, "pit", false, "Enable/update point-in-time recovery settings")
 	cmd.Flags().StringSliceVar(&tagStrings, "tag", []string{}, "Resource tags as key=value pairs (repeatable)")
 	cmd.Flags().BoolVar(&clearTags, "clear-tags", false, "Remove all tags from the cluster")
 
 	return cmd
+}
+
+func runUpdateCluster(cmd *cobra.Command, projectID, clusterName, tier string, diskSizeGB int, backupEnabled bool, backupChanged bool, pitEnabled bool, pitChanged bool, tags map[string]string, clearTags bool) error {
+	// Get configuration first to resolve project ID if not provided
+	cfg, err := config.Load(cmd, "")
+	if err != nil {
+		return fmt.Errorf("failed to load configuration: %w", err)
+	}
+
+	// Resolve project ID from flag or config/env
+	projectID = cfg.ResolveProjectID(projectID)
+
+	// Validate inputs
+	if err := validation.ValidateProjectID(projectID); err != nil {
+		return cli.FormatValidationError("project-id", projectID, err.Error())
+	}
+
+	if err := validation.ValidateClusterName(clusterName); err != nil {
+		return cli.FormatValidationError("cluster-name", clusterName, err.Error())
+	}
+
+	// Must have at least one thing to update
+	if tier == "" && diskSizeGB == 0 && !backupChanged && !pitChanged && !clearTags && len(tags) == 0 {
+		return fmt.Errorf("nothing to update: specify --tier, --disk-size, --backup, --pit, --tag, or --clear-tags")
+	}
+
+	// Validate PIT configuration
+	if pitChanged && pitEnabled {
+		// Check if backup will be enabled after this update
+		if backupChanged && !backupEnabled {
+			return fmt.Errorf("Point-in-Time Recovery requires backup to be enabled. Cannot enable PIT while disabling backup")
+		}
+
+		// If backup is not being changed in this update, we need to check current cluster state
+		if !backupChanged {
+			print_info := ui.NewProgressIndicator(cmd.Flag("verbose").Changed, false)
+			print_info.Print("Checking current cluster backup status...")
+
+			// Check current cluster backup status
+			ctx, cancel := context.WithTimeout(cmd.Context(), cfg.Timeout)
+			defer cancel()
+
+			client, err := cfg.CreateAtlasClient()
+			if err != nil {
+				return cli.WrapWithSuggestion(err, "Check your API key and public key configuration")
+			}
+
+			service := atlas.NewClustersService(client)
+			existingCluster, err := service.Get(ctx, projectID, clusterName)
+			if err != nil {
+				return fmt.Errorf("failed to get cluster for validation: %w", err)
+			}
+
+			if existingCluster.BackupEnabled == nil || !*existingCluster.BackupEnabled {
+				return fmt.Errorf("Point-in-Time Recovery requires backup to be enabled. Please enable backup first with --backup")
+			}
+		}
+	}
+
+	// Create context with timeout
+	ctx, cancel := context.WithTimeout(cmd.Context(), cfg.Timeout)
+	defer cancel()
+
+	// Create progress indicator
+	progress := ui.NewProgressIndicator(cmd.Flag("verbose").Changed, false)
+	progress.StartSpinner(fmt.Sprintf("Updating cluster '%s'...", clusterName))
+
+	// Create Atlas client
+	client, err := cfg.CreateAtlasClient()
+	if err != nil {
+		progress.StopSpinnerWithError("Failed to initialize Atlas client")
+		return cli.WrapWithSuggestion(err, "Check your API key and public key configuration")
+	}
+
+	service := atlas.NewClustersService(client)
+
+	// Get existing cluster
+	existingCluster, err := service.Get(ctx, projectID, clusterName)
+	if err != nil {
+		progress.StopSpinnerWithError("Failed to fetch existing cluster")
+		errorFormatter := cli.NewErrorFormatter(cmd.Flag("verbose").Changed)
+		return fmt.Errorf("%s", errorFormatter.Format(err))
+	}
+
+	// Create update object with only changed fields
+	updateCluster := &admin.ClusterDescription20240805{}
+
+	// Apply backup change
+	if backupChanged {
+		updateCluster.BackupEnabled = &backupEnabled
+	}
+
+	// Apply PIT change
+	if pitChanged {
+		updateCluster.PitEnabled = &pitEnabled
+	}
+
+	// Apply tag changes
+	if clearTags {
+		empty := []admin.ResourceTag{}
+		updateCluster.Tags = &empty
+	} else if len(tags) > 0 {
+		updateCluster.Tags = convertTagsToAtlasFormat(tags)
+	}
+
+	// Apply tier/disk changes across existing replication specs
+	if tier != "" || diskSizeGB > 0 {
+		if existingCluster.ReplicationSpecs != nil {
+			replicationSpecs := make([]admin.ReplicationSpec20240805, len(*existingCluster.ReplicationSpecs))
+			for i, spec := range *existingCluster.ReplicationSpecs {
+				replicationSpecs[i] = spec
+				if spec.RegionConfigs != nil {
+					regionConfigs := make([]admin.CloudRegionConfig20240805, len(*spec.RegionConfigs))
+					for j, regionConfig := range *spec.RegionConfigs {
+						regionConfigs[j] = regionConfig
+						if regionConfig.ElectableSpecs != nil {
+							electableSpecs := *regionConfig.ElectableSpecs
+							if tier != "" {
+								electableSpecs.InstanceSize = &tier
+							}
+							if diskSizeGB > 0 {
+								diskSize := float64(diskSizeGB)
+								electableSpecs.DiskSizeGB = &diskSize
+							}
+							regionConfigs[j].ElectableSpecs = &electableSpecs
+						}
+					}
+					replicationSpecs[i].RegionConfigs = &regionConfigs
+				}
+			}
+			updateCluster.ReplicationSpecs = &replicationSpecs
+		}
+	}
+
+	// Apply the update
+	updatedCluster, err := service.Update(ctx, projectID, clusterName, updateCluster)
+	if err != nil {
+		progress.StopSpinnerWithError("Failed to update cluster")
+		errorFormatter := cli.NewErrorFormatter(cmd.Flag("verbose").Changed)
+		return fmt.Errorf("%s", errorFormatter.Format(err))
+	}
+
+	progress.StopSpinner("")
+
+	// Display updated cluster details
+	formatter := output.NewFormatter(cfg.Output, os.Stdout)
+	return formatter.Format(updatedCluster)
 }
 
 func newDeleteCmd() *cobra.Command {
@@ -559,128 +717,6 @@ func runGetCluster(cmd *cobra.Command, projectID, clusterName string) error {
 	// Format and display output
 	formatter := output.NewFormatter(cfg.Output, os.Stdout)
 	return formatter.Format(cluster)
-}
-
-func runCreateCluster(cmd *cobra.Command, projectID, clusterName, tier, provider, region string, diskSizeGB int, backupEnabled bool) error {
-	// Get configuration first to resolve project ID if not provided
-	cfg, err := config.Load(cmd, "")
-	if err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
-	}
-
-	// Resolve project ID from flag or config/env
-	projectID = cfg.ResolveProjectID(projectID)
-
-	// Validate inputs
-	if err := validation.ValidateProjectID(projectID); err != nil {
-		return cli.FormatValidationError("project-id", projectID, err.Error())
-	}
-
-	if err := validation.ValidateClusterName(clusterName); err != nil {
-		return cli.FormatValidationError("name", clusterName, err.Error())
-	}
-
-	// Create context with timeout
-	ctx, cancel := context.WithTimeout(cmd.Context(), cfg.Timeout)
-	defer cancel()
-
-	// Create progress indicator
-	progress := ui.NewProgressIndicator(cmd.Flag("verbose").Changed, false)
-	progress.StartSpinner(fmt.Sprintf("Creating cluster '%s'...", clusterName))
-
-	// Create Atlas client
-	client, err := cfg.CreateAtlasClient()
-	if err != nil {
-		progress.StopSpinnerWithError("Failed to initialize Atlas client")
-		return cli.WrapWithSuggestion(err, "Check your API key and public key configuration")
-	}
-
-	service := atlas.NewClustersService(client)
-
-	// Create cluster configuration
-	nodeCount := 3 // Default to 3 nodes for replica set
-	priority := 7  // Default priority
-	// Do not set DiskIOPS/EbsVolumeType by default. These should only be provided
-	// when explicitly requested and valid for the selected provider/tier.
-	diskIOPS := 0
-	ebsVolumeType := ""
-
-	clusterType := "REPLICASET"
-	mongoDBMajorVersion := "7.0"
-
-	cluster := &admin.ClusterDescription20240805{
-		Name:                &clusterName,
-		ClusterType:         &clusterType,
-		MongoDBMajorVersion: &mongoDBMajorVersion,
-		ReplicationSpecs: &[]admin.ReplicationSpec20240805{{
-			RegionConfigs: &[]admin.CloudRegionConfig20240805{{
-				ProviderName: &provider,
-				RegionName:   &region,
-				Priority:     &priority,
-				ElectableSpecs: &admin.HardwareSpec20240805{
-					InstanceSize: &tier,
-					NodeCount:    &nodeCount,
-				},
-			}},
-		}},
-	}
-
-	// Conditionally apply storage settings only when explicitly provided
-	if diskIOPS > 0 {
-		if cluster.ReplicationSpecs != nil && len(*cluster.ReplicationSpecs) > 0 {
-			repSpec := &(*cluster.ReplicationSpecs)[0]
-			if repSpec.RegionConfigs != nil && len(*repSpec.RegionConfigs) > 0 {
-				regionConfig := &(*repSpec.RegionConfigs)[0]
-				if regionConfig.ElectableSpecs != nil {
-					regionConfig.ElectableSpecs.DiskIOPS = &diskIOPS
-				}
-			}
-		}
-	}
-	if ebsVolumeType != "" {
-		if cluster.ReplicationSpecs != nil && len(*cluster.ReplicationSpecs) > 0 {
-			repSpec := &(*cluster.ReplicationSpecs)[0]
-			if repSpec.RegionConfigs != nil && len(*repSpec.RegionConfigs) > 0 {
-				regionConfig := &(*repSpec.RegionConfigs)[0]
-				if regionConfig.ElectableSpecs != nil {
-					regionConfig.ElectableSpecs.EbsVolumeType = &ebsVolumeType
-				}
-			}
-		}
-	}
-
-	// Set disk size if specified
-	if diskSizeGB > 0 {
-		diskSize := float64(diskSizeGB)
-		if cluster.ReplicationSpecs != nil && len(*cluster.ReplicationSpecs) > 0 {
-			repSpec := &(*cluster.ReplicationSpecs)[0]
-			if repSpec.RegionConfigs != nil && len(*repSpec.RegionConfigs) > 0 {
-				regionConfig := &(*repSpec.RegionConfigs)[0]
-				if regionConfig.ElectableSpecs != nil {
-					regionConfig.ElectableSpecs.DiskSizeGB = &diskSize
-				}
-			}
-		}
-	}
-
-	// Set backup if enabled
-	if backupEnabled {
-		cluster.BackupEnabled = &backupEnabled
-	}
-
-	// Create the cluster
-	createdCluster, err := service.Create(ctx, projectID, cluster)
-	if err != nil {
-		progress.StopSpinnerWithError("Failed to create cluster")
-		errorFormatter := cli.NewErrorFormatter(cmd.Flag("verbose").Changed)
-		return fmt.Errorf("%s", errorFormatter.Format(err))
-	}
-
-	progress.StopSpinner("")
-
-	// Display created cluster details with prettier formatting
-	formatter := output.NewCreateResultFormatter(cfg.Output, os.Stdout)
-	return formatter.FormatCreateResult(createdCluster, "cluster")
 }
 
 // runCreateClusterAdvanced handles the comprehensive cluster creation with full configuration support
@@ -1198,133 +1234,6 @@ func containsInt(slice []int, item int) bool {
 		}
 	}
 	return false
-}
-
-func runUpdateCluster(cmd *cobra.Command, projectID, clusterName, tier string, diskSizeGB int, backupEnabled bool, backupChanged bool, tags map[string]string, clearTags bool) error {
-	// Get configuration first to resolve project ID if not provided
-	cfg, err := config.Load(cmd, "")
-	if err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
-	}
-
-	// Resolve project ID from flag or config/env
-	projectID = cfg.ResolveProjectID(projectID)
-
-	// Validate inputs
-	if err := validation.ValidateProjectID(projectID); err != nil {
-		return cli.FormatValidationError("project-id", projectID, err.Error())
-	}
-
-	if err := validation.ValidateClusterName(clusterName); err != nil {
-		return cli.FormatValidationError("cluster-name", clusterName, err.Error())
-	}
-
-	// Must have at least one thing to update
-	if tier == "" && diskSizeGB == 0 && !backupChanged && !clearTags && len(tags) == 0 {
-		return fmt.Errorf("nothing to update: specify --tier, --disk-size, --backup, --tag, or --clear-tags")
-	}
-
-	// Create context with timeout
-	ctx, cancel := context.WithTimeout(cmd.Context(), cfg.Timeout)
-	defer cancel()
-
-	// Create Atlas client
-	client, err := cfg.CreateAtlasClient()
-	if err != nil {
-		return cli.WrapWithSuggestion(err, "Check your API key and public key configuration")
-	}
-
-	service := atlas.NewClustersService(client)
-
-	// First, get the existing cluster to preserve unchanged fields
-	progress := ui.NewProgressIndicator(cmd.Flag("verbose").Changed, false)
-	progress.StartSpinner(fmt.Sprintf("Fetching existing cluster '%s'...", clusterName))
-
-	existingCluster, err := service.Get(ctx, projectID, clusterName)
-	if err != nil {
-		progress.StopSpinnerWithError("Failed to fetch existing cluster")
-		errorFormatter := cli.NewErrorFormatter(cmd.Flag("verbose").Changed)
-		return fmt.Errorf("%s", errorFormatter.Format(err))
-	}
-
-	// Create update object. We'll include only changed fields.
-	updateCluster := &admin.ClusterDescription20240805{}
-
-	// Apply backup change
-	if backupChanged {
-		updateCluster.BackupEnabled = &backupEnabled
-	}
-
-	// Apply tag changes
-	if clearTags {
-		empty := []admin.ResourceTag{}
-		updateCluster.Tags = &empty
-	} else if len(tags) > 0 {
-		updateCluster.Tags = convertTagsToAtlasFormat(tags)
-	}
-
-	// Apply tier/disk changes across existing replication specs
-	if tier != "" || diskSizeGB > 0 {
-		if existingCluster.ReplicationSpecs != nil {
-			var newSpecs []admin.ReplicationSpec20240805
-			for _, rs := range *existingCluster.ReplicationSpecs {
-				var newRegionConfigs []admin.CloudRegionConfig20240805
-				if rs.RegionConfigs != nil {
-					for _, rc := range *rs.RegionConfigs {
-						newRc := admin.CloudRegionConfig20240805{}
-						// Keep provider/region to target correct configs
-						if rc.ProviderName != nil {
-							newRc.ProviderName = rc.ProviderName
-						}
-						if rc.RegionName != nil {
-							newRc.RegionName = rc.RegionName
-						}
-						// Only set electable specs fields we want to change
-						var setElectable bool
-						es := admin.HardwareSpec20240805{}
-						if tier != "" {
-							es.InstanceSize = &tier
-							setElectable = true
-						}
-						if diskSizeGB > 0 {
-							sz := float64(diskSizeGB)
-							es.DiskSizeGB = &sz
-							setElectable = true
-						}
-						if setElectable {
-							newRc.ElectableSpecs = &es
-						}
-						if setElectable {
-							newRegionConfigs = append(newRegionConfigs, newRc)
-						}
-					}
-				}
-				if len(newRegionConfigs) > 0 {
-					newSpecs = append(newSpecs, admin.ReplicationSpec20240805{RegionConfigs: &newRegionConfigs})
-				}
-			}
-			if len(newSpecs) > 0 {
-				updateCluster.ReplicationSpecs = &newSpecs
-			}
-		}
-	}
-
-	progress.StopSpinner("Existing cluster fetched")
-	progress.StartSpinner(fmt.Sprintf("Updating cluster '%s'...", clusterName))
-
-	// Update the cluster
-	updatedCluster, err := service.Update(ctx, projectID, clusterName, updateCluster)
-	if err != nil {
-		progress.StopSpinnerWithError("Failed to update cluster")
-		errorFormatter := cli.NewErrorFormatter(cmd.Flag("verbose").Changed)
-		return fmt.Errorf("%s", errorFormatter.Format(err))
-	}
-
-	progress.StopSpinner(fmt.Sprintf("Cluster '%s' updated successfully", clusterName))
-
-	// Display updated cluster details
-	formatter := output.NewFormatter(cfg.Output, os.Stdout)
-	return formatter.Format(updatedCluster)
 }
 
 func runDeleteCluster(cmd *cobra.Command, projectID, clusterName string, yes bool) error {

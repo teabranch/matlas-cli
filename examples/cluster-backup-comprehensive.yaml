@@ -1,0 +1,194 @@
+# Comprehensive Backup Features Example
+# This example demonstrates all backup features: continuous backup, point-in-time recovery, and cross-region backup
+
+apiVersion: matlas.mongodb.com/v1
+kind: ApplyDocument
+metadata:
+  name: backup-features-comprehensive
+  labels:
+    purpose: backup-demo
+    environment: production
+  annotations:
+    description: "Comprehensive backup features demonstration"
+    documentation: "Shows continuous backup, PIT recovery, and cross-region configurations"
+resources:
+  # Basic backup-enabled cluster
+  - apiVersion: matlas.mongodb.com/v1
+    kind: Cluster
+    metadata:
+      name: backup-basic-cluster
+      labels:
+        backup: enabled
+        tier: standard
+        environment: production
+    spec:
+      projectName: "Backup Demo Project"
+      provider: AWS
+      region: US_EAST_1
+      instanceSize: M10
+      diskSizeGB: 20
+      mongodbVersion: "7.0"
+      
+      # Continuous backup configuration
+      backupEnabled: true
+      
+      tags:
+        - key: BackupPolicy
+          value: Standard
+        - key: Environment
+          value: Production
+
+  # Point-in-Time Recovery enabled cluster
+  - apiVersion: matlas.mongodb.com/v1
+    kind: Cluster
+    metadata:
+      name: backup-pit-cluster
+      labels:
+        backup: enabled
+        pit: enabled
+        tier: advanced
+        criticality: high
+    spec:
+      projectName: "Backup Demo Project"
+      provider: AWS
+      region: US_EAST_1
+      instanceSize: M20
+      diskSizeGB: 40
+      mongodbVersion: "7.0"
+      
+      # Advanced backup configuration with Point-in-Time Recovery
+      backupEnabled: true
+      pitEnabled: true       # Requires backupEnabled: true
+      
+      # Enhanced storage for PIT workloads
+      autoscaling:
+        diskGBEnabled: true
+        computeEnabled: false
+      
+      tags:
+        - key: BackupPolicy
+          value: PointInTime
+        - key: Environment
+          value: Production
+        - key: DataCriticality
+          value: High
+
+  # Cross-region backup cluster (via multi-region configuration)
+  - apiVersion: matlas.mongodb.com/v1
+    kind: Cluster
+    metadata:
+      name: backup-cross-region-cluster
+      labels:
+        backup: enabled
+        regions: multi
+        geographic-redundancy: enabled
+        disaster-recovery: enabled
+    spec:
+      projectName: "Backup Demo Project"
+      provider: AWS
+      clusterType: REPLICASET
+      mongodbVersion: "7.0"
+      
+      # Backup enabled for cross-region redundancy
+      backupEnabled: true
+      
+      # Multi-region configuration for geographic backup redundancy
+      replicationSpecs:
+        - numShards: 1
+          regionConfigs:
+            # Primary region - US East
+            - electableNodes: 3
+              priority: 7
+              readOnlyNodes: 0
+              analyticsNodes: 0
+              providerName: AWS
+              regionName: US_EAST_1
+              instanceSize: M30
+              
+            # Backup region - US West (geographic separation)
+            - electableNodes: 2
+              priority: 6
+              readOnlyNodes: 1
+              analyticsNodes: 0
+              providerName: AWS
+              regionName: US_WEST_2
+              instanceSize: M20
+              
+            # International backup region - Europe
+            - electableNodes: 2
+              priority: 5
+              readOnlyNodes: 1
+              analyticsNodes: 0
+              providerName: AWS
+              regionName: EU_WEST_1
+              instanceSize: M20
+      
+      tags:
+        - key: BackupPolicy
+          value: CrossRegion
+        - key: Environment
+          value: Production
+        - key: DisasterRecovery
+          value: Global
+
+  # Development cluster with backup disabled (cost optimization)
+  - apiVersion: matlas.mongodb.com/v1
+    kind: Cluster
+    metadata:
+      name: backup-dev-cluster
+      labels:
+        backup: disabled
+        tier: basic
+        environment: development
+        cost-optimized: "true"
+    spec:
+      projectName: "Backup Demo Project"
+      provider: AWS
+      region: US_EAST_1
+      instanceSize: M10
+      diskSizeGB: 10
+      mongodbVersion: "7.0"
+      
+      # Backup disabled for development to reduce costs
+      backupEnabled: false
+      # Note: pitEnabled cannot be true when backupEnabled is false
+      
+      tags:
+        - key: BackupPolicy
+          value: None
+        - key: Environment
+          value: Development
+        - key: CostOptimization
+          value: Enabled
+
+  # Network access for backup clusters
+  - apiVersion: matlas.mongodb.com/v1
+    kind: NetworkAccess
+    metadata:
+      name: backup-vpc-access
+      labels:
+        purpose: backup-access
+        environment: production
+    spec:
+      projectName: "Backup Demo Project"
+      awsSecurityGroup: "sg-1234567890abcdef0"
+      comment: "VPC access for backup-enabled clusters"
+
+  # Administrative user for backup management
+  - apiVersion: matlas.mongodb.com/v1
+    kind: DatabaseUser
+    metadata:
+      name: backup-admin
+      labels:
+        purpose: backup-administration
+        scope: all-clusters
+    spec:
+      projectName: "Backup Demo Project"
+      username: backup-admin
+      authDatabase: admin
+      password: "${BACKUP_ADMIN_PASSWORD}"
+      roles:
+        - roleName: backup
+          databaseName: admin
+        - roleName: clusterMonitor
+          databaseName: admin

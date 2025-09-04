@@ -105,6 +105,7 @@ type ClusterConfig struct {
 	InstanceSize     string             `yaml:"instanceSize" json:"instanceSize" validate:"required,oneof=M0 M2 M5 M10 M20 M30 M40 M50 M60 M80 M140 M200 M300 M400 M700 R40 R50 R60 R80 R200 R300 R400 R700"`
 	DiskSizeGB       *float64           `yaml:"diskSizeGB,omitempty" json:"diskSizeGB,omitempty" validate:"omitempty,min=1,max=4096"`
 	BackupEnabled    *bool              `yaml:"backupEnabled,omitempty" json:"backupEnabled,omitempty"`
+	PitEnabled       *bool              `yaml:"pitEnabled,omitempty" json:"pitEnabled,omitempty"`
 	TierType         string             `yaml:"tierType,omitempty" json:"tierType,omitempty" validate:"omitempty,oneof=dedicated shared"`
 	MongoDBVersion   string             `yaml:"mongodbVersion,omitempty" json:"mongodbVersion,omitempty" validate:"omitempty,min=3,max=10"`
 	ClusterType      string             `yaml:"clusterType,omitempty" json:"clusterType,omitempty" validate:"omitempty,oneof=REPLICASET SHARDED GEOSHARDED"`
