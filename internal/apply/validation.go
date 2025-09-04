@@ -1349,7 +1349,7 @@ func validateClusterPITRequirements(doc *types.ApplyDocument, result *Validation
 			if specMap, ok := resource.Spec.(map[string]interface{}); ok {
 				pitEnabled, pitExists := specMap["pitEnabled"].(bool)
 				backupEnabled, backupExists := specMap["backupEnabled"].(bool)
-				
+
 				if pitExists && pitEnabled {
 					if !backupExists || !backupEnabled {
 						path := fmt.Sprintf("resources[%d].spec", i)
@@ -1366,7 +1366,7 @@ func validateClusterPITRequirements(doc *types.ApplyDocument, result *Validation
 func validateCrossDocumentDependencies(doc *types.ApplyDocument, result *ValidationResult, opts *ValidatorOptions) {
 	// Validate PIT requirements across cluster resources
 	validateClusterPITRequirements(doc, result, opts)
-	
+
 	// Check for resource name conflicts across the document
 	resourceNames := make(map[string][]string)
 

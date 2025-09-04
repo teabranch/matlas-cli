@@ -439,27 +439,27 @@ func runUpdateCluster(cmd *cobra.Command, projectID, clusterName, tier string, d
 		if backupChanged && !backupEnabled {
 			return fmt.Errorf("Point-in-Time Recovery requires backup to be enabled. Cannot enable PIT while disabling backup")
 		}
-		
+
 		// If backup is not being changed in this update, we need to check current cluster state
 		if !backupChanged {
 			print_info := ui.NewProgressIndicator(cmd.Flag("verbose").Changed, false)
 			print_info.Print("Checking current cluster backup status...")
-			
+
 			// Check current cluster backup status
 			ctx, cancel := context.WithTimeout(cmd.Context(), cfg.Timeout)
 			defer cancel()
-			
+
 			client, err := cfg.CreateAtlasClient()
 			if err != nil {
 				return cli.WrapWithSuggestion(err, "Check your API key and public key configuration")
 			}
-			
+
 			service := atlas.NewClustersService(client)
 			existingCluster, err := service.Get(ctx, projectID, clusterName)
 			if err != nil {
 				return fmt.Errorf("failed to get cluster for validation: %w", err)
 			}
-			
+
 			if existingCluster.BackupEnabled == nil || !*existingCluster.BackupEnabled {
 				return fmt.Errorf("Point-in-Time Recovery requires backup to be enabled. Please enable backup first with --backup")
 			}
@@ -718,7 +718,6 @@ func runGetCluster(cmd *cobra.Command, projectID, clusterName string) error {
 	formatter := output.NewFormatter(cfg.Output, os.Stdout)
 	return formatter.Format(cluster)
 }
-
 
 // runCreateClusterAdvanced handles the comprehensive cluster creation with full configuration support
 func runCreateClusterAdvanced(cmd *cobra.Command, opts *CreateClusterOptions) error {
@@ -1236,8 +1235,6 @@ func containsInt(slice []int, item int) bool {
 	}
 	return false
 }
-
-
 
 func runDeleteCluster(cmd *cobra.Command, projectID, clusterName string, yes bool) error {
 	// Get configuration first to resolve project ID if not provided
