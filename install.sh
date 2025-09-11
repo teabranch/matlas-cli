@@ -47,7 +47,7 @@ detect_platform() {
                         exit 1 ;;
     esac
     
-    echo "${os}-${arch}"
+    echo "${os}_${arch}"
 }
 
 # Check if running as root (for install dir permissions)
@@ -73,7 +73,7 @@ prepare_install_dir() {
 
 # Get the latest release version from GitHub
 get_latest_version() {
-    print_info "Fetching latest release information..."
+    print_info "Fetching latest release information..." >&2
     
     if command -v curl >/dev/null 2>&1; then
         curl -s "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases/latest" | \
@@ -96,12 +96,12 @@ download_binary() {
     local temp_dir
     
     temp_dir=$(mktemp -d)
-    trap 'rm -rf "$temp_dir"' EXIT
+    trap 'if [[ -n "${temp_dir:-}" ]] && [[ -d "${temp_dir:-}" ]]; then rm -rf "$temp_dir"; fi' EXIT
     
     # Remove 'v' prefix if present
     version="${version#v}"
     
-    local archive_name="${BINARY_NAME}-${platform}.tar.gz"
+    local archive_name="${BINARY_NAME}_${platform}.tar.gz"
     local download_url="https://github.com/$REPO_OWNER/$REPO_NAME/releases/download/v${version}/${archive_name}"
     
     print_info "Downloading $archive_name..."
@@ -125,8 +125,8 @@ download_binary() {
     local binary_path
     if [[ -f "$temp_dir/$BINARY_NAME" ]]; then
         binary_path="$temp_dir/$BINARY_NAME"
-    elif [[ -f "$temp_dir/${BINARY_NAME}-${platform}" ]]; then
-        binary_path="$temp_dir/${BINARY_NAME}-${platform}"
+    elif [[ -f "$temp_dir/${BINARY_NAME}_${platform}" ]]; then
+        binary_path="$temp_dir/${BINARY_NAME}_${platform}"
     else
         # Try to find any executable file
         binary_path=$(find "$temp_dir" -type f -executable | head -1)

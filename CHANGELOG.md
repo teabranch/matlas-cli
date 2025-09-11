@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+### Fixed
+- Fixed version command to display proper semantic versions instead of 'dev' or branch names
+- Fixed build process to use Git-based version detection that works locally and in CI/CD
+- Fixed installation script URL generation bug where info messages were captured in version string causing malformed download URLs
+- Fixed installation script artifact naming to use underscores (matlas_darwin_arm64.tar.gz) instead of hyphens to match actual release artifacts
+- Fixed installation script cleanup trap to handle unbound variables with set -u option
+
 ### Added
 - **Comprehensive Backup Features**: Complete backup and Point-in-Time Recovery implementation
 - Point-in-Time Recovery (PIT) support with proper validation workflow

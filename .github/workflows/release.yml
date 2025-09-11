@@ -187,7 +187,26 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: 0
         run: |
-          VERSION=${GITHUB_REF_NAME:-dev}
+          # Use Git-based version detection like our build script
+          if VERSION=$(git describe --tags --exact-match HEAD 2>/dev/null); then
+            echo "On exact tag: $VERSION"
+          elif LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null); then
+            COMMIT_COUNT=$(git rev-list --count "$LATEST_TAG"..HEAD 2>/dev/null || echo "0")
+            SHORT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+            if [[ "$COMMIT_COUNT" -gt 0 ]]; then
+              VERSION="${LATEST_TAG}-dev.${COMMIT_COUNT}+${SHORT_COMMIT}"
+            else
+              VERSION="$LATEST_TAG"
+            fi
+            echo "Based on tag: $VERSION"
+          elif SHORT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null); then
+            VERSION="v0.0.0-dev+${SHORT_COMMIT}"
+            echo "No tags found, using commit: $VERSION"
+          else
+            VERSION="dev"
+            echo "Fallback version: $VERSION"
+          fi
+          
           COMMIT=$(git rev-parse --short HEAD)
           BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           

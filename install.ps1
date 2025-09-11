@@ -144,8 +144,8 @@ function Download-Binary {
     # Remove 'v' prefix if present
     $cleanVersion = $Version -replace '^v', ''
     
-    $platform = "windows-$(Get-Architecture)"
-    $archiveName = "$BINARY_NAME-$platform.zip"
+    $platform = "windows_$(Get-Architecture)"
+    $archiveName = "$BINARY_NAME`_$platform.zip"
     $downloadUrl = "https://github.com/$REPO_OWNER/$REPO_NAME/releases/download/v$cleanVersion/$archiveName"
     
     Write-Info "Downloading $archiveName..."
@@ -176,7 +176,7 @@ function Download-Binary {
         $binaryPath = $null
         $possiblePaths = @(
             (Join-Path $tempDir "$BINARY_NAME.exe"),
-            (Join-Path $tempDir "$BINARY_NAME-$platform.exe")
+            (Join-Path $tempDir "$BINARY_NAME`_$platform.exe")
         )
         
         foreach ($path in $possiblePaths) {
