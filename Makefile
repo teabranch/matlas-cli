@@ -8,7 +8,7 @@ build:
 
 $(BINARY):
 	@mkdir -p $(BIN_DIR)
-	go build -o $(BINARY) .
+	./scripts/build/build.sh build -o $(BINARY)
 
 test:
 	./scripts/test.sh unit

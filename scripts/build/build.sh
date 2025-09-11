@@ -22,28 +22,59 @@ print_error() { echo -e "${RED}✗ $1${NC}"; }
 print_info() { echo -e "${BLUE}ℹ $1${NC}"; }
 
 get_version() {
-    # Try to get version from git
-    if git describe --tags --abbrev=0 2>/dev/null; then
-        return 0
-    elif git rev-parse --short HEAD 2>/dev/null; then
-        return 0
-    else
-        echo "dev"
+    # Try to get a proper semantic version from git
+    local version
+    
+    # First try to get exact tag on current commit
+    if version=$(git describe --tags --exact-match HEAD 2>/dev/null); then
+        echo "$version"
         return 0
     fi
+    
+    # Get the latest tag and add commit info if we're ahead
+    if version=$(git describe --tags --abbrev=0 2>/dev/null); then
+        local commit_count=$(git rev-list --count "$version"..HEAD 2>/dev/null || echo "0")
+        if [[ "$commit_count" -gt 0 ]]; then
+            local short_commit=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+            echo "${version}-dev.${commit_count}+${short_commit}"
+        else
+            echo "$version"
+        fi
+        return 0
+    fi
+    
+    # No tags found, use commit-based version
+    if version=$(git rev-parse --short HEAD 2>/dev/null); then
+        echo "v0.0.0-dev+${version}"
+        return 0
+    fi
+    
+    # Fallback for non-git environments
+    echo "dev"
+    return 0
+}
+
+get_commit() {
+    git rev-parse --short HEAD 2>/dev/null || echo "unknown"
+}
+
+get_build_time() {
+    date -u +"%Y-%m-%dT%H:%M:%SZ"
 }
 
 build_binary() {
     local output_name="${1:-matlas}"
-    local version
+    local version commit build_time
     version=$(get_version)
+    commit=$(get_commit)
+    build_time=$(get_build_time)
     
     print_info "Building $output_name (version: $version)..."
     
     cd "$PROJECT_ROOT"
     
-    # Build flags
-    local ldflags="-X main.version=$version -X main.buildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    # Build flags - match what release.yml uses
+    local ldflags="-s -w -X main.version=$version -X main.commit=$commit -X main.buildTime=$build_time"
     
     if go build -ldflags "$ldflags" -o "$output_name"; then
         print_success "Build completed: $output_name"
@@ -67,8 +98,10 @@ build_binary() {
 }
 
 cross_compile() {
-    local version
+    local version commit build_time
     version=$(get_version)
+    commit=$(get_commit)
+    build_time=$(get_build_time)
     
     print_info "Cross-compiling for multiple platforms..."
     
@@ -93,7 +126,8 @@ cross_compile() {
         
         print_info "Building for $os/$arch..."
         
-        local ldflags="-X main.version=$version -X main.buildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        # Build flags - match what release.yml uses
+        local ldflags="-s -w -X main.version=$version -X main.commit=$commit -X main.buildTime=$build_time"
         
         if GOOS="$os" GOARCH="$arch" go build -ldflags "$ldflags" -o "$output"; then
             print_success "Built: $output"
