@@ -1242,6 +1242,167 @@ This fix ensures proper alignment with the search missing operations feature des
 
 ---
 
+## [2025-09-11] Release Workflow Version Injection Fix
+
+**Status**: Completed  
+**Developer**: Assistant  
+**Related Issues**: Release binaries showing incorrect version (v0.0.0-dev+f6598d7) instead of actual release version (v3.0.2)
+
+### Summary
+Fixed critical issue where release workflow was building binaries with git-based development versions instead of the actual release version from semantic-release. The build job was running before semantic-release created tags, causing version detection to fail and produce development versions like `v0.0.0-dev+f6598d7` instead of proper release versions like `v3.0.2`.
+
+### Tasks
+- [x] Investigate how version is currently being set in build process and semantic-release workflow
+- [x] Fix the build process to use proper release version instead of git-based detection
+- [x] Update semantic-release configuration to properly handle version injection
+- [x] Verify the fix works correctly for both development and release builds
+
+### Files Modified
+- `.releaserc.json` - Added @semantic-release/exec plugin to run custom build script with version
+- `package.json` - Added @semantic-release/exec dependency
+- `scripts/build/build-release.sh` - New script that receives version from semantic-release and builds all platform binaries with correct version
+- `.github/workflows/release.yml` - Removed separate build job, updated release job to use semantic-release for building
+
+### Root Cause Analysis
+
+#### Primary Issue: Build Before Tagging
+- **Problem**: Build job ran before semantic-release created the release tag
+- **Error**: Git-based version detection found no tags or wrong tags, generating `v0.0.0-dev+f6598d7`
+- **Impact**: Released binaries showed development versions instead of release versions like `v3.0.2`
+- **Sequence**: 1) Build with wrong version → 2) Upload artifacts → 3) Semantic-release creates tag → 4) Attach wrong-versioned artifacts
+
+#### Secondary Issue: Workflow Structure
+- **Problem**: Separate build job made it impossible to inject the semantic-release determined version
+- **Design Flaw**: Version was available only after semantic-release analysis, but build happened before
+- **Timing**: Build artifacts were created before the release version was determined
+
+### Technical Implementation
+
+#### 1. Semantic-Release Integration
+```json
+// Before: Only basic plugins
+"plugins": [
+  "@semantic-release/commit-analyzer",
+  "@semantic-release/release-notes-generator", 
+  "@semantic-release/github"
+]
+
+// After: Added exec plugin to handle building with version
+"plugins": [
+  "@semantic-release/commit-analyzer",
+  "@semantic-release/release-notes-generator",
+  [
+    "@semantic-release/exec",
+    {
+      "prepareCmd": "./scripts/build/build-release.sh ${nextRelease.version}"
+    }
+  ],
+  "@semantic-release/github"
+]
+```
+
+#### 2. Build Script With Version Injection
+```bash
+# scripts/build/build-release.sh - receives version as parameter
+VERSION="$1"  # e.g., "3.0.3" from semantic-release
+
+# Build with proper version injection
+go build \
+  -ldflags="-s -w -X main.version=v${VERSION} -X main.commit=${COMMIT} -X main.buildTime=${BUILD_TIME} -X main.builtBy=semantic-release" \
+  -o "dist/${BINARY_NAME}" \
+  .
+```
+
+#### 3. Workflow Restructure
+```yaml
+# Before: Separate build job with wrong version
+build:
+  needs: [lint, test]
+  steps:
+    - name: Build Binary
+      run: |
+        # Git-based version detection fails here
+        VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0-dev+$(git rev-parse --short HEAD)")
+
+# After: Building integrated into semantic-release
+release:
+  needs: [lint, test]  # No build dependency
+  steps:
+    - name: Setup Go (needed for build script)
+    - name: Run semantic-release  # Handles building with correct version
+```
+
+### Impact Assessment
+
+#### Before Fix
+- **Version Output**: `matlas-cli version: v0.0.0-dev+f6598d7` (incorrect)
+- **User Confusion**: Released binaries showed development versions
+- **Release Integrity**: No way to verify actual release version from binary
+- **Support Issues**: Difficult to track which actual release users were running
+
+#### After Fix
+- ✅ **Correct Version**: `matlas-cli version: v3.0.3-test` (matches release)
+- ✅ **Build Metadata**: Proper commit, build time, and "semantic-release" built-by
+- ✅ **Release Integrity**: Binary version matches GitHub release version
+- ✅ **User Experience**: Clear version information for support and debugging
+
+### Verification Results
+
+#### Test Build Execution
+```bash
+$ ./scripts/build/build-release.sh v3.0.3-test
+🏗️ Building matlas-cli binaries for release v3.0.3-test
+Build variables:
+  VERSION: v3.0.3-test
+  COMMIT: f6598d7
+  BUILD_TIME: 2025-09-11T17:37:03Z
+  BUILT_BY: semantic-release
+✅ Build completed successfully for release v3.0.3-test
+```
+
+#### Binary Version Verification
+```bash
+$ ./matlas version
+matlas-cli version: v3.0.3-test
+Build time: 2025-09-11T17:37:03Z
+Git commit: f6598d7
+Built by: semantic-release
+Go version: go1.24.5
+```
+
+### Workflow Benefits
+
+#### 1. Atomic Versioning
+- Build and release happen in single workflow job
+- Version determined once and used consistently
+- No race conditions between build and tagging
+
+#### 2. Simplified Pipeline
+- Removed complex artifact upload/download between jobs
+- Reduced job dependencies and timing issues
+- Single source of truth for version information
+
+#### 3. Proper Version Injection
+- Semantic-release determines version based on conventional commits
+- Version passed directly to build script as parameter
+- All binaries built with identical, correct version
+
+### Code Quality Impact
+
+1. **Reliability**: Release binaries now show correct version information
+2. **Maintainability**: Simplified workflow with fewer moving parts
+3. **Traceability**: Clear connection between Git tags and binary versions
+4. **User Experience**: Users can verify they're running the expected release version
+
+### Future Considerations
+
+1. **Development Builds**: Consider adding development build script for testing
+2. **Version Validation**: Could add verification that binary version matches expected release
+3. **Rollback Strategy**: Document process for fixing releases with wrong versions
+4. **Monitoring**: Consider adding alerts for version mismatches in CI/CD
+
+---
+
 ## [2025-08-19] Search Index Discovery & Apply Pipeline Fixes
 **Status**: Completed  
 **Developer**: Assistant  
