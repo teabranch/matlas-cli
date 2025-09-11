@@ -140,139 +140,14 @@ jobs:
           name: codecov-umbrella
 
   # ==============================================================================
-  # Build and Release
-  # ==============================================================================
-  
-  build:
-    name: 🏗️ Build Artifacts
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: [lint, test]
-    strategy:
-      matrix:
-        include:
-          - os: linux
-            arch: amd64
-            goos: linux
-            goarch: amd64
-          - os: linux
-            arch: arm64
-            goos: linux
-            goarch: arm64
-          - os: darwin
-            arch: amd64
-            goos: darwin
-            goarch: amd64
-          - os: darwin
-            arch: arm64
-            goos: darwin
-            goarch: arm64
-          - os: windows
-            arch: amd64
-            goos: windows
-            goarch: amd64
-            ext: .exe
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Build Binary
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: 0
-        run: |
-          # Use Git-based version detection like our build script
-          if VERSION=$(git describe --tags --exact-match HEAD 2>/dev/null); then
-            echo "On exact tag: $VERSION"
-          elif LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null); then
-            COMMIT_COUNT=$(git rev-list --count "$LATEST_TAG"..HEAD 2>/dev/null || echo "0")
-            SHORT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-            if [[ "$COMMIT_COUNT" -gt 0 ]]; then
-              VERSION="${LATEST_TAG}-dev.${COMMIT_COUNT}+${SHORT_COMMIT}"
-            else
-              VERSION="$LATEST_TAG"
-            fi
-            echo "Based on tag: $VERSION"
-          elif SHORT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null); then
-            VERSION="v0.0.0-dev+${SHORT_COMMIT}"
-            echo "No tags found, using commit: $VERSION"
-          else
-            VERSION="dev"
-            echo "Fallback version: $VERSION"
-          fi
-          
-          COMMIT=$(git rev-parse --short HEAD)
-          BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          
-          # Create unique dist directory for this build
-          DIST_DIR="dist-${{ matrix.goos }}-${{ matrix.goarch }}"
-          rm -rf "${DIST_DIR}"
-          mkdir -p "${DIST_DIR}"
-          
-          # Build binary
-          BINARY_NAME="matlas${{ matrix.ext }}"
-          go build \
-            -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.buildTime=${BUILD_TIME}" \
-            -o "${DIST_DIR}/${BINARY_NAME}" \
-            .
-          
-          # Create release archive
-          cd "${DIST_DIR}"
-          if [ "${{ matrix.goos }}" = "windows" ]; then
-            zip "matlas_${{ matrix.goos }}_${{ matrix.goarch }}.zip" "${BINARY_NAME}"
-          else
-            tar -czf "matlas_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz" "${BINARY_NAME}"
-            # Also create zip for consistency
-            zip "matlas_${{ matrix.goos }}_${{ matrix.goarch }}.zip" "${BINARY_NAME}"
-          fi
-
-      - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: matlas-${{ matrix.os }}-${{ matrix.arch }}
-          path: |
-            dist-${{ matrix.goos }}-${{ matrix.goarch }}/*.zip
-            dist-${{ matrix.goos }}-${{ matrix.goarch }}/*.tar.gz
-          retention-days: 90
-
-  prepare-release-assets:
-    name: 📋 Prepare Release Assets
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts/
-
-      - name: Create consolidated dist directory
-        run: |
-          mkdir -p dist
-          find artifacts/ -name "*.zip" -exec cp {} dist/ \;
-          find artifacts/ -name "*.tar.gz" -exec cp {} dist/ \;
-
-      - name: Generate checksums
-        run: |
-          cd dist
-          sha256sum *.zip *.tar.gz > checksums.txt || shasum -a 256 *.zip *.tar.gz > checksums.txt
-          echo "Generated checksums:"
-          cat checksums.txt
-
-  # ==============================================================================
-  # Semantic Release
+  # Semantic Release (builds and releases in one step)
   # ==============================================================================
   
   release:
     name: 🚀 Semantic Release
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: [prepare-release-assets]
+    timeout-minutes: 30
+    needs: [lint, test]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     outputs:
       new_release_published: ${{ steps.semantic.outputs.new_release_published }}
@@ -285,19 +160,10 @@ jobs:
           # Use a Personal Access Token to trigger other workflows if needed
           token: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
-      - name: Download all artifacts to recreate dist/
-        uses: actions/download-artifact@v4
+      - name: Setup Go (needed for build script)
+        uses: actions/setup-go@v5
         with:
-          path: artifacts/
-      
-      - name: Recreate dist directory for semantic-release
-        run: |
-          mkdir -p dist
-          find artifacts/ -name "*.zip" -exec cp {} dist/ \;
-          find artifacts/ -name "*.tar.gz" -exec cp {} dist/ \;
-          # Generate checksums
-          cd dist
-          sha256sum *.zip *.tar.gz > checksums.txt || shasum -a 256 *.zip *.tar.gz > checksums.txt
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
