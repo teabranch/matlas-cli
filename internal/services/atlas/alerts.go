@@ -8,7 +8,7 @@ import (
 	atlasclient "github.com/teabranch/matlas-cli/internal/clients/atlas"
 	"github.com/teabranch/matlas-cli/internal/logging"
 	"github.com/teabranch/matlas-cli/internal/types"
-	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312010/admin"
 )
 
 // AlertsService wraps Atlas Alerts API operations.
@@ -143,7 +143,7 @@ func (s *AlertsService) ListAlertsByConfiguration(ctx context.Context, projectID
 
 	var alerts []admin.AlertViewForNdsGroup
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.AlertsApi.ListAlertsByAlertConfigurationId(ctx, projectID, alertConfigID).Execute()
+		resp, _, err := api.AlertsApi.GetAlertConfigAlerts(ctx, projectID, alertConfigID).Execute()
 		if err != nil {
 			return err
 		}

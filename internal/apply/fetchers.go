@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/teabranch/matlas-cli/internal/types"
-	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312010/admin"
 )
 
 // convertClusterToManifest converts an Atlas cluster to our ClusterManifest type

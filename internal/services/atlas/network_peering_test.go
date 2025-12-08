@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	atlasclient "github.com/teabranch/matlas-cli/internal/clients/atlas"
-	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312010/admin"
 )
 
 func TestNewNetworkPeeringService(t *testing.T) {

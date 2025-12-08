@@ -34,7 +34,7 @@ require (
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/crypto v0.33.0 // indirect
 	golang.org/x/net v0.34.0 // indirect
-	golang.org/x/oauth2 v0.30.0 // indirect
+	golang.org/x/oauth2 v0.32.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
@@ -42,9 +42,9 @@ require (
 
 require (
 	github.com/go-playground/validator/v10 v10.27.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/subosito/gotenv v1.6.0
-	go.mongodb.org/atlas-sdk/v20250312006 v20250312006.1.0
+	go.mongodb.org/atlas-sdk/v20250312010 v20250312010.0.0
 	go.mongodb.org/mongo-driver v1.17.4
 	golang.org/x/term v0.33.0
 	gopkg.in/yaml.v3 v3.0.1

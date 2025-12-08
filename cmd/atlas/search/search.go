@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"go.mongodb.org/atlas-sdk/v20250312006/admin"
+	"go.mongodb.org/atlas-sdk/v20250312010/admin"
 
 	"github.com/teabranch/matlas-cli/internal/cli"
 	"github.com/teabranch/matlas-cli/internal/config"
@@ -343,17 +343,23 @@ func runGetSearchIndex(cmd *cobra.Command, projectID, clusterName, indexID, inde
 			progress.StopSpinnerWithError("Search index not found")
 			return fmt.Errorf("search index %q not found", indexName)
 		}
-		res, err = searchService.GetSearchIndex(ctx, projectID, clusterName, foundID)
+		clusterIdx, err := searchService.GetSearchIndex(ctx, projectID, clusterName, foundID)
 		if err != nil {
 			progress.StopSpinnerWithError("Failed to get search index details")
 			return cli.WrapWithSuggestion(err, "Check your project ID, cluster name, and index identifier")
 		}
+		// Convert to SearchIndexResponse for formatting
+		converted := atlas.ConvertClusterSearchIndexToResponse(clusterIdx)
+		res = &converted
 	} else {
-		res, err = searchService.GetSearchIndex(ctx, projectID, clusterName, indexID)
+		clusterIdx, err := searchService.GetSearchIndex(ctx, projectID, clusterName, indexID)
 		if err != nil {
 			progress.StopSpinnerWithError("Failed to get search index details")
 			return cli.WrapWithSuggestion(err, "Check your project ID, cluster name, and index identifier")
 		}
+		// Convert to SearchIndexResponse for formatting
+		converted := atlas.ConvertClusterSearchIndexToResponse(clusterIdx)
+		res = &converted
 	}
 	progress.StopSpinner(fmt.Sprintf("Fetched details for index %s", res.GetName()))
 	// Format and display result
@@ -455,8 +461,11 @@ func runCreateSearchIndex(cmd *cobra.Command, projectID, clusterName, databaseNa
 		indexRequest.SetDefinition(*indexDefinition)
 	}
 
+	// Convert request to ClusterSearchIndex
+	clusterIndexReq := atlas.ConvertSearchIndexCreateRequestToClusterSearchIndex(indexRequest)
+
 	// Create the search index
-	result, err := searchService.CreateSearchIndex(ctx, projectID, clusterName, *indexRequest)
+	result, err := searchService.CreateSearchIndex(ctx, projectID, clusterName, *clusterIndexReq)
 	if err != nil {
 		progress.StopSpinnerWithError("Failed to create search index")
 		return cli.WrapWithSuggestion(err, "Check your project ID, cluster name, and index configuration")
@@ -464,9 +473,12 @@ func runCreateSearchIndex(cmd *cobra.Command, projectID, clusterName, databaseNa
 
 	progress.StopSpinner("Search index created successfully")
 
+	// Convert result to SearchIndexResponse for formatting
+	converted := atlas.ConvertClusterSearchIndexToResponse(result)
+
 	// Format and display the result
 	formatter := output.CreateSearchIndexesFormatter()
-	return formatter.FormatSearchIndex(*result, cmd.Flag("output").Value.String())
+	return formatter.FormatSearchIndex(converted, cmd.Flag("output").Value.String())
 }
 
 func runUpdateSearchIndex(cmd *cobra.Command, projectID, clusterName, indexID, indexFile string) error {

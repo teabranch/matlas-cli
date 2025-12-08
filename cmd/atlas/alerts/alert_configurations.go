@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312010/admin"
 
 	"github.com/teabranch/matlas-cli/internal/cli"
 	"github.com/teabranch/matlas-cli/internal/config"

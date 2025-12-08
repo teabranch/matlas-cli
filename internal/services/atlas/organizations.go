@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	atlasclient "github.com/teabranch/matlas-cli/internal/clients/atlas"
-	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312010/admin"
 )
 
 // OrganizationsService provides helpers around Atlas Organizations API.
@@ -22,7 +22,7 @@ func NewOrganizationsService(client *atlasclient.Client) *OrganizationsService {
 func (s *OrganizationsService) List(ctx context.Context) ([]admin.AtlasOrganization, error) {
 	var out []admin.AtlasOrganization
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.OrganizationsApi.ListOrganizations(ctx).Execute()
+		resp, _, err := api.OrganizationsApi.ListOrgs(ctx).Execute()
 		if err != nil {
 			return err
 		}
@@ -42,7 +42,7 @@ func (s *OrganizationsService) Get(ctx context.Context, orgID string) (*admin.At
 	}
 	var org *admin.AtlasOrganization
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		o, _, err := api.OrganizationsApi.GetOrganization(ctx, orgID).Execute()
+		o, _, err := api.OrganizationsApi.GetOrg(ctx, orgID).Execute()
 		if err != nil {
 			return err
 		}

@@ -6,7 +6,7 @@ import (
 
 	atlasclient "github.com/teabranch/matlas-cli/internal/clients/atlas"
 	"github.com/teabranch/matlas-cli/internal/logging"
-	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312010/admin"
 )
 
 // ProjectsService provides high-level helpers around the Atlas Projects API.
@@ -40,7 +40,7 @@ func (s *ProjectsService) List(ctx context.Context) ([]admin.Group, error) {
 
 	var out []admin.Group
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.ProjectsApi.ListProjects(ctx).Execute()
+		resp, _, err := api.ProjectsApi.ListGroups(ctx).Execute()
 		if err != nil {
 			return err
 		}
@@ -70,7 +70,7 @@ func (s *ProjectsService) ListByOrg(ctx context.Context, orgID string) ([]admin.
 
 	var out []admin.Group
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.OrganizationsApi.ListOrganizationProjects(ctx, orgID).Execute()
+		resp, _, err := api.OrganizationsApi.GetOrgGroups(ctx, orgID).Execute()
 		if err != nil {
 			return err
 		}
@@ -100,7 +100,7 @@ func (s *ProjectsService) Get(ctx context.Context, projectID string) (*admin.Gro
 
 	var result *admin.Group
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		grp, _, err := api.ProjectsApi.GetProject(ctx, projectID).Execute()
+		grp, _, err := api.ProjectsApi.GetGroup(ctx, projectID).Execute()
 		if err != nil {
 			return err
 		}
@@ -137,7 +137,7 @@ func (s *ProjectsService) Create(ctx context.Context, name, orgID string, tags m
 
 	var created *admin.Group
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		grp, _, err := api.ProjectsApi.CreateProject(ctx, newGrp).Execute()
+		grp, _, err := api.ProjectsApi.CreateGroup(ctx, newGrp).Execute()
 		if err != nil {
 			return err
 		}
@@ -153,7 +153,7 @@ func (s *ProjectsService) Delete(ctx context.Context, projectID string) error {
 		return fmt.Errorf("projectID is required")
 	}
 	return s.client.Do(ctx, func(api *admin.APIClient) error {
-		_, err := api.ProjectsApi.DeleteProject(ctx, projectID).Execute()
+		_, err := api.ProjectsApi.DeleteGroup(ctx, projectID).Execute()
 		return err
 	})
 }
@@ -165,7 +165,7 @@ func (s *ProjectsService) Update(ctx context.Context, projectID string, update a
 	}
 	var updated *admin.Group
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.ProjectsApi.UpdateProject(ctx, projectID, &update).Execute()
+		resp, _, err := api.ProjectsApi.UpdateGroup(ctx, projectID, &update).Execute()
 		if err != nil {
 			return err
 		}

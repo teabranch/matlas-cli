@@ -7,7 +7,7 @@ import (
 	atlasclient "github.com/teabranch/matlas-cli/internal/clients/atlas"
 	"github.com/teabranch/matlas-cli/internal/logging"
 	"github.com/teabranch/matlas-cli/internal/types"
-	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312010/admin"
 )
 
 // AlertConfigurationsService wraps Atlas Alert Configurations API operations.
@@ -45,7 +45,7 @@ func (s *AlertConfigurationsService) ListAlertConfigurations(ctx context.Context
 
 	var configs []admin.GroupAlertsConfig
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.AlertConfigurationsApi.ListAlertConfigurations(ctx, projectID).Execute()
+		resp, _, err := api.AlertConfigurationsApi.ListAlertConfigs(ctx, projectID).Execute()
 		if err != nil {
 			return err
 		}
@@ -76,7 +76,7 @@ func (s *AlertConfigurationsService) GetAlertConfiguration(ctx context.Context, 
 
 	var config *admin.GroupAlertsConfig
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.AlertConfigurationsApi.GetAlertConfiguration(ctx, projectID, alertConfigID).Execute()
+		resp, _, err := api.AlertConfigurationsApi.GetAlertConfig(ctx, projectID, alertConfigID).Execute()
 		if err != nil {
 			return err
 		}
@@ -110,7 +110,7 @@ func (s *AlertConfigurationsService) CreateAlertConfiguration(ctx context.Contex
 
 	var result *admin.GroupAlertsConfig
 	err = s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.AlertConfigurationsApi.CreateAlertConfiguration(ctx, projectID, atlasConfig).Execute()
+		resp, _, err := api.AlertConfigurationsApi.CreateAlertConfig(ctx, projectID, atlasConfig).Execute()
 		if err != nil {
 			return err
 		}
@@ -147,7 +147,7 @@ func (s *AlertConfigurationsService) UpdateAlertConfiguration(ctx context.Contex
 
 	var result *admin.GroupAlertsConfig
 	err = s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.AlertConfigurationsApi.UpdateAlertConfiguration(ctx, projectID, alertConfigID, atlasConfig).Execute()
+		resp, _, err := api.AlertConfigurationsApi.UpdateAlertConfig(ctx, projectID, alertConfigID, atlasConfig).Execute()
 		if err != nil {
 			return err
 		}
@@ -175,7 +175,7 @@ func (s *AlertConfigurationsService) DeleteAlertConfiguration(ctx context.Contex
 	s.logger.Debug("Deleting alert configuration", "project_id", projectID, "alert_config_id", alertConfigID)
 
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		_, err := api.AlertConfigurationsApi.DeleteAlertConfiguration(ctx, projectID, alertConfigID).Execute()
+		_, err := api.AlertConfigurationsApi.DeleteAlertConfig(ctx, projectID, alertConfigID).Execute()
 		return err
 	})
 
@@ -193,7 +193,7 @@ func (s *AlertConfigurationsService) ListMatcherFieldNames(ctx context.Context) 
 
 	var fieldNames []string
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.AlertConfigurationsApi.ListAlertConfigurationMatchersFieldNames(ctx).Execute()
+		resp, _, err := api.AlertConfigurationsApi.ListMatcherFieldNames(ctx).Execute()
 		if err != nil {
 			return err
 		}
