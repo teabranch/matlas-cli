@@ -7,7 +7,7 @@ import (
 	"time"
 
 	atlasclient "github.com/teabranch/matlas-cli/internal/clients/atlas"
-	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312010/admin"
 )
 
 // NetworkPeeringService provides CRUD operations for Atlas Network Peering.
@@ -29,7 +29,7 @@ func (s *NetworkPeeringService) ListPeeringConnections(ctx context.Context, proj
 
 	var connections []admin.BaseNetworkPeeringConnectionSettings
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.NetworkPeeringApi.ListPeeringConnections(ctx, projectID).Execute()
+		resp, _, err := api.NetworkPeeringApi.ListGroupPeers(ctx, projectID).Execute()
 		if err != nil {
 			return err
 		}
@@ -50,7 +50,7 @@ func (s *NetworkPeeringService) GetPeeringConnection(ctx context.Context, projec
 
 	var connection *admin.BaseNetworkPeeringConnectionSettings
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.NetworkPeeringApi.GetPeeringConnection(ctx, projectID, peerID).Execute()
+		resp, _, err := api.NetworkPeeringApi.GetGroupPeer(ctx, projectID, peerID).Execute()
 		if err != nil {
 			return err
 		}
@@ -73,7 +73,7 @@ func (s *NetworkPeeringService) CreatePeeringConnection(ctx context.Context, pro
 
 	var created *admin.BaseNetworkPeeringConnectionSettings
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.NetworkPeeringApi.CreatePeeringConnection(ctx, projectID, connection).Execute()
+		resp, _, err := api.NetworkPeeringApi.CreateGroupPeer(ctx, projectID, connection).Execute()
 		if err != nil {
 			return err
 		}
@@ -96,7 +96,7 @@ func (s *NetworkPeeringService) UpdatePeeringConnection(ctx context.Context, pro
 
 	var updated *admin.BaseNetworkPeeringConnectionSettings
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.NetworkPeeringApi.UpdatePeeringConnection(ctx, projectID, peerID, connection).Execute()
+		resp, _, err := api.NetworkPeeringApi.UpdateGroupPeer(ctx, projectID, peerID, connection).Execute()
 		if err != nil {
 			return err
 		}
@@ -113,7 +113,7 @@ func (s *NetworkPeeringService) DeletePeeringConnection(ctx context.Context, pro
 	}
 
 	return s.client.Do(ctx, func(api *admin.APIClient) error {
-		_, _, err := api.NetworkPeeringApi.DeletePeeringConnection(ctx, projectID, peerID).Execute()
+		_, _, err := api.NetworkPeeringApi.DeleteGroupPeer(ctx, projectID, peerID).Execute()
 		return err
 	})
 }

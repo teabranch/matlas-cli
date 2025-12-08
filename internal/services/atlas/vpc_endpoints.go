@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	atlasclient "github.com/teabranch/matlas-cli/internal/clients/atlas"
-	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312010/admin"
 )
 
 // VPCEndpointsService provides CRUD operations for Atlas VPC Endpoints and Private Link.
@@ -27,7 +27,7 @@ func (s *VPCEndpointsService) ListPrivateEndpointServices(ctx context.Context, p
 
 	var services []admin.EndpointService
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		result, _, err := api.PrivateEndpointServicesApi.ListPrivateEndpointServices(ctx, projectID, cloudProvider).Execute()
+		result, _, err := api.PrivateEndpointServicesApi.ListPrivateEndpointService(ctx, projectID, cloudProvider).Execute()
 		if err != nil {
 			return err
 		}

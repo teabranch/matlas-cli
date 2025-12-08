@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	atlasclient "github.com/teabranch/matlas-cli/internal/clients/atlas"
-	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312010/admin"
 )
 
 // NetworkContainersService provides CRUD operations for Atlas Network Containers.
@@ -29,7 +29,7 @@ func (s *NetworkContainersService) ListNetworkContainers(ctx context.Context, pr
 
 	var containers []admin.CloudProviderContainer
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.NetworkPeeringApi.ListPeeringContainers(ctx, projectID).Execute()
+		resp, _, err := api.NetworkPeeringApi.ListGroupContainerAll(ctx, projectID).Execute()
 		if err != nil {
 			return err
 		}
@@ -50,7 +50,7 @@ func (s *NetworkContainersService) GetNetworkContainer(ctx context.Context, proj
 
 	var container *admin.CloudProviderContainer
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.NetworkPeeringApi.GetPeeringContainer(ctx, projectID, containerID).Execute()
+		resp, _, err := api.NetworkPeeringApi.GetGroupContainer(ctx, projectID, containerID).Execute()
 		if err != nil {
 			return err
 		}
@@ -73,7 +73,7 @@ func (s *NetworkContainersService) CreateNetworkContainer(ctx context.Context, p
 
 	var created *admin.CloudProviderContainer
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.NetworkPeeringApi.CreatePeeringContainer(ctx, projectID, container).Execute()
+		resp, _, err := api.NetworkPeeringApi.CreateGroupContainer(ctx, projectID, container).Execute()
 		if err != nil {
 			return err
 		}
@@ -96,7 +96,7 @@ func (s *NetworkContainersService) UpdateNetworkContainer(ctx context.Context, p
 
 	var updated *admin.CloudProviderContainer
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.NetworkPeeringApi.UpdatePeeringContainer(ctx, projectID, containerID, container).Execute()
+		resp, _, err := api.NetworkPeeringApi.UpdateGroupContainer(ctx, projectID, containerID, container).Execute()
 		if err != nil {
 			return err
 		}
@@ -113,7 +113,7 @@ func (s *NetworkContainersService) DeleteNetworkContainer(ctx context.Context, p
 	}
 
 	return s.client.Do(ctx, func(api *admin.APIClient) error {
-		_, err := api.NetworkPeeringApi.DeletePeeringContainer(ctx, projectID, containerID).Execute()
+		_, err := api.NetworkPeeringApi.DeleteGroupContainer(ctx, projectID, containerID).Execute()
 		return err
 	})
 }

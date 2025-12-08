@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	atlasclient "github.com/teabranch/matlas-cli/internal/clients/atlas"
-	admin "go.mongodb.org/atlas-sdk/v20250312006/admin"
+	admin "go.mongodb.org/atlas-sdk/v20250312010/admin"
 )
 
 // NetworkAccessListsService provides CRUD operations for Atlas IP Access Lists (network access control).
@@ -27,7 +27,7 @@ func (s *NetworkAccessListsService) List(ctx context.Context, projectID string) 
 	}
 	var entries []admin.NetworkPermissionEntry
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.ProjectIPAccessListApi.ListProjectIpAccessLists(ctx, projectID).Execute()
+		resp, _, err := api.ProjectIPAccessListApi.ListAccessListEntries(ctx, projectID).Execute()
 		if err != nil {
 			return err
 		}
@@ -47,7 +47,7 @@ func (s *NetworkAccessListsService) Get(ctx context.Context, projectID, ipAddres
 	}
 	var entry *admin.NetworkPermissionEntry
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.ProjectIPAccessListApi.GetProjectIpList(ctx, projectID, ipAddress).Execute()
+		resp, _, err := api.ProjectIPAccessListApi.GetAccessListEntry(ctx, projectID, ipAddress).Execute()
 		if err != nil {
 			return err
 		}
@@ -72,7 +72,7 @@ func (s *NetworkAccessListsService) Create(ctx context.Context, projectID string
 
 	var result *admin.PaginatedNetworkAccess
 	err := s.client.Do(ctx, func(api *admin.APIClient) error {
-		resp, _, err := api.ProjectIPAccessListApi.CreateProjectIpAccessList(ctx, projectID, &entries).Execute()
+		resp, _, err := api.ProjectIPAccessListApi.CreateAccessListEntry(ctx, projectID, &entries).Execute()
 		if err != nil {
 			return err
 		}
@@ -88,7 +88,7 @@ func (s *NetworkAccessListsService) Delete(ctx context.Context, projectID, ipAdd
 		return fmt.Errorf("projectID and ipAddress are required")
 	}
 	return s.client.Do(ctx, func(api *admin.APIClient) error {
-		_, err := api.ProjectIPAccessListApi.DeleteProjectIpAccessList(ctx, projectID, ipAddress).Execute()
+		_, err := api.ProjectIPAccessListApi.DeleteAccessListEntry(ctx, projectID, ipAddress).Execute()
 		return err
 	})
 }
