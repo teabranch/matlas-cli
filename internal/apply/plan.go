@@ -490,7 +490,7 @@ func (pb *PlanBuilder) buildDAGFromOperations(ops []PlannedOperation) *dag.Graph
 			ResourceType: op.ResourceType,
 			Properties:   props,
 		}
-		graph.AddNode(node)
+		_ = graph.AddNode(node)
 	}
 
 	// Add dependencies as edges
@@ -502,7 +502,7 @@ func (pb *PlanBuilder) buildDAGFromOperations(ops []PlannedOperation) *dag.Graph
 				Type:   dag.DependencyTypeHard,
 				Weight: 1.0,
 			}
-			graph.AddEdge(edge)
+			_ = graph.AddEdge(edge)
 		}
 	}
 

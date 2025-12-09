@@ -300,9 +300,9 @@ func TestValidation(t *testing.T) {
 	node1 := &Node{ID: "node1", Name: "Node 1", ResourceType: types.KindCluster}
 	node2 := &Node{ID: "node2", Name: "Node 2", ResourceType: types.KindDatabaseUser}
 
-	graph.AddNode(node1)
-	graph.AddNode(node2)
-	graph.AddEdge(&Edge{From: "node1", To: "node2", Type: DependencyTypeHard})
+	_ = graph.AddNode(node1)
+	_ = graph.AddNode(node2)
+	_ = graph.AddEdge(&Edge{From: "node1", To: "node2", Type: DependencyTypeHard})
 
 	// Valid graph
 	err := graph.Validate()
@@ -311,7 +311,7 @@ func TestValidation(t *testing.T) {
 	}
 
 	// Create a graph with cycle
-	graph.AddEdge(&Edge{From: "node2", To: "node1", Type: DependencyTypeHard})
+	_ = graph.AddEdge(&Edge{From: "node2", To: "node1", Type: DependencyTypeHard})
 	err = graph.Validate()
 	if err == nil {
 		t.Error("Expected validation to fail for graph with cycle")

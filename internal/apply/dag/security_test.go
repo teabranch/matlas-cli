@@ -277,7 +277,7 @@ func TestSecurityConcurrency(t *testing.T) {
 		go func() {
 			for i := 0; i < 100; i++ {
 				nodeID := fmt.Sprintf("concurrent_a_%d", i)
-				g.AddNode(&Node{
+				_ = g.AddNode(&Node{
 					ID:         nodeID,
 					Properties: NodeProperties{EstimatedDuration: 1 * time.Second},
 				})
@@ -434,7 +434,7 @@ func TestSecurityPrivilegeEscalation(t *testing.T) {
 		g := NewGraph(GraphMetadata{Name: "security-test"})
 
 		// Simulate a security-sensitive operation that must run last
-		g.AddNode(&Node{
+		_ = g.AddNode(&Node{
 			ID: "security_check",
 			Properties: NodeProperties{
 				EstimatedDuration: 1 * time.Second,
@@ -443,7 +443,7 @@ func TestSecurityPrivilegeEscalation(t *testing.T) {
 		})
 
 		// Attacker tries to add a malicious operation that should run before security check
-		g.AddNode(&Node{
+		_ = g.AddNode(&Node{
 			ID:         "malicious",
 			Properties: NodeProperties{EstimatedDuration: 1 * time.Second},
 		})
@@ -485,7 +485,7 @@ func TestSecurityInformationDisclosure(t *testing.T) {
 		g := NewGraph(GraphMetadata{Name: "security-test"})
 
 		// Add node with sensitive data
-		g.AddNode(&Node{
+		_ = g.AddNode(&Node{
 			ID: "db_user",
 			Properties: NodeProperties{
 				EstimatedDuration: 1 * time.Second,
@@ -514,7 +514,7 @@ func TestSecurityInformationDisclosure(t *testing.T) {
 	t.Run("json_export_sanitization", func(t *testing.T) {
 		g := NewGraph(GraphMetadata{Name: "security-test"})
 
-		g.AddNode(&Node{
+		_ = g.AddNode(&Node{
 			ID: "resource",
 			Properties: NodeProperties{
 				EstimatedDuration: 1 * time.Second,
