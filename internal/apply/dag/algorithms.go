@@ -529,8 +529,15 @@ func (g *Graph) ComputeParallelGroups() ([][]*Node, error) {
 		return nil, err
 	}
 	
-	// Group by level
-	levelGroups := g.GetNodesByLevel()
+	// Group by level (internal - no locking needed since we already hold the lock)
+	levelGroups := make(map[int][]*Node)
+	for _, node := range g.Nodes {
+		level := node.Level
+		if levelGroups[level] == nil {
+			levelGroups[level] = make([]*Node, 0)
+		}
+		levelGroups[level] = append(levelGroups[level], node)
+	}
 	
 	// Convert to array of arrays
 	groups := make([][]*Node, g.MaxLevel+1)
