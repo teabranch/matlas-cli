@@ -145,14 +145,14 @@ func TestCycleDetection(t *testing.T) {
 	node2 := &Node{ID: "node2", Name: "Node 2", ResourceType: types.KindDatabaseUser}
 	node3 := &Node{ID: "node3", Name: "Node 3", ResourceType: types.KindNetworkAccess}
 
-	graph.AddNode(node1)
-	graph.AddNode(node2)
-	graph.AddNode(node3)
+	_ = graph.AddNode(node1)
+	_ = graph.AddNode(node2)
+	_ = graph.AddNode(node3)
 
 	// Create a cycle: 1 -> 2 -> 3 -> 1
-	graph.AddEdge(&Edge{From: "node1", To: "node2", Type: DependencyTypeHard})
-	graph.AddEdge(&Edge{From: "node2", To: "node3", Type: DependencyTypeHard})
-	graph.AddEdge(&Edge{From: "node3", To: "node1", Type: DependencyTypeHard})
+	_ = graph.AddEdge(&Edge{From: "node1", To: "node2", Type: DependencyTypeHard})
+	_ = graph.AddEdge(&Edge{From: "node2", To: "node3", Type: DependencyTypeHard})
+	_ = graph.AddEdge(&Edge{From: "node3", To: "node1", Type: DependencyTypeHard})
 
 	hasCycle, cycle := graph.HasCycle()
 	if !hasCycle {
@@ -193,13 +193,13 @@ func TestCriticalPathMethod(t *testing.T) {
 		},
 	}
 
-	graph.AddNode(node1)
-	graph.AddNode(node2)
-	graph.AddNode(node3)
+	_ = graph.AddNode(node1)
+	_ = graph.AddNode(node2)
+	_ = graph.AddNode(node3)
 
 	// node2 depends on node1, node3 depends on node2
-	graph.AddEdge(&Edge{From: "node2", To: "node1", Type: DependencyTypeHard})
-	graph.AddEdge(&Edge{From: "node3", To: "node2", Type: DependencyTypeHard})
+	_ = graph.AddEdge(&Edge{From: "node2", To: "node1", Type: DependencyTypeHard})
+	_ = graph.AddEdge(&Edge{From: "node3", To: "node2", Type: DependencyTypeHard})
 
 	criticalPath, duration, err := graph.CriticalPathMethod()
 	if err != nil {
@@ -230,14 +230,14 @@ func TestAnalyzer(t *testing.T) {
 				RiskLevel:         RiskLevelLow,
 			},
 		}
-		graph.AddNode(node)
+		_ = graph.AddNode(node)
 	}
 
 	// Add some dependencies
-	graph.AddEdge(&Edge{From: "node2", To: "node1", Type: DependencyTypeHard})
-	graph.AddEdge(&Edge{From: "node3", To: "node1", Type: DependencyTypeHard})
-	graph.AddEdge(&Edge{From: "node4", To: "node2", Type: DependencyTypeHard})
-	graph.AddEdge(&Edge{From: "node5", To: "node3", Type: DependencyTypeHard})
+	_ = graph.AddEdge(&Edge{From: "node2", To: "node1", Type: DependencyTypeHard})
+	_ = graph.AddEdge(&Edge{From: "node3", To: "node1", Type: DependencyTypeHard})
+	_ = graph.AddEdge(&Edge{From: "node4", To: "node2", Type: DependencyTypeHard})
+	_ = graph.AddEdge(&Edge{From: "node5", To: "node3", Type: DependencyTypeHard})
 
 	analyzer := NewAnalyzer(graph)
 	analysis, err := analyzer.Analyze()

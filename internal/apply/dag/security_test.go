@@ -155,7 +155,7 @@ func TestSecurityResourceExhaustion(t *testing.T) {
 		chainLength := 10000
 		for i := 0; i < chainLength; i++ {
 			nodeID := fmt.Sprintf("node_%d", i)
-			g.AddNode(&Node{
+			_ = g.AddNode(&Node{
 				ID:         nodeID,
 				Properties: NodeProperties{EstimatedDuration: 1 * time.Second},
 			})
@@ -194,7 +194,7 @@ func TestSecurityResourceExhaustion(t *testing.T) {
 		for c := 0; c < numCycles; c++ {
 			for i := 0; i < 10; i++ {
 				nodeID := fmt.Sprintf("cycle_%d_node_%d", c, i)
-				g.AddNode(&Node{
+				_ = g.AddNode(&Node{
 					ID:         nodeID,
 					Properties: NodeProperties{EstimatedDuration: 1 * time.Second},
 				})
@@ -265,7 +265,7 @@ func TestSecurityConcurrency(t *testing.T) {
 		// Pre-populate graph
 		for i := 0; i < 10; i++ {
 			nodeID := fmt.Sprintf("node_%d", i)
-			g.AddNode(&Node{
+			_ = g.AddNode(&Node{
 				ID:         nodeID,
 				Properties: NodeProperties{EstimatedDuration: 1 * time.Second},
 			})
@@ -299,7 +299,7 @@ func TestSecurityConcurrency(t *testing.T) {
 			for i := 0; i < 100; i++ {
 				from := fmt.Sprintf("node_%d", i%10)
 				to := fmt.Sprintf("node_%d", (i+1)%10)
-				g.AddEdge(&Edge{From: from, To: to, Type: DependencyTypeHard})
+				_ = g.AddEdge(&Edge{From: from, To: to, Type: DependencyTypeHard})
 			}
 			done <- true
 		}()

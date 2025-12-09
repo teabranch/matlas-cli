@@ -159,7 +159,7 @@ func (sm *StateManager) SaveState(state *ExecutionState) error {
 
 	// Write to file
 	stateFile := filepath.Join(sm.stateDir, fmt.Sprintf("%s.json", state.ExecutionID))
-	if err := os.WriteFile(stateFile, data, 0644); err != nil {
+	if err := os.WriteFile(stateFile, data, 0600); err != nil {
 		return fmt.Errorf("failed to write state file: %w", err)
 	}
 

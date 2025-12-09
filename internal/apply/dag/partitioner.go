@@ -338,7 +338,7 @@ func (p *Partitioner) partitionMinCut(ctx context.Context, graph *Graph) ([]*Gra
 		// Assign to best partition
 		partition := partitions[bestPartition]
 		partition.Nodes = append(partition.Nodes, node)
-		partition.Graph.AddNode(node)
+		_ = partition.Graph.AddNode(node)
 		nodeToPartition[nodeID] = bestPartition
 	}
 
@@ -352,7 +352,7 @@ func (p *Partitioner) partitionMinCut(ctx context.Context, graph *Graph) ([]*Gra
 		for _, node := range partition.Nodes {
 			for _, edge := range graph.Edges[node.ID] {
 				if nodeSet[edge.To] {
-					partition.Graph.AddEdge(edge)
+					_ = partition.Graph.AddEdge(edge)
 				} else {
 					partition.CrossPartitionDeps = append(partition.CrossPartitionDeps, edge)
 				}
