@@ -127,6 +127,7 @@ func (cm *CheckpointManager) writeCheckpoint(checkpoint *Checkpoint) error {
 	checkpointPath := cm.getCheckpointPath(checkpoint.CheckpointID)
 
 	// Create file
+	// #nosec G304 -- checkpointPath is constructed internally via filepath.Join, not from user input
 	file, err := os.Create(checkpointPath)
 	if err != nil {
 		return fmt.Errorf("failed to create checkpoint file: %w", err)
@@ -174,6 +175,7 @@ func (cm *CheckpointManager) LoadCheckpoint(checkpointID string) (*Checkpoint, e
 	checkpointPath := cm.getCheckpointPath(checkpointID)
 
 	// Open file
+	// #nosec G304 -- checkpointPath is constructed internally via filepath.Join, not from user input
 	file, err := os.Open(checkpointPath)
 	if err != nil {
 		if os.IsNotExist(err) {

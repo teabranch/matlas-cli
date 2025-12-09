@@ -173,6 +173,7 @@ func (sm *StateManager) LoadState(executionID string) (*ExecutionState, error) {
 
 	stateFile := filepath.Join(sm.stateDir, fmt.Sprintf("%s.json", executionID))
 
+	// #nosec G304 -- stateFile is constructed internally via filepath.Join, not from user input
 	data, err := os.ReadFile(stateFile)
 	if err != nil {
 		if os.IsNotExist(err) {
