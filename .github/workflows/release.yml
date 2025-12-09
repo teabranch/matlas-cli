@@ -56,8 +56,8 @@ jobs:
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           args: --no-config --enable-only=errcheck,gosec,ineffassign --timeout=5m
-          skip-pkg-cache: false
-          skip-build-cache: false
+          skip-cache: false
+          skip-save-cache: false
           only-new-issues: false
 
       - name: Check Code Formatting

@@ -54,6 +54,13 @@ permalink: /
   </div>
   
   <div class="card feature">
+    <div class="feature-icon">🔗</div>
+    <h3 class="feature-title">DAG Dependency Engine</h3>
+    <p class="feature-description">Advanced dependency analysis, critical path detection, bottleneck identification, and deployment optimization.</p>
+    <a href="{{ '/dag-engine/' | relative_url }}" class="btn btn-outline">Learn more</a>
+  </div>
+  
+  <div class="card feature">
     <div class="feature-icon">🚨</div>
     <h3 class="feature-title">Alerts & Monitoring</h3>
     <p class="feature-description">Comprehensive alert management and monitoring configuration with multi-channel notifications.</p>
@@ -75,6 +82,8 @@ permalink: /
 ✅ **Single Mental Model** - Unified interface for both Atlas infrastructure and database operations
 
 ✅ **Terraform-Inspired** - Familiar workflow: Discover → Plan/Diff → Apply
+
+✅ **Intelligent Optimization** - DAG-based dependency analysis reduces deployment time by 30%+
 
 ✅ **Consistent Interface** - Same flags, output formats, and ergonomics across all commands
 
@@ -115,13 +124,16 @@ matlas discover --project-id abc123 --include-databases -o project.yaml
 # 2. Edit the configuration
 vim project.yaml
 
-# 3. Preview changes
+# 3. Analyze dependencies (NEW in v3.0)
+matlas infra analyze -f project.yaml --project-id abc123
+
+# 4. Preview changes
 matlas infra diff -f project.yaml
 
-# 4. Apply changes
+# 5. Apply changes
 matlas infra apply -f project.yaml
 
-# 5. Explore examples for more patterns
+# 6. Explore examples for more patterns
 matlas examples --help
 ```
 

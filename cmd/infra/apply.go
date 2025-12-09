@@ -115,6 +115,9 @@ It supports dry-run mode to preview changes before applying them.`,
 	cmd.AddCommand(NewDiffCmd())
 	cmd.AddCommand(NewShowCmd())
 	cmd.AddCommand(NewDestroyCmd())
+	cmd.AddCommand(NewAnalyzeCmd())
+	cmd.AddCommand(NewVisualizeCmd())
+	cmd.AddCommand(NewOptimizeCmd())
 
 	return cmd
 }
