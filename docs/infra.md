@@ -80,6 +80,35 @@ See [Discovery documentation](/discovery/) for complete usage guide and examples
 
 ---
 
+## DAG-Based Dependency Engine
+
+**New in v3.0**: The DAG (Directed Acyclic Graph) engine provides advanced dependency analysis, visualization, and optimization capabilities.
+
+### Quick Start
+
+```bash
+# Analyze dependencies and identify bottlenecks
+matlas infra analyze -f config.yaml --project-id <project-id>
+
+# Visualize dependency graph
+matlas infra visualize -f config.yaml --project-id <project-id>
+
+# Get optimization suggestions
+matlas infra optimize -f config.yaml --project-id <project-id>
+```
+
+**Benefits:**
+- Identify critical path operations that determine deployment time
+- Find bottlenecks that block many other operations
+- Assess risk levels and their impact on deployment success
+- Discover parallelization opportunities
+- Generate visual dependency graphs
+- Get actionable optimization recommendations
+
+**For comprehensive documentation, see [DAG Engine](/dag-engine/)**
+
+---
+
 ## Plan
 
 ## Supported resource kinds

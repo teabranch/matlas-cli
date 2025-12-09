@@ -199,6 +199,115 @@ Limited by resource availability (API quotas, rate limits).
 - Graph storage: O(V + E)
 - Analysis results: O(V + E)
 
+## Testing
+
+### Running Tests
+```bash
+# Unit tests
+go test ./internal/apply/dag/...
+
+# With race detection
+go test ./internal/apply/dag/... -race
+
+# With coverage
+go test ./internal/apply/dag/... -cover
+
+# Verbose output
+go test ./internal/apply/dag/... -v
+```
+
+### Test Organization
+- **dag_test.go**: Core functionality tests (graph, algorithms, analysis)
+- **security_test.go**: Security and concurrency tests
+
+### Common Testing Patterns
+
+#### Thread Safety
+All public methods use RWMutex locking:
+- Write operations (Add, Remove, Update): `mu.Lock()`
+- Read operations (Get, List, Analyze): `mu.RLock()`
+- Internal methods (called while holding lock): No additional locking
+
+**Critical**: Never call a locking method from within another locking method to avoid deadlock.
+
+#### Example: Avoiding Deadlock
+```go
+// WRONG - causes deadlock
+func (g *Graph) ComputeParallelGroups() ([][]*Node, error) {
+    g.mu.Lock()
+    defer g.mu.Unlock()
+    
+    // BAD: GetNodesByLevel() tries to acquire RLock while we hold Lock
+    return g.GetNodesByLevel(), nil
+}
+
+// CORRECT - inline the logic
+func (g *Graph) ComputeParallelGroups() ([][]*Node, error) {
+    g.mu.Lock()
+    defer g.mu.Unlock()
+    
+    // Inline level grouping - no additional locking needed
+    levels := make(map[int][]*Node)
+    for _, node := range g.Nodes {
+        levels[node.Level] = append(levels[node.Level], node)
+    }
+    return levels, nil
+}
+```
+
+### Known Issues and Fixes
+
+#### Fixed: Deadlock in ComputeParallelGroups (v3.0.3)
+**Issue**: Calling `GetNodesByLevel()` while holding write lock caused deadlock.
+**Fix**: Inlined level grouping logic to avoid nested locking.
+
+#### Fixed: Concurrent Modifications Test (v3.0.3)
+**Issue**: Test incorrectly expected no cycles, but circular edge pattern created cycles by design.
+**Fix**: Changed test to check for data corruption (forward/reverse edge consistency) instead of cycles.
+
+## Best Practices
+
+### 1. Always Validate Before Analysis
+```go
+if err := graph.Validate(); err != nil {
+    return fmt.Errorf("invalid graph: %w", err)
+}
+```
+
+### 2. Handle Cycles Gracefully
+```go
+if hasCycle, cycle := graph.HasCycle(); hasCycle {
+    return fmt.Errorf("cycle detected: %v", cycle)
+}
+```
+
+### 3. Use Internal Methods When Holding Lock
+```go
+func (g *Graph) PublicMethod() error {
+    g.mu.Lock()
+    defer g.mu.Unlock()
+    
+    // Use internal methods that don't acquire locks
+    return g.internalMethodNoLock()
+}
+```
+
+### 4. Clone for Concurrent Operations
+```go
+// Clone graph for analysis while original is being modified
+analysisGraph := graph.Clone()
+go analyzer.Analyze(analysisGraph)
+```
+
+### 5. Estimate Durations Realistically
+```go
+props := NodeProperties{
+    EstimatedDuration: 10 * time.Minute,  // Based on historical data
+    MinDuration: 5 * time.Minute,         // Best case
+    MaxDuration: 20 * time.Minute,        // Worst case
+}
+```
+
 Where:
 - V = number of nodes (operations)
 - E = number of edges (dependencies)

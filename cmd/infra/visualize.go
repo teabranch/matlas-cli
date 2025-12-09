@@ -41,20 +41,23 @@ func NewVisualizeCmd() *cobra.Command {
 - Mermaid: Mermaid diagram format (for markdown/documentation)
 - ASCII: Terminal-friendly ASCII art
 - JSON: Structured JSON data`,
-		Example: `  # Visualize as ASCII art in terminal
+	Example: `  # Visualize as ASCII art in terminal
   matlas infra visualize -f config.yaml
 
   # Export as Graphviz DOT format
-  matlas infra visualize -f config.yaml -o dot --output-file graph.dot
+  matlas infra visualize -f config.yaml --format dot --output-file graph.dot
 
   # Export as Mermaid diagram
-  matlas infra visualize -f config.yaml -o mermaid --output-file graph.mmd
+  matlas infra visualize -f config.yaml --format mermaid --output-file graph.mmd
 
   # Visualize with critical path highlighted
   matlas infra visualize -f config.yaml --highlight-critical-path
 
+  # Export as JSON
+  matlas infra visualize -f config.yaml --format json --output-file graph.json
+
   # Compact ASCII visualization
-  matlas infra visualize -f config.yaml -o ascii --compact`,
+  matlas infra visualize -f config.yaml --format ascii --compact`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Support positional arguments as files if no --file flag provided
 			if len(opts.Files) == 0 && len(args) > 0 {
@@ -68,7 +71,7 @@ func NewVisualizeCmd() *cobra.Command {
 	cmd.Flags().StringSliceVarP(&opts.Files, "file", "f", []string{}, "Configuration files to visualize (supports glob patterns)")
 
 	// Output flags
-	cmd.Flags().StringVarP(&opts.OutputFormat, "output", "o", "ascii", "Output format: dot, mermaid, ascii, json")
+	cmd.Flags().StringVar(&opts.OutputFormat, "format", "ascii", "Visualization format: dot, mermaid, ascii, json")
 	cmd.Flags().StringVar(&opts.OutputFile, "output-file", "", "Save visualization to file")
 	cmd.Flags().BoolVarP(&opts.Verbose, "verbose", "v", false, "Enable verbose output")
 

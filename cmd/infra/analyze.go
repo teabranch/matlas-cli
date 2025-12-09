@@ -49,8 +49,8 @@ func NewAnalyzeCmd() *cobra.Command {
   # Analyze and detect cycles
   matlas infra analyze -f config.yaml --show-cycles
 
-  # Export analysis as JSON
-  matlas infra analyze -f config.yaml -o json --output-file analysis.json`,
+	# Export analysis as JSON
+  matlas infra analyze -f config.yaml --format json --output-file analysis.json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Support positional arguments as files if no --file flag provided
 			if len(opts.Files) == 0 && len(args) > 0 {
@@ -64,7 +64,7 @@ func NewAnalyzeCmd() *cobra.Command {
 	cmd.Flags().StringSliceVarP(&opts.Files, "file", "f", []string{}, "Configuration files to analyze (supports glob patterns)")
 
 	// Output flags
-	cmd.Flags().StringVarP(&opts.OutputFormat, "output", "o", "text", "Output format: text, markdown, json")
+	cmd.Flags().StringVar(&opts.OutputFormat, "format", "text", "Report format: text, markdown, json")
 	cmd.Flags().StringVar(&opts.OutputFile, "output-file", "", "Save analysis to file")
 	cmd.Flags().BoolVarP(&opts.Verbose, "verbose", "v", false, "Enable verbose output")
 	cmd.Flags().BoolVar(&opts.NoColor, "no-color", false, "Disable colored output")
