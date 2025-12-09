@@ -181,7 +181,7 @@ func buildGraphFromPlan(plan *apply.Plan) *dag.Graph {
 	// Add all operations as nodes
 	for _, op := range plan.Operations {
 		props := dag.NodeProperties{
-			EstimatedDuration: 5 * time.Second, // Default duration
+			EstimatedDuration: 5 * time.Second,     // Default duration
 			RiskLevel:         dag.RiskLevelMedium, // Default risk level
 		}
 

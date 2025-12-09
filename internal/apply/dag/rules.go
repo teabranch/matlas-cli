@@ -13,13 +13,13 @@ import (
 type Rule interface {
 	// Name returns the unique name of the rule
 	Name() string
-	
+
 	// Description returns a human-readable description
 	Description() string
-	
+
 	// Priority returns the rule priority (higher = evaluated first)
 	Priority() int
-	
+
 	// Evaluate evaluates the rule for a pair of operations
 	// Returns the dependency edge if the rule applies, nil otherwise
 	Evaluate(ctx context.Context, from, to *PlannedOperation) (*Edge, error)
@@ -33,7 +33,7 @@ type PlannedOperation struct {
 	ResourceName string
 	Spec         interface{} // The resource specification
 	Properties   NodeProperties
-	
+
 	// For conditional evaluation
 	Metadata map[string]interface{}
 }
@@ -55,20 +55,20 @@ func NewRuleRegistry() *RuleRegistry {
 func (r *RuleRegistry) Register(rule Rule) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	if rule == nil {
 		return fmt.Errorf("rule cannot be nil")
 	}
-	
+
 	name := rule.Name()
 	if name == "" {
 		return fmt.Errorf("rule name cannot be empty")
 	}
-	
+
 	if _, exists := r.rules[name]; exists {
 		return fmt.Errorf("rule %s is already registered", name)
 	}
-	
+
 	r.rules[name] = rule
 	return nil
 }
@@ -77,11 +77,11 @@ func (r *RuleRegistry) Register(rule Rule) error {
 func (r *RuleRegistry) Unregister(name string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	if _, exists := r.rules[name]; !exists {
 		return fmt.Errorf("rule %s is not registered", name)
 	}
-	
+
 	delete(r.rules, name)
 	return nil
 }
@@ -90,7 +90,7 @@ func (r *RuleRegistry) Unregister(name string) error {
 func (r *RuleRegistry) GetRule(name string) (Rule, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	rule, exists := r.rules[name]
 	return rule, exists
 }
@@ -99,17 +99,17 @@ func (r *RuleRegistry) GetRule(name string) (Rule, bool) {
 func (r *RuleRegistry) ListRules() []Rule {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	rules := make([]Rule, 0, len(r.rules))
 	for _, rule := range r.rules {
 		rules = append(rules, rule)
 	}
-	
+
 	// Sort by priority (higher first)
 	sort.Slice(rules, func(i, j int) bool {
 		return rules[i].Priority() > rules[j].Priority()
 	})
-	
+
 	return rules
 }
 
@@ -142,7 +142,7 @@ func (e *RuleEvaluator) Evaluate(ctx context.Context) (*Graph, error) {
 	graph := NewGraph(GraphMetadata{
 		Name: "rule-evaluated-graph",
 	})
-	
+
 	// Add all operations as nodes
 	for _, op := range e.operations {
 		node := &Node{
@@ -152,15 +152,15 @@ func (e *RuleEvaluator) Evaluate(ctx context.Context) (*Graph, error) {
 			Properties:   op.Properties,
 			Labels:       map[string]string{"resource": op.ResourceName},
 		}
-		
+
 		if err := graph.AddNode(node); err != nil {
 			return nil, fmt.Errorf("failed to add node %s: %w", op.ID, err)
 		}
 	}
-	
+
 	// Get rules sorted by priority
 	rules := e.registry.ListRules()
-	
+
 	// Evaluate each rule for all operation pairs
 	for _, rule := range rules {
 		for _, from := range e.operations {
@@ -168,25 +168,25 @@ func (e *RuleEvaluator) Evaluate(ctx context.Context) (*Graph, error) {
 				if from.ID == to.ID {
 					continue
 				}
-				
+
 				// Evaluate rule
 				edge, err := rule.Evaluate(ctx, from, to)
 				if err != nil {
-					return nil, fmt.Errorf("rule %s failed for %s -> %s: %w", 
+					return nil, fmt.Errorf("rule %s failed for %s -> %s: %w",
 						rule.Name(), from.ID, to.ID, err)
 				}
-				
+
 				// Add edge if rule applies
 				if edge != nil {
 					// Set edge endpoints
 					edge.From = from.ID
 					edge.To = to.ID
-					
+
 					// Set reason if not provided
 					if edge.Reason == "" {
 						edge.Reason = rule.Description()
 					}
-					
+
 					// Check if edge would create a cycle
 					tempGraph := graph.Clone()
 					if err := tempGraph.AddEdge(edge); err == nil {
@@ -202,7 +202,7 @@ func (e *RuleEvaluator) Evaluate(ctx context.Context) (*Graph, error) {
 			}
 		}
 	}
-	
+
 	return graph, nil
 }
 
@@ -258,19 +258,19 @@ func (r *ResourceKindRule) Evaluate(ctx context.Context, from, to *PlannedOperat
 	if from.ResourceType != r.fromKind || to.ResourceType != r.toKind {
 		return nil, nil
 	}
-	
+
 	// Check condition if provided
 	if r.condition != nil && !r.condition(from, to) {
 		return nil, nil
 	}
-	
+
 	// Create edge
 	edge := &Edge{
 		Type:   r.depType,
 		Weight: 1.0,
 		Reason: r.Description(),
 	}
-	
+
 	return edge, nil
 }
 
@@ -321,7 +321,7 @@ func (r *ConditionalRule) Evaluate(ctx context.Context, from, to *PlannedOperati
 	if !r.condition(ctx) {
 		return nil, nil
 	}
-	
+
 	// Evaluate wrapped rule
 	return r.wrapped.Evaluate(ctx, from, to)
 }
@@ -339,7 +339,7 @@ type CompositeLogic int
 const (
 	// LogicAND requires all rules to apply
 	LogicAND CompositeLogic = iota
-	
+
 	// LogicOR requires at least one rule to apply
 	LogicOR
 )
@@ -377,7 +377,7 @@ func (r *CompositeRule) Evaluate(ctx context.Context, from, to *PlannedOperation
 		}
 		return resultEdge, nil
 	}
-	
+
 	// OR logic: at least one rule must apply
 	for _, rule := range r.rules {
 		edge, err := rule.Evaluate(ctx, from, to)
@@ -388,7 +388,7 @@ func (r *CompositeRule) Evaluate(ctx context.Context, from, to *PlannedOperation
 			return edge, nil
 		}
 	}
-	
+
 	return nil, nil
 }
 

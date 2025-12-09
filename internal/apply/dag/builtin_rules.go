@@ -12,16 +12,16 @@ func GetBuiltinRules() []Rule {
 	return []Rule{
 		// High priority: Project dependencies
 		NewProjectDependencyRule(),
-		
+
 		// Medium-high priority: Resource kind dependencies
 		NewClusterDependencyRule(),
 		NewRoleDependencyRule(),
 		NewVPCDependencyRule(),
-		
+
 		// Medium priority: Ordering rules
 		NewNetworkAccessOrderingRule(),
 		NewSearchIndexOrderingRule(),
-		
+
 		// Lower priority: Same-cluster conflict detection
 		NewSameClusterConflictRule(),
 	}
@@ -33,7 +33,7 @@ func NewProjectDependencyRule() Rule {
 	return NewResourceKindRule(
 		"project_dependency",
 		"All resources must wait for their project to exist",
-		200, // Highest priority
+		200,               // Highest priority
 		types.KindCluster, // From any cluster
 		types.KindProject, // To project
 		DependencyTypeHard,
@@ -56,15 +56,15 @@ func NewClusterDependencyRule() Rule {
 			clusterDependent := from.ResourceType == types.KindDatabaseUser ||
 				from.ResourceType == types.KindDatabaseRole ||
 				from.ResourceType == types.KindSearchIndex
-			
+
 			if !clusterDependent || to.ResourceType != types.KindCluster {
 				return nil, nil
 			}
-			
+
 			// Check if they reference the same cluster
 			fromCluster := extractClusterName(from.Spec)
 			toCluster := extractClusterName(to.Spec)
-			
+
 			if fromCluster != "" && toCluster != "" && fromCluster == toCluster {
 				return &Edge{
 					Type:   DependencyTypeHard,
@@ -72,7 +72,7 @@ func NewClusterDependencyRule() Rule {
 					Reason: "Resource requires cluster to exist",
 				}, nil
 			}
-			
+
 			return nil, nil
 		},
 	)
@@ -89,11 +89,11 @@ func NewRoleDependencyRule() Rule {
 			if from.ResourceType != types.KindDatabaseUser || to.ResourceType != types.KindDatabaseRole {
 				return nil, nil
 			}
-			
+
 			// Check if the user references this role
 			userRoles := extractUserRoles(from.Spec)
 			roleName := extractRoleName(to.Spec)
-			
+
 			for _, userRole := range userRoles {
 				if userRole == roleName {
 					return &Edge{
@@ -103,7 +103,7 @@ func NewRoleDependencyRule() Rule {
 					}, nil
 				}
 			}
-			
+
 			return nil, nil
 		},
 	)
@@ -154,7 +154,7 @@ func NewSearchIndexOrderingRule() Rule {
 			if from.ResourceType != types.KindSearchIndex || to.ResourceType != types.KindDatabaseUser {
 				return nil, nil
 			}
-			
+
 			// Same cluster
 			if extractClusterName(from.Spec) == extractClusterName(to.Spec) {
 				return &Edge{
@@ -163,7 +163,7 @@ func NewSearchIndexOrderingRule() Rule {
 					Reason: "Search index benefits from having users configured first",
 				}, nil
 			}
-			
+
 			return nil, nil
 		},
 	)
@@ -282,7 +282,7 @@ func NewAPIQuotaRule(maxConcurrentOps int) Rule {
 			// This would need runtime tracking of concurrent operations
 			// For now, we can mark certain operations as resource-dependent
 			// The actual enforcement would happen in the scheduler
-			
+
 			// High-cost operations should be serialized
 			highCost := isHighCostOperation(from) && isHighCostOperation(to)
 			if highCost {
@@ -292,7 +292,7 @@ func NewAPIQuotaRule(maxConcurrentOps int) Rule {
 					Reason: "High-cost operations should be rate-limited",
 				}, nil
 			}
-			
+
 			return nil, nil
 		},
 	)
@@ -303,12 +303,12 @@ func isHighCostOperation(op *PlannedOperation) bool {
 	if op.ResourceType == types.KindCluster {
 		return true
 	}
-	
+
 	// VPC endpoint operations are high cost
 	if op.ResourceType == types.KindVPCEndpoint {
 		return true
 	}
-	
+
 	return false
 }
 
@@ -323,15 +323,15 @@ func NewConditionalDependencyRule() Rule {
 			if from.ResourceType != types.KindCluster {
 				return nil, nil
 			}
-			
+
 			// Check if cluster has backup enabled
 			if hasBackupEnabled(from.Spec) {
 				// Would depend on backup config resource if it exists
 				// This is a placeholder for demonstration
 				return &Edge{
-					Type:      DependencyTypeConditional,
-					Weight:    1.0,
-					Reason:    "Cluster with backup requires backup configuration",
+					Type:   DependencyTypeConditional,
+					Weight: 1.0,
+					Reason: "Cluster with backup requires backup configuration",
 					Condition: &Condition{
 						PropertyPath: "spec.backupEnabled",
 						Operator:     "==",
@@ -339,7 +339,7 @@ func NewConditionalDependencyRule() Rule {
 					},
 				}, nil
 			}
-			
+
 			return nil, nil
 		},
 	)
@@ -380,7 +380,7 @@ func NewCrossRegionOrderingRule() Rule {
 		func(ctx context.Context, from, to *PlannedOperation) (*Edge, error) {
 			fromRegion := extractRegion(from.Spec)
 			toRegion := extractRegion(to.Spec)
-			
+
 			// If different regions, create soft ordering
 			if fromRegion != "" && toRegion != "" && fromRegion != toRegion {
 				return &Edge{
@@ -389,7 +389,7 @@ func NewCrossRegionOrderingRule() Rule {
 					Reason: "Cross-region operations ordered for consistency",
 				}, nil
 			}
-			
+
 			return nil, nil
 		},
 	)
@@ -416,7 +416,7 @@ func NewNamePrefixOrderingRule(precedence []string) Rule {
 		func(ctx context.Context, from, to *PlannedOperation) (*Edge, error) {
 			fromIdx := -1
 			toIdx := -1
-			
+
 			for i, prefix := range precedence {
 				if strings.HasPrefix(from.ResourceName, prefix) {
 					fromIdx = i
@@ -425,7 +425,7 @@ func NewNamePrefixOrderingRule(precedence []string) Rule {
 					toIdx = i
 				}
 			}
-			
+
 			// If 'from' has higher precedence (lower index), it depends on 'to'
 			if fromIdx > toIdx && toIdx >= 0 {
 				return &Edge{
@@ -434,7 +434,7 @@ func NewNamePrefixOrderingRule(precedence []string) Rule {
 					Reason: "Resource name prefix ordering",
 				}, nil
 			}
-			
+
 			return nil, nil
 		},
 	)

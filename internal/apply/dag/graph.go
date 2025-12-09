@@ -14,7 +14,7 @@ func NewGraph(metadata GraphMetadata) *Graph {
 	if metadata.CreatedAt.IsZero() {
 		metadata.CreatedAt = time.Now()
 	}
-	
+
 	return &Graph{
 		Nodes:        make(map[string]*Node),
 		Edges:        make(map[string][]*Edge),
@@ -28,20 +28,20 @@ func NewGraph(metadata GraphMetadata) *Graph {
 func (g *Graph) AddNode(node *Node) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	
+
 	if node == nil {
 		return fmt.Errorf("node cannot be nil")
 	}
-	
+
 	// Validate node ID
 	if err := validateNodeID(node.ID); err != nil {
 		return err
 	}
-	
+
 	if _, exists := g.Nodes[node.ID]; exists {
 		return fmt.Errorf("node with ID %s already exists", node.ID)
 	}
-	
+
 	// Validate duration is non-negative
 	if node.Properties.EstimatedDuration < 0 {
 		return fmt.Errorf("estimated duration cannot be negative: %v", node.Properties.EstimatedDuration)
@@ -52,7 +52,7 @@ func (g *Graph) AddNode(node *Node) error {
 	if node.Properties.MaxDuration < 0 {
 		return fmt.Errorf("max duration cannot be negative: %v", node.Properties.MaxDuration)
 	}
-	
+
 	// Initialize maps if needed
 	if node.Labels == nil {
 		node.Labels = make(map[string]string)
@@ -60,7 +60,7 @@ func (g *Graph) AddNode(node *Node) error {
 	if node.Dependencies == nil {
 		node.Dependencies = make([]*Edge, 0)
 	}
-	
+
 	g.Nodes[node.ID] = node
 	return nil
 }
@@ -70,34 +70,34 @@ func validateNodeID(id string) error {
 	if id == "" {
 		return fmt.Errorf("node ID cannot be empty")
 	}
-	
+
 	// Check length limits
 	if len(id) > 256 {
 		return fmt.Errorf("node ID too long: max 256 characters")
 	}
-	
+
 	// Reject path traversal patterns
 	if strings.Contains(id, "..") {
 		return fmt.Errorf("node ID cannot contain path traversal (..)")
 	}
-	
+
 	// Reject command injection patterns
 	if strings.ContainsAny(id, ";|&$`\n\r") {
 		return fmt.Errorf("node ID contains invalid characters")
 	}
-	
+
 	// Reject null bytes
 	if strings.Contains(id, "\x00") {
 		return fmt.Errorf("node ID cannot contain null bytes")
 	}
-	
+
 	// Must be printable ASCII or Unicode letters/numbers/common symbols
 	// Allow: alphanumeric, underscore, hyphen, dot, colon, forward slash
 	validPattern := regexp.MustCompile(`^[a-zA-Z0-9_\-.:/@]+$`)
 	if !validPattern.MatchString(id) {
 		return fmt.Errorf("node ID contains invalid characters: must be alphanumeric with _-.:/@ only")
 	}
-	
+
 	return nil
 }
 
@@ -105,33 +105,33 @@ func validateNodeID(id string) error {
 func (g *Graph) RemoveNode(nodeID string) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	
+
 	if _, exists := g.Nodes[nodeID]; !exists {
 		return fmt.Errorf("node %s not found", nodeID)
 	}
-	
+
 	// Remove all edges from this node
 	delete(g.Edges, nodeID)
-	
+
 	// Remove all edges to this node
 	delete(g.ReverseEdges, nodeID)
-	
+
 	// Remove references from other nodes' edge lists
 	for fromID := range g.Edges {
 		g.Edges[fromID] = filterEdges(g.Edges[fromID], func(e *Edge) bool {
 			return e.To != nodeID
 		})
 	}
-	
+
 	for toID := range g.ReverseEdges {
 		g.ReverseEdges[toID] = filterEdges(g.ReverseEdges[toID], func(e *Edge) bool {
 			return e.From != nodeID
 		})
 	}
-	
+
 	// Remove the node
 	delete(g.Nodes, nodeID)
-	
+
 	return nil
 }
 
@@ -139,15 +139,15 @@ func (g *Graph) RemoveNode(nodeID string) error {
 func (g *Graph) AddEdge(edge *Edge) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	
+
 	if edge == nil {
 		return fmt.Errorf("edge cannot be nil")
 	}
-	
+
 	if edge.From == "" || edge.To == "" {
 		return fmt.Errorf("edge from and to cannot be empty")
 	}
-	
+
 	// Verify nodes exist
 	if _, exists := g.Nodes[edge.From]; !exists {
 		return fmt.Errorf("source node %s not found", edge.From)
@@ -155,38 +155,38 @@ func (g *Graph) AddEdge(edge *Edge) error {
 	if _, exists := g.Nodes[edge.To]; !exists {
 		return fmt.Errorf("target node %s not found", edge.To)
 	}
-	
+
 	// Prevent self-loops
 	if edge.From == edge.To {
 		return fmt.Errorf("self-loops are not allowed: %s", edge.From)
 	}
-	
+
 	// Default weight
 	if edge.Weight == 0 {
 		edge.Weight = 1.0
 	}
-	
+
 	// Default type
 	if edge.Type == "" {
 		edge.Type = DependencyTypeHard
 	}
-	
+
 	// Add to forward edges
 	if g.Edges[edge.From] == nil {
 		g.Edges[edge.From] = make([]*Edge, 0)
 	}
 	g.Edges[edge.From] = append(g.Edges[edge.From], edge)
-	
+
 	// Add to reverse edges
 	if g.ReverseEdges[edge.To] == nil {
 		g.ReverseEdges[edge.To] = make([]*Edge, 0)
 	}
 	g.ReverseEdges[edge.To] = append(g.ReverseEdges[edge.To], edge)
-	
+
 	// Add to node's dependencies
 	fromNode := g.Nodes[edge.From]
 	fromNode.Dependencies = append(fromNode.Dependencies, edge)
-	
+
 	return nil
 }
 
@@ -194,11 +194,11 @@ func (g *Graph) AddEdge(edge *Edge) error {
 func (g *Graph) RemoveEdge(from, to string) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	
+
 	if g.Edges[from] == nil {
 		return fmt.Errorf("no edges from node %s", from)
 	}
-	
+
 	found := false
 	g.Edges[from] = filterEdges(g.Edges[from], func(e *Edge) bool {
 		if e.To == to {
@@ -207,24 +207,24 @@ func (g *Graph) RemoveEdge(from, to string) error {
 		}
 		return true
 	})
-	
+
 	if !found {
 		return fmt.Errorf("edge from %s to %s not found", from, to)
 	}
-	
+
 	// Remove from reverse edges
 	if g.ReverseEdges[to] != nil {
 		g.ReverseEdges[to] = filterEdges(g.ReverseEdges[to], func(e *Edge) bool {
 			return e.From != from
 		})
 	}
-	
+
 	// Remove from node's dependencies
 	fromNode := g.Nodes[from]
 	fromNode.Dependencies = filterEdges(fromNode.Dependencies, func(e *Edge) bool {
 		return e.To != to
 	})
-	
+
 	return nil
 }
 
@@ -232,7 +232,7 @@ func (g *Graph) RemoveEdge(from, to string) error {
 func (g *Graph) GetNode(nodeID string) (*Node, error) {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
-	
+
 	node, exists := g.Nodes[nodeID]
 	if !exists {
 		return nil, fmt.Errorf("node %s not found", nodeID)
@@ -258,7 +258,7 @@ func (g *Graph) GetIncomingEdges(nodeID string) []*Edge {
 func (g *Graph) GetDependencies(nodeID string) []string {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
-	
+
 	edges := g.Edges[nodeID]
 	deps := make([]string, len(edges))
 	for i, edge := range edges {
@@ -271,7 +271,7 @@ func (g *Graph) GetDependencies(nodeID string) []string {
 func (g *Graph) GetDependents(nodeID string) []string {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
-	
+
 	edges := g.ReverseEdges[nodeID]
 	deps := make([]string, len(edges))
 	for i, edge := range edges {
@@ -291,7 +291,7 @@ func (g *Graph) NodeCount() int {
 func (g *Graph) EdgeCount() int {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
-	
+
 	count := 0
 	for _, edges := range g.Edges {
 		count += len(edges)
@@ -303,7 +303,7 @@ func (g *Graph) EdgeCount() int {
 func (g *Graph) HasCycle() (bool, []string) {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
-	
+
 	return g.hasCycleInternal()
 }
 
@@ -312,7 +312,7 @@ func (g *Graph) hasCycleInternal() (bool, []string) {
 	visited := make(map[string]bool)
 	recStack := make(map[string]bool)
 	parent := make(map[string]string)
-	
+
 	for nodeID := range g.Nodes {
 		if !visited[nodeID] {
 			if hasCycle, cycle := g.hasCycleUtil(nodeID, visited, recStack, parent); hasCycle {
@@ -320,7 +320,7 @@ func (g *Graph) hasCycleInternal() (bool, []string) {
 			}
 		}
 	}
-	
+
 	return false, nil
 }
 
@@ -328,12 +328,12 @@ func (g *Graph) hasCycleInternal() (bool, []string) {
 func (g *Graph) hasCycleUtil(nodeID string, visited, recStack map[string]bool, parent map[string]string) (bool, []string) {
 	visited[nodeID] = true
 	recStack[nodeID] = true
-	
+
 	// Visit all dependencies
 	for _, edge := range g.Edges[nodeID] {
 		dep := edge.To
 		parent[dep] = nodeID
-		
+
 		if !visited[dep] {
 			if hasCycle, cycle := g.hasCycleUtil(dep, visited, recStack, parent); hasCycle {
 				return true, cycle
@@ -350,7 +350,7 @@ func (g *Graph) hasCycleUtil(nodeID string, visited, recStack map[string]bool, p
 			return true, cycle
 		}
 	}
-	
+
 	recStack[nodeID] = false
 	return false, nil
 }
@@ -359,66 +359,66 @@ func (g *Graph) hasCycleUtil(nodeID string, visited, recStack map[string]bool, p
 func (g *Graph) Clone() *Graph {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
-	
+
 	clone := NewGraph(g.Metadata)
-	
+
 	// Clone nodes
 	for id, node := range g.Nodes {
 		nodeClone := &Node{
-			ID:           node.ID,
-			Name:         node.Name,
-			ResourceType: node.ResourceType,
-			Properties:   node.Properties,
-			Labels:       make(map[string]string),
-			Level:        node.Level,
+			ID:            node.ID,
+			Name:          node.Name,
+			ResourceType:  node.ResourceType,
+			Properties:    node.Properties,
+			Labels:        make(map[string]string),
+			Level:         node.Level,
 			EarliestStart: node.EarliestStart,
 			LatestStart:   node.LatestStart,
 			Slack:         node.Slack,
 			IsCritical:    node.IsCritical,
 		}
-		
+
 		// Clone labels
 		for k, v := range node.Labels {
 			nodeClone.Labels[k] = v
 		}
-		
+
 		clone.Nodes[id] = nodeClone
 	}
-	
+
 	// Clone edges
 	for _, edges := range g.Edges {
 		for _, edge := range edges {
 			edgeClone := &Edge{
-				From:      edge.From,
-				To:        edge.To,
-				Type:      edge.Type,
-				Weight:    edge.Weight,
-				Reason:    edge.Reason,
+				From:       edge.From,
+				To:         edge.To,
+				Type:       edge.Type,
+				Weight:     edge.Weight,
+				Reason:     edge.Reason,
 				IsCritical: edge.IsCritical,
-				Metadata:  make(map[string]string),
+				Metadata:   make(map[string]string),
 			}
-			
+
 			// Clone metadata
 			if edge.Metadata != nil {
 				for k, v := range edge.Metadata {
 					edgeClone.Metadata[k] = v
 				}
 			}
-			
+
 			// Note: Condition is not cloned as it may contain function pointers
 			if edge.Condition != nil {
 				edgeClone.Condition = edge.Condition
 			}
-			
+
 			clone.AddEdge(edgeClone)
 		}
 	}
-	
+
 	// Copy computed properties
 	clone.CriticalPath = append([]string(nil), g.CriticalPath...)
 	clone.TotalDuration = g.TotalDuration
 	clone.MaxLevel = g.MaxLevel
-	
+
 	return clone
 }
 
@@ -426,7 +426,7 @@ func (g *Graph) Clone() *Graph {
 func (g *Graph) ToJSON() ([]byte, error) {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
-	
+
 	// Create a sanitized copy for serialization
 	sanitized := g.sanitizeForExport()
 	return json.MarshalIndent(sanitized, "", "  ")
@@ -444,14 +444,14 @@ func (g *Graph) sanitizeForExport() *Graph {
 		TotalDuration: g.TotalDuration,
 		MaxLevel:      g.MaxLevel,
 	}
-	
+
 	// Sanitize sensitive fields in node labels
 	sensitiveKeys := []string{"password", "api_key", "apiKey", "token", "secret", "credential", "auth"}
-	
+
 	for id, node := range g.Nodes {
 		nodeCopy := *node
 		nodeCopy.Labels = make(map[string]string)
-		
+
 		// Copy labels, redacting sensitive ones
 		for k, v := range node.Labels {
 			isSensitive := false
@@ -462,17 +462,17 @@ func (g *Graph) sanitizeForExport() *Graph {
 					break
 				}
 			}
-			
+
 			if isSensitive {
 				nodeCopy.Labels[k] = "[REDACTED]"
 			} else {
 				nodeCopy.Labels[k] = v
 			}
 		}
-		
+
 		export.Nodes[id] = &nodeCopy
 	}
-	
+
 	return export
 }
 
@@ -489,7 +489,7 @@ func FromJSON(data []byte) (*Graph, error) {
 func (g *Graph) GetRootNodes() []*Node {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
-	
+
 	roots := make([]*Node, 0)
 	for _, node := range g.Nodes {
 		if len(g.ReverseEdges[node.ID]) == 0 {
@@ -503,7 +503,7 @@ func (g *Graph) GetRootNodes() []*Node {
 func (g *Graph) GetLeafNodes() []*Node {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
-	
+
 	leaves := make([]*Node, 0)
 	for _, node := range g.Nodes {
 		if len(g.Edges[node.ID]) == 0 {
@@ -517,7 +517,7 @@ func (g *Graph) GetLeafNodes() []*Node {
 func (g *Graph) GetNodesByLevel() map[int][]*Node {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
-	
+
 	levels := make(map[int][]*Node)
 	for _, node := range g.Nodes {
 		level := node.Level
@@ -533,7 +533,7 @@ func (g *Graph) GetNodesByLevel() map[int][]*Node {
 func (g *Graph) GetNodesByType() map[string][]*Node {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
-	
+
 	types := make(map[string][]*Node)
 	for _, node := range g.Nodes {
 		resourceType := string(node.ResourceType)
@@ -549,11 +549,11 @@ func (g *Graph) GetNodesByType() map[string][]*Node {
 func (g *Graph) IsReachable(from, to string) bool {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
-	
+
 	if from == to {
 		return true
 	}
-	
+
 	visited := make(map[string]bool)
 	return g.isReachableUtil(from, to, visited)
 }
@@ -563,9 +563,9 @@ func (g *Graph) isReachableUtil(from, to string, visited map[string]bool) bool {
 	if from == to {
 		return true
 	}
-	
+
 	visited[from] = true
-	
+
 	for _, edge := range g.Edges[from] {
 		if !visited[edge.To] {
 			if g.isReachableUtil(edge.To, to, visited) {
@@ -573,7 +573,7 @@ func (g *Graph) isReachableUtil(from, to string, visited map[string]bool) bool {
 			}
 		}
 	}
-	
+
 	return false
 }
 
@@ -581,21 +581,21 @@ func (g *Graph) isReachableUtil(from, to string, visited map[string]bool) bool {
 func (g *Graph) GetPath(from, to string) []string {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
-	
+
 	if from == to {
 		return []string{from}
 	}
-	
+
 	visited := make(map[string]bool)
 	parent := make(map[string]string)
 	queue := []string{from}
 	visited[from] = true
-	
+
 	// BFS to find shortest path
 	for len(queue) > 0 {
 		current := queue[0]
 		queue = queue[1:]
-		
+
 		if current == to {
 			// Reconstruct path
 			path := []string{to}
@@ -606,7 +606,7 @@ func (g *Graph) GetPath(from, to string) []string {
 			}
 			return path
 		}
-		
+
 		for _, edge := range g.Edges[current] {
 			if !visited[edge.To] {
 				visited[edge.To] = true
@@ -615,7 +615,7 @@ func (g *Graph) GetPath(from, to string) []string {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -625,23 +625,23 @@ func (g *Graph) Validate() error {
 	if hasCycle, cycle := g.HasCycle(); hasCycle {
 		return fmt.Errorf("graph contains cycle: %v", cycle)
 	}
-	
+
 	g.mu.RLock()
 	defer g.mu.RUnlock()
-	
+
 	// Validate all edges reference existing nodes
 	for fromID, edges := range g.Edges {
 		if _, exists := g.Nodes[fromID]; !exists {
 			return fmt.Errorf("edge references non-existent source node: %s", fromID)
 		}
-		
+
 		for _, edge := range edges {
 			if _, exists := g.Nodes[edge.To]; !exists {
 				return fmt.Errorf("edge from %s references non-existent target node: %s", fromID, edge.To)
 			}
 		}
 	}
-	
+
 	// Validate reverse edges match forward edges
 	for nodeID := range g.Nodes {
 		// Check forward->reverse consistency
@@ -657,7 +657,7 @@ func (g *Graph) Validate() error {
 				return fmt.Errorf("inconsistency: forward edge %s->%s has no reverse edge", nodeID, edge.To)
 			}
 		}
-		
+
 		// Check reverse->forward consistency
 		for _, edge := range g.ReverseEdges[nodeID] {
 			found := false
@@ -672,7 +672,7 @@ func (g *Graph) Validate() error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -691,7 +691,7 @@ func filterEdges(edges []*Edge, predicate func(*Edge) bool) []*Edge {
 func (g *Graph) ComputeLevels() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	
+
 	return g.computeLevelsInternal()
 }
 
@@ -701,18 +701,18 @@ func (g *Graph) computeLevelsInternal() error {
 	for _, node := range g.Nodes {
 		node.Level = 0
 	}
-	
+
 	// Get topological order (using internal method)
 	order, err := g.topologicalSortInternal()
 	if err != nil {
 		return fmt.Errorf("cannot compute levels: %w", err)
 	}
-	
+
 	// Assign levels based on topological order
 	for _, nodeID := range order {
 		node := g.Nodes[nodeID]
 		maxDepLevel := -1
-		
+
 		// Find maximum level of dependencies (nodes this node depends on)
 		// Edges[nodeID] contains edges FROM this node TO its dependencies
 		for _, edge := range g.Edges[nodeID] {
@@ -721,12 +721,12 @@ func (g *Graph) computeLevelsInternal() error {
 				maxDepLevel = depNode.Level
 			}
 		}
-		
+
 		node.Level = maxDepLevel + 1
 		if node.Level > g.MaxLevel {
 			g.MaxLevel = node.Level
 		}
 	}
-	
+
 	return nil
 }

@@ -21,7 +21,7 @@ func NewScheduler(config ScheduleConfig) *Scheduler {
 	if config.Strategy == "" {
 		config.Strategy = StrategyGreedy
 	}
-	
+
 	return &Scheduler{
 		config: config,
 	}
@@ -32,17 +32,17 @@ func (s *Scheduler) Schedule(ctx context.Context, graph *Graph) (*Schedule, erro
 	if graph == nil {
 		return nil, fmt.Errorf("graph cannot be nil")
 	}
-	
+
 	// Validate graph
 	if err := graph.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid graph: %w", err)
 	}
-	
+
 	// Check for cycles
 	if hasCycle, cycle := graph.HasCycle(); hasCycle {
 		return nil, fmt.Errorf("graph contains cycle: %v", cycle)
 	}
-	
+
 	// Choose scheduling strategy
 	switch s.config.Strategy {
 	case StrategyGreedy:
@@ -70,12 +70,12 @@ func (s *Scheduler) scheduleGreedy(ctx context.Context, graph *Graph) (*Schedule
 	if err != nil {
 		return nil, fmt.Errorf("topological sort failed: %w", err)
 	}
-	
+
 	// Compute levels (distance from sources)
 	if err := graph.ComputeLevels(); err != nil {
 		return nil, fmt.Errorf("failed to compute levels: %w", err)
 	}
-	
+
 	// Group nodes by level
 	levelMap := make(map[int][]*Node)
 	maxLevel := 0
@@ -86,7 +86,7 @@ func (s *Scheduler) scheduleGreedy(ctx context.Context, graph *Graph) (*Schedule
 			maxLevel = node.Level
 		}
 	}
-	
+
 	// Create stages
 	stages := make([][]*Node, 0, maxLevel+1)
 	for level := 0; level <= maxLevel; level++ {
@@ -94,12 +94,12 @@ func (s *Scheduler) scheduleGreedy(ctx context.Context, graph *Graph) (*Schedule
 		if len(nodes) == 0 {
 			continue
 		}
-		
+
 		// Sort nodes within level by priority
 		sort.Slice(nodes, func(i, j int) bool {
 			return nodes[i].Properties.Priority > nodes[j].Properties.Priority
 		})
-		
+
 		// Split into batches based on maxParallelOps
 		for i := 0; i < len(nodes); i += s.config.MaxParallelOps {
 			end := i + s.config.MaxParallelOps
@@ -109,7 +109,7 @@ func (s *Scheduler) scheduleGreedy(ctx context.Context, graph *Graph) (*Schedule
 			stages = append(stages, nodes[i:end])
 		}
 	}
-	
+
 	// Compute estimated duration
 	totalDuration := time.Duration(0)
 	for _, stage := range stages {
@@ -121,13 +121,13 @@ func (s *Scheduler) scheduleGreedy(ctx context.Context, graph *Graph) (*Schedule
 		}
 		totalDuration += stageDuration
 	}
-	
+
 	return &Schedule{
-		Stages:             stages,
-		Strategy:           s.config.Strategy,
-		EstimatedDuration:  totalDuration,
-		MaxParallelOps:     s.config.MaxParallelOps,
-		CreatedAt:          time.Now(),
+		Stages:            stages,
+		Strategy:          s.config.Strategy,
+		EstimatedDuration: totalDuration,
+		MaxParallelOps:    s.config.MaxParallelOps,
+		CreatedAt:         time.Now(),
 	}, nil
 }
 
@@ -139,25 +139,25 @@ func (s *Scheduler) scheduleCriticalPathFirst(ctx context.Context, graph *Graph)
 	if err != nil {
 		return nil, fmt.Errorf("critical path computation failed: %w", err)
 	}
-	
+
 	// Mark critical nodes
 	criticalSet := make(map[string]bool)
 	for _, nodeID := range criticalPath {
 		criticalSet[nodeID] = true
 		graph.Nodes[nodeID].IsCritical = true
 	}
-	
+
 	// Get topological ordering
 	sorted, err := graph.TopologicalSort()
 	if err != nil {
 		return nil, fmt.Errorf("topological sort failed: %w", err)
 	}
-	
+
 	// Compute levels
 	if err := graph.ComputeLevels(); err != nil {
 		return nil, fmt.Errorf("failed to compute levels: %w", err)
 	}
-	
+
 	// Group by level, prioritizing critical nodes
 	levelMap := make(map[int][]*Node)
 	maxLevel := 0
@@ -168,7 +168,7 @@ func (s *Scheduler) scheduleCriticalPathFirst(ctx context.Context, graph *Graph)
 			maxLevel = node.Level
 		}
 	}
-	
+
 	// Create stages with critical nodes first
 	stages := make([][]*Node, 0)
 	for level := 0; level <= maxLevel; level++ {
@@ -176,7 +176,7 @@ func (s *Scheduler) scheduleCriticalPathFirst(ctx context.Context, graph *Graph)
 		if len(nodes) == 0 {
 			continue
 		}
-		
+
 		// Separate critical and non-critical
 		critical := make([]*Node, 0)
 		nonCritical := make([]*Node, 0)
@@ -187,12 +187,12 @@ func (s *Scheduler) scheduleCriticalPathFirst(ctx context.Context, graph *Graph)
 				nonCritical = append(nonCritical, node)
 			}
 		}
-		
+
 		// Process critical nodes first
 		for _, node := range critical {
 			stages = append(stages, []*Node{node})
 		}
-		
+
 		// Then batch non-critical nodes
 		for i := 0; i < len(nonCritical); i += s.config.MaxParallelOps {
 			end := i + s.config.MaxParallelOps
@@ -202,14 +202,14 @@ func (s *Scheduler) scheduleCriticalPathFirst(ctx context.Context, graph *Graph)
 			stages = append(stages, nonCritical[i:end])
 		}
 	}
-	
+
 	return &Schedule{
-		Stages:             stages,
-		Strategy:           s.config.Strategy,
-		EstimatedDuration:  totalDuration,
-		CriticalPath:       criticalPath,
-		MaxParallelOps:     s.config.MaxParallelOps,
-		CreatedAt:          time.Now(),
+		Stages:            stages,
+		Strategy:          s.config.Strategy,
+		EstimatedDuration: totalDuration,
+		CriticalPath:      criticalPath,
+		MaxParallelOps:    s.config.MaxParallelOps,
+		CreatedAt:         time.Now(),
 	}, nil
 }
 
@@ -222,12 +222,12 @@ func (s *Scheduler) scheduleRiskBased(ctx context.Context, graph *Graph, earlyRi
 	if err != nil {
 		return nil, fmt.Errorf("topological sort failed: %w", err)
 	}
-	
+
 	// Compute levels
 	if err := graph.ComputeLevels(); err != nil {
 		return nil, fmt.Errorf("failed to compute levels: %w", err)
 	}
-	
+
 	// Group by level
 	levelMap := make(map[int][]*Node)
 	maxLevel := 0
@@ -238,7 +238,7 @@ func (s *Scheduler) scheduleRiskBased(ctx context.Context, graph *Graph, earlyRi
 			maxLevel = node.Level
 		}
 	}
-	
+
 	// Risk level priorities
 	riskPriority := map[RiskLevel]int{
 		RiskLevelCritical: 4,
@@ -246,7 +246,7 @@ func (s *Scheduler) scheduleRiskBased(ctx context.Context, graph *Graph, earlyRi
 		RiskLevelMedium:   2,
 		RiskLevelLow:      1,
 	}
-	
+
 	// Create stages, sorting by risk within each level
 	stages := make([][]*Node, 0)
 	for level := 0; level <= maxLevel; level++ {
@@ -254,18 +254,18 @@ func (s *Scheduler) scheduleRiskBased(ctx context.Context, graph *Graph, earlyRi
 		if len(nodes) == 0 {
 			continue
 		}
-		
+
 		// Sort by risk level
 		sort.Slice(nodes, func(i, j int) bool {
 			riski := riskPriority[nodes[i].Properties.RiskLevel]
 			riskj := riskPriority[nodes[j].Properties.RiskLevel]
-			
+
 			if earlyRisk {
 				return riski > riskj // High risk first
 			}
 			return riski < riskj // Low risk first
 		})
-		
+
 		// Batch into stages
 		for i := 0; i < len(nodes); i += s.config.MaxParallelOps {
 			end := i + s.config.MaxParallelOps
@@ -275,7 +275,7 @@ func (s *Scheduler) scheduleRiskBased(ctx context.Context, graph *Graph, earlyRi
 			stages = append(stages, nodes[i:end])
 		}
 	}
-	
+
 	// Compute estimated duration
 	totalDuration := time.Duration(0)
 	for _, stage := range stages {
@@ -287,13 +287,13 @@ func (s *Scheduler) scheduleRiskBased(ctx context.Context, graph *Graph, earlyRi
 		}
 		totalDuration += stageDuration
 	}
-	
+
 	return &Schedule{
-		Stages:             stages,
-		Strategy:           s.config.Strategy,
-		EstimatedDuration:  totalDuration,
-		MaxParallelOps:     s.config.MaxParallelOps,
-		CreatedAt:          time.Now(),
+		Stages:            stages,
+		Strategy:          s.config.Strategy,
+		EstimatedDuration: totalDuration,
+		MaxParallelOps:    s.config.MaxParallelOps,
+		CreatedAt:         time.Now(),
 	}, nil
 }
 
@@ -305,16 +305,16 @@ func (s *Scheduler) scheduleResourceLeveling(ctx context.Context, graph *Graph) 
 	if err != nil {
 		return nil, fmt.Errorf("topological sort failed: %w", err)
 	}
-	
+
 	// Compute levels
 	if err := graph.ComputeLevels(); err != nil {
 		return nil, fmt.Errorf("failed to compute levels: %w", err)
 	}
-	
+
 	// Track available nodes (nodes whose dependencies are satisfied)
 	available := make([]*Node, 0)
 	inDegree := make(map[string]int)
-	
+
 	// Initialize in-degrees
 	for _, nodeID := range sorted {
 		inDegree[nodeID] = len(graph.Edges[nodeID])
@@ -322,47 +322,47 @@ func (s *Scheduler) scheduleResourceLeveling(ctx context.Context, graph *Graph) 
 			available = append(available, graph.Nodes[nodeID])
 		}
 	}
-	
+
 	// Resource tracking
 	targetAPICallsPerSec := s.config.MaxAPICallsPerSec
 	if targetAPICallsPerSec == 0 {
 		targetAPICallsPerSec = 100 // Default limit
 	}
-	
+
 	stages := make([][]*Node, 0)
 	processed := make(map[string]bool)
-	
+
 	for len(available) > 0 {
 		// Sort available nodes by resource requirements
 		sort.Slice(available, func(i, j int) bool {
-			return available[i].Properties.ResourceRequirements.APICallsRequired < 
-				   available[j].Properties.ResourceRequirements.APICallsRequired
+			return available[i].Properties.ResourceRequirements.APICallsRequired <
+				available[j].Properties.ResourceRequirements.APICallsRequired
 		})
-		
+
 		// Fill stage up to resource limits
 		stage := make([]*Node, 0)
 		stageAPICallsPerSec := 0
-		
+
 		for len(available) > 0 && len(stage) < s.config.MaxParallelOps {
 			node := available[0]
 			available = available[1:]
-			
+
 			apiCalls := node.Properties.ResourceRequirements.APICallsRequired
 			if apiCalls == 0 {
 				apiCalls = 1 // Default minimum
 			}
-			
+
 			// Check if adding this node would exceed resource limits
-			if stageAPICallsPerSec + apiCalls > targetAPICallsPerSec && len(stage) > 0 {
+			if stageAPICallsPerSec+apiCalls > targetAPICallsPerSec && len(stage) > 0 {
 				// Put it back for next stage
 				available = append([]*Node{node}, available...)
 				break
 			}
-			
+
 			stage = append(stage, node)
 			stageAPICallsPerSec += apiCalls
 			processed[node.ID] = true
-			
+
 			// Add newly available nodes
 			for _, dependent := range graph.GetDependents(node.ID) {
 				inDegree[dependent]--
@@ -371,7 +371,7 @@ func (s *Scheduler) scheduleResourceLeveling(ctx context.Context, graph *Graph) 
 				}
 			}
 		}
-		
+
 		if len(stage) > 0 {
 			stages = append(stages, stage)
 		} else {
@@ -385,7 +385,7 @@ func (s *Scheduler) scheduleResourceLeveling(ctx context.Context, graph *Graph) 
 			}
 		}
 	}
-	
+
 	// Compute estimated duration
 	totalDuration := time.Duration(0)
 	for _, stage := range stages {
@@ -397,13 +397,13 @@ func (s *Scheduler) scheduleResourceLeveling(ctx context.Context, graph *Graph) 
 		}
 		totalDuration += stageDuration
 	}
-	
+
 	return &Schedule{
-		Stages:             stages,
-		Strategy:           s.config.Strategy,
-		EstimatedDuration:  totalDuration,
-		MaxParallelOps:     s.config.MaxParallelOps,
-		CreatedAt:          time.Now(),
+		Stages:            stages,
+		Strategy:          s.config.Strategy,
+		EstimatedDuration: totalDuration,
+		MaxParallelOps:    s.config.MaxParallelOps,
+		CreatedAt:         time.Now(),
 	}, nil
 }
 
@@ -415,32 +415,32 @@ func (s *Scheduler) scheduleBatchOptimized(ctx context.Context, graph *Graph) (*
 	if err != nil {
 		return nil, fmt.Errorf("topological sort failed: %w", err)
 	}
-	
+
 	// Compute levels
 	if err := graph.ComputeLevels(); err != nil {
 		return nil, fmt.Errorf("failed to compute levels: %w", err)
 	}
-	
+
 	// Group by level and resource type
 	levelTypeMap := make(map[int]map[string][]*Node)
 	maxLevel := 0
-	
+
 	for _, nodeID := range sorted {
 		node := graph.Nodes[nodeID]
 		level := node.Level
-		
+
 		if levelTypeMap[level] == nil {
 			levelTypeMap[level] = make(map[string][]*Node)
 		}
-		
+
 		resourceType := string(node.ResourceType)
 		levelTypeMap[level][resourceType] = append(levelTypeMap[level][resourceType], node)
-		
+
 		if level > maxLevel {
 			maxLevel = level
 		}
 	}
-	
+
 	// Create stages, batching by resource type
 	stages := make([][]*Node, 0)
 	for level := 0; level <= maxLevel; level++ {
@@ -448,14 +448,14 @@ func (s *Scheduler) scheduleBatchOptimized(ctx context.Context, graph *Graph) (*
 		if len(typeMap) == 0 {
 			continue
 		}
-		
+
 		// Process each resource type
 		for _, nodes := range typeMap {
 			// Sort by priority
 			sort.Slice(nodes, func(i, j int) bool {
 				return nodes[i].Properties.Priority > nodes[j].Properties.Priority
 			})
-			
+
 			// Batch into stages
 			for i := 0; i < len(nodes); i += s.config.MaxParallelOps {
 				end := i + s.config.MaxParallelOps
@@ -466,7 +466,7 @@ func (s *Scheduler) scheduleBatchOptimized(ctx context.Context, graph *Graph) (*
 			}
 		}
 	}
-	
+
 	// Compute estimated duration
 	totalDuration := time.Duration(0)
 	for _, stage := range stages {
@@ -478,13 +478,13 @@ func (s *Scheduler) scheduleBatchOptimized(ctx context.Context, graph *Graph) (*
 		}
 		totalDuration += stageDuration
 	}
-	
+
 	return &Schedule{
-		Stages:             stages,
-		Strategy:           s.config.Strategy,
-		EstimatedDuration:  totalDuration,
-		MaxParallelOps:     s.config.MaxParallelOps,
-		CreatedAt:          time.Now(),
+		Stages:            stages,
+		Strategy:          s.config.Strategy,
+		EstimatedDuration: totalDuration,
+		MaxParallelOps:    s.config.MaxParallelOps,
+		CreatedAt:         time.Now(),
 	}, nil
 }
 
@@ -493,16 +493,16 @@ func (s *Scheduler) AnalyzeSchedule(schedule *Schedule) *ScheduleAnalysis {
 	if schedule == nil {
 		return nil
 	}
-	
+
 	totalOps := 0
 	maxStageSize := 0
 	minStageSize := 0
 	avgStageSize := 0.0
-	
+
 	for _, stage := range schedule.Stages {
 		stageSize := len(stage)
 		totalOps += stageSize
-		
+
 		if stageSize > maxStageSize {
 			maxStageSize = stageSize
 		}
@@ -510,11 +510,11 @@ func (s *Scheduler) AnalyzeSchedule(schedule *Schedule) *ScheduleAnalysis {
 			minStageSize = stageSize
 		}
 	}
-	
+
 	if len(schedule.Stages) > 0 {
 		avgStageSize = float64(totalOps) / float64(len(schedule.Stages))
 	}
-	
+
 	// Compute parallelization factor
 	// This is the ratio of total operations to stages
 	// Higher means more parallelism
@@ -522,14 +522,14 @@ func (s *Scheduler) AnalyzeSchedule(schedule *Schedule) *ScheduleAnalysis {
 	if len(schedule.Stages) > 0 {
 		parallelizationFactor = float64(totalOps) / float64(len(schedule.Stages))
 	}
-	
+
 	// Compute efficiency
 	// This is the ratio of actual parallelization to maximum possible
 	efficiency := parallelizationFactor / float64(schedule.MaxParallelOps)
 	if efficiency > 1.0 {
 		efficiency = 1.0
 	}
-	
+
 	return &ScheduleAnalysis{
 		TotalOperations:       totalOps,
 		TotalStages:           len(schedule.Stages),

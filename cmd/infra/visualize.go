@@ -41,7 +41,7 @@ func NewVisualizeCmd() *cobra.Command {
 - Mermaid: Mermaid diagram format (for markdown/documentation)
 - ASCII: Terminal-friendly ASCII art
 - JSON: Structured JSON data`,
-	Example: `  # Visualize as ASCII art in terminal
+		Example: `  # Visualize as ASCII art in terminal
   matlas infra visualize -f config.yaml
 
   # Export as Graphviz DOT format

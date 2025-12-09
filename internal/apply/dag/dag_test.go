@@ -13,17 +13,17 @@ func TestNewGraph(t *testing.T) {
 		Name:      "test-graph",
 		ProjectID: "test-project",
 	}
-	
+
 	graph := NewGraph(metadata)
-	
+
 	if graph == nil {
 		t.Fatal("NewGraph returned nil")
 	}
-	
+
 	if graph.Metadata.Name != "test-graph" {
 		t.Errorf("Expected name 'test-graph', got '%s'", graph.Metadata.Name)
 	}
-	
+
 	if graph.NodeCount() != 0 {
 		t.Errorf("Expected 0 nodes, got %d", graph.NodeCount())
 	}
@@ -31,7 +31,7 @@ func TestNewGraph(t *testing.T) {
 
 func TestAddNode(t *testing.T) {
 	graph := NewGraph(GraphMetadata{})
-	
+
 	node := &Node{
 		ID:           "node1",
 		Name:         "Test Node",
@@ -41,16 +41,16 @@ func TestAddNode(t *testing.T) {
 			RiskLevel:         RiskLevelLow,
 		},
 	}
-	
+
 	err := graph.AddNode(node)
 	if err != nil {
 		t.Fatalf("Failed to add node: %v", err)
 	}
-	
+
 	if graph.NodeCount() != 1 {
 		t.Errorf("Expected 1 node, got %d", graph.NodeCount())
 	}
-	
+
 	// Try adding duplicate
 	err = graph.AddNode(node)
 	if err == nil {
@@ -60,13 +60,13 @@ func TestAddNode(t *testing.T) {
 
 func TestAddEdge(t *testing.T) {
 	graph := NewGraph(GraphMetadata{})
-	
+
 	node1 := &Node{ID: "node1", Name: "Node 1", ResourceType: types.KindCluster}
 	node2 := &Node{ID: "node2", Name: "Node 2", ResourceType: types.KindDatabaseUser}
-	
+
 	graph.AddNode(node1)
 	graph.AddNode(node2)
-	
+
 	edge := &Edge{
 		From:   "node1",
 		To:     "node2",
@@ -74,16 +74,16 @@ func TestAddEdge(t *testing.T) {
 		Weight: 1.0,
 		Reason: "Database user depends on cluster",
 	}
-	
+
 	err := graph.AddEdge(edge)
 	if err != nil {
 		t.Fatalf("Failed to add edge: %v", err)
 	}
-	
+
 	if graph.EdgeCount() != 1 {
 		t.Errorf("Expected 1 edge, got %d", graph.EdgeCount())
 	}
-	
+
 	// Verify dependencies
 	deps := graph.GetDependencies("node1")
 	if len(deps) != 1 || deps[0] != "node2" {
@@ -93,31 +93,31 @@ func TestAddEdge(t *testing.T) {
 
 func TestTopologicalSort(t *testing.T) {
 	graph := NewGraph(GraphMetadata{})
-	
+
 	// Create a simple DAG where node2 depends on node1, node3 depends on node2
 	// In our DAG semantics: Edge(From, To) means FROM depends ON TO
 	// So node1 should execute first, then node2, then node3
 	node1 := &Node{ID: "node1", Name: "Node 1", ResourceType: types.KindProject}
 	node2 := &Node{ID: "node2", Name: "Node 2", ResourceType: types.KindCluster}
 	node3 := &Node{ID: "node3", Name: "Node 3", ResourceType: types.KindDatabaseUser}
-	
+
 	graph.AddNode(node1)
 	graph.AddNode(node2)
 	graph.AddNode(node3)
-	
+
 	// node2 depends on node1, node3 depends on node2
 	graph.AddEdge(&Edge{From: "node2", To: "node1", Type: DependencyTypeHard})
 	graph.AddEdge(&Edge{From: "node3", To: "node2", Type: DependencyTypeHard})
-	
+
 	order, err := graph.TopologicalSort()
 	if err != nil {
 		t.Fatalf("TopologicalSort failed: %v", err)
 	}
-	
+
 	if len(order) != 3 {
 		t.Errorf("Expected 3 nodes in order, got %d", len(order))
 	}
-	
+
 	// In topological order: node1 should come before node2, node2 before node3
 	pos1, pos2, pos3 := -1, -1, -1
 	for i, id := range order {
@@ -129,7 +129,7 @@ func TestTopologicalSort(t *testing.T) {
 			pos3 = i
 		}
 	}
-	
+
 	// node1 has no dependencies, node2 depends on node1, node3 depends on node2
 	// So execution order should be: node1, node2, node3
 	// In our result positions should be: pos1 < pos2 < pos3
@@ -140,25 +140,25 @@ func TestTopologicalSort(t *testing.T) {
 
 func TestCycleDetection(t *testing.T) {
 	graph := NewGraph(GraphMetadata{})
-	
+
 	node1 := &Node{ID: "node1", Name: "Node 1", ResourceType: types.KindCluster}
 	node2 := &Node{ID: "node2", Name: "Node 2", ResourceType: types.KindDatabaseUser}
 	node3 := &Node{ID: "node3", Name: "Node 3", ResourceType: types.KindNetworkAccess}
-	
+
 	graph.AddNode(node1)
 	graph.AddNode(node2)
 	graph.AddNode(node3)
-	
+
 	// Create a cycle: 1 -> 2 -> 3 -> 1
 	graph.AddEdge(&Edge{From: "node1", To: "node2", Type: DependencyTypeHard})
 	graph.AddEdge(&Edge{From: "node2", To: "node3", Type: DependencyTypeHard})
 	graph.AddEdge(&Edge{From: "node3", To: "node1", Type: DependencyTypeHard})
-	
+
 	hasCycle, cycle := graph.HasCycle()
 	if !hasCycle {
 		t.Error("Expected to detect cycle")
 	}
-	
+
 	if len(cycle) == 0 {
 		t.Error("Expected non-empty cycle path")
 	}
@@ -166,7 +166,7 @@ func TestCycleDetection(t *testing.T) {
 
 func TestCriticalPathMethod(t *testing.T) {
 	graph := NewGraph(GraphMetadata{})
-	
+
 	// Create nodes with durations
 	node1 := &Node{
 		ID:           "node1",
@@ -192,25 +192,25 @@ func TestCriticalPathMethod(t *testing.T) {
 			EstimatedDuration: 15 * time.Minute,
 		},
 	}
-	
+
 	graph.AddNode(node1)
 	graph.AddNode(node2)
 	graph.AddNode(node3)
-	
+
 	// node2 depends on node1, node3 depends on node2
 	graph.AddEdge(&Edge{From: "node2", To: "node1", Type: DependencyTypeHard})
 	graph.AddEdge(&Edge{From: "node3", To: "node2", Type: DependencyTypeHard})
-	
+
 	criticalPath, duration, err := graph.CriticalPathMethod()
 	if err != nil {
 		t.Fatalf("CriticalPathMethod failed: %v", err)
 	}
-	
+
 	expectedDuration := 45 * time.Minute // 10 + 20 + 15
 	if duration != expectedDuration {
 		t.Errorf("Expected duration %v, got %v", expectedDuration, duration)
 	}
-	
+
 	if len(criticalPath) != 3 {
 		t.Errorf("Expected 3 nodes in critical path, got %d", len(criticalPath))
 	}
@@ -218,7 +218,7 @@ func TestCriticalPathMethod(t *testing.T) {
 
 func TestAnalyzer(t *testing.T) {
 	graph := NewGraph(GraphMetadata{Name: "test-analysis"})
-	
+
 	// Create a simple graph
 	for i := 1; i <= 5; i++ {
 		node := &Node{
@@ -232,35 +232,35 @@ func TestAnalyzer(t *testing.T) {
 		}
 		graph.AddNode(node)
 	}
-	
+
 	// Add some dependencies
 	graph.AddEdge(&Edge{From: "node2", To: "node1", Type: DependencyTypeHard})
 	graph.AddEdge(&Edge{From: "node3", To: "node1", Type: DependencyTypeHard})
 	graph.AddEdge(&Edge{From: "node4", To: "node2", Type: DependencyTypeHard})
 	graph.AddEdge(&Edge{From: "node5", To: "node3", Type: DependencyTypeHard})
-	
+
 	analyzer := NewAnalyzer(graph)
 	analysis, err := analyzer.Analyze()
 	if err != nil {
 		t.Fatalf("Analyze failed: %v", err)
 	}
-	
+
 	if analysis.NodeCount != 5 {
 		t.Errorf("Expected 5 nodes, got %d", analysis.NodeCount)
 	}
-	
+
 	if analysis.EdgeCount != 4 {
 		t.Errorf("Expected 4 edges, got %d", analysis.EdgeCount)
 	}
-	
+
 	if analysis.HasCycles {
 		t.Error("Did not expect cycles")
 	}
-	
+
 	if len(analysis.CriticalPath) == 0 {
 		t.Error("Expected non-empty critical path")
 	}
-	
+
 	if analysis.ParallelizationFactor <= 0 {
 		t.Error("Expected positive parallelization factor")
 	}
@@ -268,27 +268,27 @@ func TestAnalyzer(t *testing.T) {
 
 func TestGraphClone(t *testing.T) {
 	original := NewGraph(GraphMetadata{Name: "original"})
-	
+
 	node1 := &Node{ID: "node1", Name: "Node 1", ResourceType: types.KindCluster}
 	node2 := &Node{ID: "node2", Name: "Node 2", ResourceType: types.KindDatabaseUser}
-	
+
 	original.AddNode(node1)
 	original.AddNode(node2)
 	original.AddEdge(&Edge{From: "node1", To: "node2", Type: DependencyTypeHard})
-	
+
 	clone := original.Clone()
-	
+
 	if clone.NodeCount() != original.NodeCount() {
 		t.Errorf("Clone has different node count: %d vs %d", clone.NodeCount(), original.NodeCount())
 	}
-	
+
 	if clone.EdgeCount() != original.EdgeCount() {
 		t.Errorf("Clone has different edge count: %d vs %d", clone.EdgeCount(), original.EdgeCount())
 	}
-	
+
 	// Modify clone and ensure original is unchanged
 	clone.AddNode(&Node{ID: "node3", Name: "Node 3", ResourceType: types.KindNetworkAccess})
-	
+
 	if original.NodeCount() == clone.NodeCount() {
 		t.Error("Modifying clone affected original")
 	}
@@ -296,20 +296,20 @@ func TestGraphClone(t *testing.T) {
 
 func TestValidation(t *testing.T) {
 	graph := NewGraph(GraphMetadata{})
-	
+
 	node1 := &Node{ID: "node1", Name: "Node 1", ResourceType: types.KindCluster}
 	node2 := &Node{ID: "node2", Name: "Node 2", ResourceType: types.KindDatabaseUser}
-	
+
 	graph.AddNode(node1)
 	graph.AddNode(node2)
 	graph.AddEdge(&Edge{From: "node1", To: "node2", Type: DependencyTypeHard})
-	
+
 	// Valid graph
 	err := graph.Validate()
 	if err != nil {
 		t.Errorf("Validation failed for valid graph: %v", err)
 	}
-	
+
 	// Create a graph with cycle
 	graph.AddEdge(&Edge{From: "node2", To: "node1", Type: DependencyTypeHard})
 	err = graph.Validate()
