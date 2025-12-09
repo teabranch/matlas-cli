@@ -144,7 +144,7 @@ func runVisualize(cmd *cobra.Command, opts *VisualizeOptions) error {
 	graph := buildGraphFromPlan(plan)
 
 	// Determine visualization format
-	var vizFormat dag.Format
+	var vizFormat dag.VisualizationFormat
 	switch opts.OutputFormat {
 	case "dot", "graphviz":
 		vizFormat = dag.FormatDOT
