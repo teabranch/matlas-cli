@@ -135,7 +135,7 @@ resources:
       labels:
         atlas.mongodb.com/project-id: "$ATLAS_PROJECT_ID"
     spec:
-      ipAddress: "203.0.113.0/24"
+      ipAddress: "203.0.113.10"
       comment: "DAG Test Network 1"
       
   - apiVersion: matlas.mongodb.com/v1
@@ -145,7 +145,7 @@ resources:
       labels:
         atlas.mongodb.com/project-id: "$ATLAS_PROJECT_ID"
     spec:
-      ipAddress: "198.51.100.0/24"
+      ipAddress: "198.51.100.10"
       comment: "DAG Test Network 2"
   
   # Cluster (depends on project, blocks users)
@@ -158,10 +158,9 @@ resources:
     spec:
       name: "$CLUSTER_NAME"
       clusterType: "REPLICASET"
-      providerSettings:
-        providerName: "AWS"
-        regionName: "$REGION"
-        instanceSizeName: "M10"
+      provider: "AWS"
+      region: "$REGION"
+      instanceSize: "M10"
       diskSizeGB: 10
       
   # Database user (depends on cluster)
@@ -172,7 +171,7 @@ resources:
       labels:
         atlas.mongodb.com/project-id: "$ATLAS_PROJECT_ID"
     spec:
-      username: "dagtestuser"
+      username: "dagtestuser-${timestamp}"
       password: "DagTest123!"
       databaseName: "admin"
       roles:
@@ -451,6 +450,9 @@ test_apply_infrastructure() {
     
     print_subheader "Applying Configuration"
     print_warning "This will create real Atlas resources (cluster, users, network access)"
+    
+    # Ensure cleanup is attempted even if apply fails
+    CLEANUP_REQUIRED=true
     
     if "$PROJECT_ROOT/matlas" infra apply \
         -f "$CONFIG_FILE" \
