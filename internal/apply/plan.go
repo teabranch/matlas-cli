@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/teabranch/matlas-cli/internal/apply/dag"
 	"github.com/teabranch/matlas-cli/internal/types"
 )
 
@@ -118,6 +119,11 @@ type PlanConfig struct {
 	// Progress tracking
 	ShowProgress  bool `json:"showProgress"`
 	VerboseOutput bool `json:"verboseOutput"`
+
+	// DAG engine settings
+	UseDAGEngine         bool   `json:"useDAGEngine"`         // Enable DAG-based dependency engine
+	OptimizationStrategy string `json:"optimizationStrategy"` // speed, cost, reliability, balanced
+	SchedulingStrategy   string `json:"schedulingStrategy"`   // greedy, critical_path_first, risk_based_early, etc.
 }
 
 // PlanBuilder helps construct execution plans
@@ -181,6 +187,26 @@ func (pb *PlanBuilder) WithTimeout(timeout time.Duration) *PlanBuilder {
 // RequireApproval enables approval requirement for the plan
 func (pb *PlanBuilder) RequireApproval(required bool) *PlanBuilder {
 	pb.config.RequireApproval = required
+	return pb
+}
+
+// WithDAGEngine enables the DAG-based dependency engine
+func (pb *PlanBuilder) WithDAGEngine(enabled bool) *PlanBuilder {
+	pb.config.UseDAGEngine = enabled
+	return pb
+}
+
+// WithOptimizationStrategy sets the optimization strategy for the DAG engine
+// Valid values: "speed", "cost", "reliability", "balanced"
+func (pb *PlanBuilder) WithOptimizationStrategy(strategy string) *PlanBuilder {
+	pb.config.OptimizationStrategy = strategy
+	return pb
+}
+
+// WithSchedulingStrategy sets the scheduling strategy for the DAG engine
+// Valid values: "greedy", "critical_path_first", "risk_based_early", "risk_based_late", "resource_leveling", "batch_optimized"
+func (pb *PlanBuilder) WithSchedulingStrategy(strategy string) *PlanBuilder {
+	pb.config.SchedulingStrategy = strategy
 	return pb
 }
 
@@ -320,6 +346,17 @@ func (pb *PlanBuilder) detectAutomaticDependencies(op Operation, previousOps []O
 
 // assignStages groups operations into stages for parallel execution
 func (pb *PlanBuilder) assignStages(ops []PlannedOperation) error {
+	// Use DAG engine if enabled
+	if pb.config.UseDAGEngine {
+		return pb.assignStagesWithDAG(ops)
+	}
+
+	// Fall back to simple topological sort
+	return pb.assignStagesSimple(ops)
+}
+
+// assignStagesSimple uses the simple topological sort (legacy behavior)
+func (pb *PlanBuilder) assignStagesSimple(ops []PlannedOperation) error {
 	// Build dependency map
 	depMap := make(map[string][]string)
 	for _, op := range ops {
@@ -370,6 +407,183 @@ func (pb *PlanBuilder) assignStages(ops []PlannedOperation) error {
 	}
 
 	return nil
+}
+
+// assignStagesWithDAG uses the DAG engine for optimized stage assignment
+func (pb *PlanBuilder) assignStagesWithDAG(ops []PlannedOperation) error {
+	// Build DAG graph from operations
+	graph := pb.buildDAGFromOperations(ops)
+
+	// Determine optimization strategy
+	var optimizationStrategy dag.OptimizationStrategy
+	switch pb.config.OptimizationStrategy {
+	case "speed":
+		optimizationStrategy = dag.OptimizeForSpeed
+	case "cost":
+		optimizationStrategy = dag.OptimizeForCost
+	case "reliability":
+		optimizationStrategy = dag.OptimizeForReliability
+	case "balanced", "":
+		optimizationStrategy = dag.OptimizeForBalance
+	default:
+		optimizationStrategy = dag.OptimizeForBalance
+	}
+
+	// Create optimizer and optimize graph
+	scheduleConfig := dag.ScheduleConfig{
+		Strategy:       pb.parseSchedulingStrategy(),
+		MaxParallelOps: pb.config.MaxParallelOps,
+	}
+	optimizer := dag.NewOptimizer(optimizationStrategy, scheduleConfig)
+	optimizedGraph, err := optimizer.Optimize(context.Background(), graph)
+	if err != nil {
+		return fmt.Errorf("failed to optimize graph: %w", err)
+	}
+
+	// Create scheduler and generate schedule
+	scheduler := dag.NewScheduler(scheduleConfig)
+	schedule, err := scheduler.Schedule(context.Background(), optimizedGraph)
+	if err != nil {
+		return fmt.Errorf("failed to create schedule: %w", err)
+	}
+
+	// Convert schedule stages back to operation stage assignments
+	for stageIdx, stage := range schedule.Stages {
+		for _, node := range stage {
+			// Find operation with this node ID and assign stage
+			for i := range ops {
+				if ops[i].ID == node.ID {
+					ops[i].Stage = stageIdx
+					// Also update priority from DAG analysis
+					ops[i].Priority = node.Properties.Priority
+					break
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// buildDAGFromOperations converts operations to a DAG graph
+func (pb *PlanBuilder) buildDAGFromOperations(ops []PlannedOperation) *dag.Graph {
+	graph := dag.NewGraph(dag.GraphMetadata{
+		Name:      "Execution Plan",
+		ProjectID: pb.projectID,
+		CreatedAt: time.Now(),
+	})
+
+	// Add all operations as nodes
+	for _, op := range ops {
+		props := dag.NodeProperties{
+			EstimatedDuration: pb.estimateOperationDuration(op),
+			RiskLevel:         pb.mapRiskLevel(op),
+			IsDestructive:     pb.isDestructiveOperation(op),
+			Priority:          op.Priority,
+			Retriable:         true,
+			Idempotent:        pb.isIdempotentOperation(op),
+		}
+
+		node := &dag.Node{
+			ID:           op.ID,
+			Name:         op.ResourceName,
+			ResourceType: op.ResourceType,
+			Properties:   props,
+		}
+		graph.AddNode(node)
+	}
+
+	// Add dependencies as edges
+	for _, op := range ops {
+		for _, depID := range op.Dependencies {
+			edge := &dag.Edge{
+				From:   op.ID,
+				To:     depID,
+				Type:   dag.DependencyTypeHard,
+				Weight: 1.0,
+			}
+			graph.AddEdge(edge)
+		}
+	}
+
+	return graph
+}
+
+// parseSchedulingStrategy converts string to SchedulingStrategy
+func (pb *PlanBuilder) parseSchedulingStrategy() dag.SchedulingStrategy {
+	switch pb.config.SchedulingStrategy {
+	case "greedy":
+		return dag.StrategyGreedy
+	case "critical_path_first":
+		return dag.StrategyCriticalPathFirst
+	case "risk_based_early":
+		return dag.StrategyRiskBasedEarly
+	case "risk_based_late":
+		return dag.StrategyRiskBasedLate
+	case "resource_leveling":
+		return dag.StrategyResourceLeveling
+	case "batch_optimized":
+		return dag.StrategyBatchOptimized
+	default:
+		return dag.StrategyGreedy
+	}
+}
+
+// estimateOperationDuration estimates how long an operation will take
+func (pb *PlanBuilder) estimateOperationDuration(op PlannedOperation) time.Duration {
+	if op.Impact != nil {
+		return op.Impact.EstimatedDuration
+	}
+
+	// Default estimates based on operation type
+	switch op.Type {
+	case OperationCreate:
+		if op.ResourceType == types.KindCluster {
+			return 10 * time.Minute // Cluster creation is slow
+		}
+		return 30 * time.Second
+	case OperationUpdate:
+		return 1 * time.Minute
+	case OperationDelete:
+		return 30 * time.Second
+	default:
+		return 5 * time.Second
+	}
+}
+
+// mapRiskLevel maps apply.RiskLevel to dag.RiskLevel
+func (pb *PlanBuilder) mapRiskLevel(op PlannedOperation) dag.RiskLevel {
+	if op.Impact == nil {
+		return dag.RiskLevelMedium
+	}
+
+	switch op.Impact.RiskLevel {
+	case RiskLevelLow:
+		return dag.RiskLevelLow
+	case RiskLevelMedium:
+		return dag.RiskLevelMedium
+	case RiskLevelHigh:
+		return dag.RiskLevelHigh
+	case RiskLevelCritical:
+		return dag.RiskLevelCritical
+	default:
+		return dag.RiskLevelMedium
+	}
+}
+
+// isDestructiveOperation checks if an operation is destructive
+func (pb *PlanBuilder) isDestructiveOperation(op PlannedOperation) bool {
+	if op.Impact != nil {
+		return op.Impact.IsDestructive
+	}
+	return op.Type == OperationDelete
+}
+
+// isIdempotentOperation checks if an operation is idempotent
+func (pb *PlanBuilder) isIdempotentOperation(op PlannedOperation) bool {
+	// Most create/update operations are idempotent
+	// Delete operations are not (can't delete twice)
+	return op.Type != OperationDelete
 }
 
 // calculateSummary generates plan summary statistics
