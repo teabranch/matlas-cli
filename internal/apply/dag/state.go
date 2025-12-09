@@ -142,7 +142,7 @@ func (sm *StateManager) SaveState(state *ExecutionState) error {
 	defer sm.mu.Unlock()
 
 	// Ensure state directory exists
-	if err := os.MkdirAll(sm.stateDir, 0755); err != nil {
+	if err := os.MkdirAll(sm.stateDir, 0750); err != nil {
 		return fmt.Errorf("failed to create state directory: %w", err)
 	}
 

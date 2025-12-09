@@ -233,7 +233,7 @@ func (v *Visualizer) visualizeASCII(graph *Graph) (string, error) {
 	var buf bytes.Buffer
 
 	// Compute levels if not already done
-	graph.ComputeLevels()
+	_ = graph.ComputeLevels()
 
 	// Group nodes by level
 	levelMap := make(map[int][]*Node)

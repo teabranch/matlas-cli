@@ -410,7 +410,7 @@ func (g *Graph) Clone() *Graph {
 				edgeClone.Condition = edge.Condition
 			}
 
-			clone.AddEdge(edgeClone)
+			_ = clone.AddEdge(edgeClone)
 		}
 	}
 

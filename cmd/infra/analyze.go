@@ -139,7 +139,7 @@ func runAnalyze(cmd *cobra.Command, opts *AnalyzeOptions) error {
 	}
 
 	// Generate report
-	reportFormat := dag.ReportFormatText
+	var reportFormat dag.ReportFormat
 	switch opts.OutputFormat {
 	case "text":
 		reportFormat = dag.ReportFormatText
@@ -159,7 +159,7 @@ func runAnalyze(cmd *cobra.Command, opts *AnalyzeOptions) error {
 
 	// Save to file or print to stdout
 	if opts.OutputFile != "" {
-		if err := os.WriteFile(opts.OutputFile, []byte(report), 0644); err != nil {
+		if err := os.WriteFile(opts.OutputFile, []byte(report), 0600); err != nil {
 			return fmt.Errorf("failed to write report to file: %w", err)
 		}
 		fmt.Printf("Analysis report saved to %s\n", opts.OutputFile)
@@ -216,7 +216,10 @@ func buildGraphFromPlan(plan *apply.Plan) *dag.Graph {
 			ResourceType: op.ResourceType,
 			Properties:   props,
 		}
-		graph.AddNode(node)
+		if err := graph.AddNode(node); err != nil {
+			// Log error but continue (node might already exist)
+			_ = err
+		}
 	}
 
 	// Add dependencies as edges
@@ -229,7 +232,10 @@ func buildGraphFromPlan(plan *apply.Plan) *dag.Graph {
 				Type:   dag.DependencyTypeHard,
 				Weight: 1.0,
 			}
-			graph.AddEdge(edge)
+			if err := graph.AddEdge(edge); err != nil {
+				// Log error but continue (edge might create cycle or already exist)
+				_ = err
+			}
 		}
 	}
 

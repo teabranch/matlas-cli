@@ -74,7 +74,7 @@ func (cm *CheckpointManager) CreateCheckpoint(executionID, planID string, state 
 	defer cm.mu.Unlock()
 
 	// Ensure checkpoint directory exists
-	if err := os.MkdirAll(cm.checkpointDir, 0755); err != nil {
+	if err := os.MkdirAll(cm.checkpointDir, 0750); err != nil {
 		return nil, fmt.Errorf("failed to create checkpoint directory: %w", err)
 	}
 
@@ -131,14 +131,22 @@ func (cm *CheckpointManager) writeCheckpoint(checkpoint *Checkpoint) error {
 	if err != nil {
 		return fmt.Errorf("failed to create checkpoint file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close checkpoint file: %v\n", err)
+		}
+	}()
 
 	var writer io.Writer = file
 
 	// Add compression if enabled
 	if cm.compression {
 		gzWriter := gzip.NewWriter(file)
-		defer gzWriter.Close()
+		defer func() {
+			if err := gzWriter.Close(); err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: failed to close gzip writer: %v\n", err)
+			}
+		}()
 		writer = gzWriter
 	}
 
@@ -173,7 +181,11 @@ func (cm *CheckpointManager) LoadCheckpoint(checkpointID string) (*Checkpoint, e
 		}
 		return nil, fmt.Errorf("failed to open checkpoint file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close checkpoint file: %v\n", err)
+		}
+	}()
 
 	var reader io.Reader = file
 
@@ -182,7 +194,9 @@ func (cm *CheckpointManager) LoadCheckpoint(checkpointID string) (*Checkpoint, e
 	if _, err := file.Read(magic); err != nil {
 		return nil, fmt.Errorf("failed to read file header: %w", err)
 	}
-	file.Seek(0, 0) // Reset to beginning
+	if _, err := file.Seek(0, 0); err != nil { // Reset to beginning
+		return nil, fmt.Errorf("failed to seek to start: %w", err)
+	}
 
 	// Check for gzip magic number (0x1f, 0x8b)
 	if magic[0] == 0x1f && magic[1] == 0x8b {
@@ -190,7 +204,11 @@ func (cm *CheckpointManager) LoadCheckpoint(checkpointID string) (*Checkpoint, e
 		if err != nil {
 			return nil, fmt.Errorf("failed to create gzip reader: %w", err)
 		}
-		defer gzReader.Close()
+		defer func() {
+			if err := gzReader.Close(); err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: failed to close gzip reader: %v\n", err)
+			}
+		}()
 		reader = gzReader
 	}
 

@@ -144,7 +144,7 @@ func runVisualize(cmd *cobra.Command, opts *VisualizeOptions) error {
 	graph := buildGraphFromPlan(plan)
 
 	// Determine visualization format
-	vizFormat := dag.FormatASCII
+	var vizFormat dag.Format
 	switch opts.OutputFormat {
 	case "dot", "graphviz":
 		vizFormat = dag.FormatDOT
@@ -179,7 +179,7 @@ func runVisualize(cmd *cobra.Command, opts *VisualizeOptions) error {
 
 	// Save to file or print to stdout
 	if opts.OutputFile != "" {
-		if err := os.WriteFile(opts.OutputFile, []byte(visualization), 0644); err != nil {
+		if err := os.WriteFile(opts.OutputFile, []byte(visualization), 0600); err != nil {
 			return fmt.Errorf("failed to write visualization to file: %w", err)
 		}
 		fmt.Printf("Visualization saved to %s\n", opts.OutputFile)

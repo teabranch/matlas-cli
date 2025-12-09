@@ -217,7 +217,7 @@ func (o *Optimizer) optimizeForReliability(ctx context.Context, graph *Graph) (*
 				Weight: 0.5,
 				Reason: "Reliability optimization: safer destructive operation ordering",
 			}
-			optimized.AddEdge(edge)
+			_ = optimized.AddEdge(edge)
 		}
 	}
 

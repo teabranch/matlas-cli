@@ -479,7 +479,10 @@ func (g *Graph) TransitiveReduction() *Graph {
 
 	// Remove redundant edges
 	for _, edge := range edgesToRemove {
-		reduced.RemoveEdge(edge[0], edge[1])
+		if err := reduced.RemoveEdge(edge[0], edge[1]); err != nil {
+			// Log but continue (edge might not exist)
+			_ = err
+		}
 	}
 
 	return reduced
@@ -499,7 +502,10 @@ func (g *Graph) GetCriticalNodes() []string {
 	for _, nodeID := range nodeIDs {
 		// Try removing the node temporarily
 		clone := g.Clone()
-		clone.RemoveNode(nodeID)
+		if err := clone.RemoveNode(nodeID); err != nil {
+			// Node doesn't exist, skip
+			continue
+		}
 
 		// Check if graph is still connected (for root to leaves)
 		roots := clone.GetRootNodes()

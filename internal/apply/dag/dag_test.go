@@ -64,8 +64,8 @@ func TestAddEdge(t *testing.T) {
 	node1 := &Node{ID: "node1", Name: "Node 1", ResourceType: types.KindCluster}
 	node2 := &Node{ID: "node2", Name: "Node 2", ResourceType: types.KindDatabaseUser}
 
-	graph.AddNode(node1)
-	graph.AddNode(node2)
+	_ = graph.AddNode(node1)
+	_ = graph.AddNode(node2)
 
 	edge := &Edge{
 		From:   "node1",
@@ -101,13 +101,13 @@ func TestTopologicalSort(t *testing.T) {
 	node2 := &Node{ID: "node2", Name: "Node 2", ResourceType: types.KindCluster}
 	node3 := &Node{ID: "node3", Name: "Node 3", ResourceType: types.KindDatabaseUser}
 
-	graph.AddNode(node1)
-	graph.AddNode(node2)
-	graph.AddNode(node3)
+	_ = graph.AddNode(node1)
+	_ = graph.AddNode(node2)
+	_ = graph.AddNode(node3)
 
 	// node2 depends on node1, node3 depends on node2
-	graph.AddEdge(&Edge{From: "node2", To: "node1", Type: DependencyTypeHard})
-	graph.AddEdge(&Edge{From: "node3", To: "node2", Type: DependencyTypeHard})
+	_ = graph.AddEdge(&Edge{From: "node2", To: "node1", Type: DependencyTypeHard})
+	_ = graph.AddEdge(&Edge{From: "node3", To: "node2", Type: DependencyTypeHard})
 
 	order, err := graph.TopologicalSort()
 	if err != nil {
@@ -272,9 +272,9 @@ func TestGraphClone(t *testing.T) {
 	node1 := &Node{ID: "node1", Name: "Node 1", ResourceType: types.KindCluster}
 	node2 := &Node{ID: "node2", Name: "Node 2", ResourceType: types.KindDatabaseUser}
 
-	original.AddNode(node1)
-	original.AddNode(node2)
-	original.AddEdge(&Edge{From: "node1", To: "node2", Type: DependencyTypeHard})
+	_ = original.AddNode(node1)
+	_ = original.AddNode(node2)
+	_ = original.AddEdge(&Edge{From: "node1", To: "node2", Type: DependencyTypeHard})
 
 	clone := original.Clone()
 
@@ -287,7 +287,7 @@ func TestGraphClone(t *testing.T) {
 	}
 
 	// Modify clone and ensure original is unchanged
-	clone.AddNode(&Node{ID: "node3", Name: "Node 3", ResourceType: types.KindNetworkAccess})
+	_ = clone.AddNode(&Node{ID: "node3", Name: "Node 3", ResourceType: types.KindNetworkAccess})
 
 	if original.NodeCount() == clone.NodeCount() {
 		t.Error("Modifying clone affected original")

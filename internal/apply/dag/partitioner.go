@@ -102,7 +102,7 @@ func (p *Partitioner) partitionByLevel(ctx context.Context, graph *Graph) ([]*Gr
 
 		for _, node := range levelMap[level] {
 			partition.Nodes = append(partition.Nodes, node)
-			partition.Graph.AddNode(node)
+			_ = partition.Graph.AddNode(node)
 		}
 	}
 
@@ -117,7 +117,7 @@ func (p *Partitioner) partitionByLevel(ctx context.Context, graph *Graph) ([]*Gr
 			for _, edge := range graph.Edges[node.ID] {
 				// Only add edges where both nodes are in the same partition
 				if nodeSet[edge.To] {
-					partition.Graph.AddEdge(edge)
+					_ = partition.Graph.AddEdge(edge)
 				} else {
 					// Cross-partition dependency
 					partition.CrossPartitionDeps = append(partition.CrossPartitionDeps, edge)
@@ -160,7 +160,7 @@ func (p *Partitioner) partitionByRegion(ctx context.Context, graph *Graph) ([]*G
 
 		// Add nodes to partition graph
 		for _, node := range nodes {
-			partition.Graph.AddNode(node)
+			_ = partition.Graph.AddNode(node)
 		}
 
 		// Add edges
@@ -172,7 +172,7 @@ func (p *Partitioner) partitionByRegion(ctx context.Context, graph *Graph) ([]*G
 		for _, node := range nodes {
 			for _, edge := range graph.Edges[node.ID] {
 				if nodeSet[edge.To] {
-					partition.Graph.AddEdge(edge)
+					_ = partition.Graph.AddEdge(edge)
 				} else {
 					partition.CrossPartitionDeps = append(partition.CrossPartitionDeps, edge)
 				}
@@ -210,7 +210,7 @@ func (p *Partitioner) partitionByResourceType(ctx context.Context, graph *Graph)
 
 		// Add nodes to partition graph
 		for _, node := range nodes {
-			partition.Graph.AddNode(node)
+			_ = partition.Graph.AddNode(node)
 		}
 
 		// Add edges
@@ -222,7 +222,7 @@ func (p *Partitioner) partitionByResourceType(ctx context.Context, graph *Graph)
 		for _, node := range nodes {
 			for _, edge := range graph.Edges[node.ID] {
 				if nodeSet[edge.To] {
-					partition.Graph.AddEdge(edge)
+					_ = partition.Graph.AddEdge(edge)
 				} else {
 					partition.CrossPartitionDeps = append(partition.CrossPartitionDeps, edge)
 				}
@@ -260,7 +260,7 @@ func (p *Partitioner) partitionBalanced(ctx context.Context, graph *Graph) ([]*G
 
 		partition := partitions[partitionIdx]
 		partition.Nodes = append(partition.Nodes, node)
-		partition.Graph.AddNode(node)
+		_ = partition.Graph.AddNode(node)
 	}
 
 	// Add edges
@@ -273,7 +273,7 @@ func (p *Partitioner) partitionBalanced(ctx context.Context, graph *Graph) ([]*G
 		for _, node := range partition.Nodes {
 			for _, edge := range graph.Edges[node.ID] {
 				if nodeSet[edge.To] {
-					partition.Graph.AddEdge(edge)
+					_ = partition.Graph.AddEdge(edge)
 				} else {
 					partition.CrossPartitionDeps = append(partition.CrossPartitionDeps, edge)
 				}

@@ -163,7 +163,7 @@ func runOptimize(cmd *cobra.Command, opts *OptimizeOptions) error {
 	suggestions := optimizer.SuggestOptimizations(graph)
 
 	// Generate report
-	reportFormat := dag.ReportFormatText
+	var reportFormat dag.ReportFormat
 	switch opts.OutputFormat {
 	case "text":
 		reportFormat = dag.ReportFormatText
@@ -195,7 +195,7 @@ func runOptimize(cmd *cobra.Command, opts *OptimizeOptions) error {
 
 	// Save to file or print to stdout
 	if opts.OutputFile != "" {
-		if err := os.WriteFile(opts.OutputFile, []byte(report), 0644); err != nil {
+		if err := os.WriteFile(opts.OutputFile, []byte(report), 0600); err != nil {
 			return fmt.Errorf("failed to write report to file: %w", err)
 		}
 		fmt.Printf("Optimization report saved to %s\n", opts.OutputFile)

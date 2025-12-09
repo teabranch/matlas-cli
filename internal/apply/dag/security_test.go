@@ -47,8 +47,8 @@ func TestSecurityInputValidation(t *testing.T) {
 
 	t.Run("invalid_edge_injection", func(t *testing.T) {
 		g := NewGraph(GraphMetadata{Name: "security-test"})
-		g.AddNode(&Node{ID: "a", Properties: NodeProperties{EstimatedDuration: 1 * time.Second}})
-		g.AddNode(&Node{ID: "b", Properties: NodeProperties{EstimatedDuration: 1 * time.Second}})
+		_ = g.AddNode(&Node{ID: "a", Properties: NodeProperties{EstimatedDuration: 1 * time.Second}})
+		_ = g.AddNode(&Node{ID: "b", Properties: NodeProperties{EstimatedDuration: 1 * time.Second}})
 
 		// Try to add edges with non-existent nodes (potential for manipulation)
 		err := g.AddEdge(&Edge{From: "nonexistent", To: "a", Type: DependencyTypeHard})
@@ -86,8 +86,8 @@ func TestSecurityInputValidation(t *testing.T) {
 
 	t.Run("invalid_dependency_types", func(t *testing.T) {
 		g := NewGraph(GraphMetadata{Name: "security-test"})
-		g.AddNode(&Node{ID: "a", Properties: NodeProperties{EstimatedDuration: 1 * time.Second}})
-		g.AddNode(&Node{ID: "b", Properties: NodeProperties{EstimatedDuration: 1 * time.Second}})
+		_ = g.AddNode(&Node{ID: "a", Properties: NodeProperties{EstimatedDuration: 1 * time.Second}})
+		_ = g.AddNode(&Node{ID: "b", Properties: NodeProperties{EstimatedDuration: 1 * time.Second}})
 
 		// Test with invalid dependency type values
 		invalidType := DependencyType("invalid999")
@@ -162,7 +162,7 @@ func TestSecurityResourceExhaustion(t *testing.T) {
 
 			if i > 0 {
 				prevID := fmt.Sprintf("node_%d", i-1)
-				g.AddEdge(&Edge{From: nodeID, To: prevID, Type: DependencyTypeHard})
+				_ = g.AddEdge(&Edge{From: nodeID, To: prevID, Type: DependencyTypeHard})
 			}
 		}
 
@@ -201,14 +201,14 @@ func TestSecurityResourceExhaustion(t *testing.T) {
 
 				if i > 0 {
 					prevID := fmt.Sprintf("cycle_%d_node_%d", c, i-1)
-					g.AddEdge(&Edge{From: nodeID, To: prevID, Type: DependencyTypeHard})
+					_ = g.AddEdge(&Edge{From: nodeID, To: prevID, Type: DependencyTypeHard})
 				}
 			}
 
 			// Close the cycle
 			firstID := fmt.Sprintf("cycle_%d_node_0", c)
 			lastID := fmt.Sprintf("cycle_%d_node_9", c)
-			g.AddEdge(&Edge{From: firstID, To: lastID, Type: DependencyTypeHard})
+			_ = g.AddEdge(&Edge{From: firstID, To: lastID, Type: DependencyTypeHard})
 		}
 
 		startTime := time.Now()
@@ -289,7 +289,7 @@ func TestSecurityConcurrency(t *testing.T) {
 		go func() {
 			for i := 0; i < 100; i++ {
 				nodeID := fmt.Sprintf("node_%d", i%10)
-				g.GetNode(nodeID)
+				_, _ = g.GetNode(nodeID)
 			}
 			done <- true
 		}()
@@ -355,7 +355,7 @@ func TestSecurityRuleExecution(t *testing.T) {
 			},
 		)
 
-		registry.Register(maliciousRule)
+		_ = registry.Register(maliciousRule)
 
 		// Create operations instead of nodes
 		eval := NewRuleEvaluator(registry)
@@ -395,7 +395,7 @@ func TestSecurityRuleExecution(t *testing.T) {
 			},
 		)
 
-		registry.Register(infiniteRule)
+		_ = registry.Register(infiniteRule)
 
 		// Create context with timeout
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
