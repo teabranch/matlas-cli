@@ -11,6 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/teabranch/matlas-cli/internal/config"
+	"github.com/teabranch/matlas-cli/internal/fileutil"
 	"github.com/teabranch/matlas-cli/internal/output"
 	"github.com/teabranch/matlas-cli/internal/validation"
 )
@@ -583,18 +584,15 @@ func runImportConfig(cmd *cobra.Command, sourceFile, targetFile, format string, 
 		finalConfig = normalizedConfig
 	}
 
-	// Ensure target directory exists
-	if err := os.MkdirAll(filepath.Dir(targetFile), 0o750); err != nil {
-		return fmt.Errorf("failed to create target directory: %w", err)
-	}
-
-	// Convert to YAML and write to target file
+	// Convert to YAML
 	outputData, err := yaml.Marshal(finalConfig)
 	if err != nil {
 		return fmt.Errorf("failed to marshal configuration: %w", err)
 	}
 
-	if err := os.WriteFile(targetFile, outputData, 0o600); err != nil {
+	// SECURITY: Write file with secure permissions
+	writer := fileutil.NewSecureFileWriter()
+	if err := writer.WriteFile(targetFile, outputData); err != nil {
 		return fmt.Errorf("failed to write target file: %w", err)
 	}
 
@@ -642,7 +640,9 @@ func runExportConfig(cmd *cobra.Command, outputFile, format string, includeSecre
 
 	// Write to file or stdout
 	if outputFile != "" {
-		if err := os.WriteFile(outputFile, output, 0o600); err != nil {
+		// SECURITY: Write file with secure permissions
+		writer := fileutil.NewSecureFileWriter()
+		if err := writer.WriteFile(outputFile, output); err != nil {
 			return fmt.Errorf("failed to write to output file: %w", err)
 		}
 		fmt.Printf("✅ Configuration exported successfully to: %s\n", outputFile)
@@ -703,7 +703,9 @@ func runMigrateConfig(cmd *cobra.Command, fromVersion, toVersion string, backup 
 	// Create backup if requested
 	if backup {
 		backupFile := configFile + ".backup." + strings.ReplaceAll(fromVersion, ".", "_")
-		if err := os.WriteFile(backupFile, configData, 0o600); err != nil {
+		// SECURITY: Write backup with secure permissions
+		writer := fileutil.NewSecureFileWriter()
+		if err := writer.WriteFile(backupFile, configData); err != nil {
 			return fmt.Errorf("failed to create backup: %w", err)
 		}
 		fmt.Printf("📁 Backup created: %s\n", backupFile)
@@ -721,7 +723,9 @@ func runMigrateConfig(cmd *cobra.Command, fromVersion, toVersion string, backup 
 		return fmt.Errorf("failed to marshal migrated configuration: %w", err)
 	}
 
-	if err := os.WriteFile(configFile, migratedData, 0o600); err != nil {
+	// SECURITY: Write file with secure permissions
+	writer := fileutil.NewSecureFileWriter()
+	if err := writer.WriteFile(configFile, migratedData); err != nil {
 		return fmt.Errorf("failed to write migrated configuration: %w", err)
 	}
 

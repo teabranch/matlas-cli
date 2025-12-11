@@ -4,12 +4,14 @@ package output
 import (
 	"fmt"
 	"io"
+	"os"
 	"reflect"
 	"strings"
 	"text/tabwriter"
 	"time"
 
 	"github.com/teabranch/matlas-cli/internal/config"
+	"github.com/teabranch/matlas-cli/internal/security"
 )
 
 // CreateResultFormatter provides pretty formatting for create command results
@@ -176,7 +178,7 @@ func (f *CreateResultFormatter) formatClusterCreateResult(result interface{}) er
 			return err
 		}
 		for name, uri := range connectionStrings {
-			if _, err := fmt.Fprintf(w, "  %s:\t%s\n", name, maskConnectionString(uri)); err != nil {
+			if _, err := fmt.Fprintf(w, "  %s:\t%s\n", name, security.MaskConnectionString(uri)); err != nil {
 				return err
 			}
 		}
@@ -216,10 +218,21 @@ func (f *CreateResultFormatter) formatUserCreateResultWithPassword(result interf
 		}
 	}
 
-	// Show password if provided
+	// SECURITY: Only show password if explicitly requested via environment variable
 	if password != "" {
-		if _, err := fmt.Fprintf(w, "Password:\t%s\n", password); err != nil {
-			return err
+		showPassword := os.Getenv("MATLAS_SHOW_PASSWORD") == "true"
+
+		if showPassword {
+			if _, err := fmt.Fprintf(w, "Password:\t%s\n", password); err != nil {
+				return err
+			}
+			if _, err := fmt.Fprintf(w, "\n⚠️  WARNING:\tPassword displayed in plaintext. Clear your terminal history!\n"); err != nil {
+				return err
+			}
+		} else {
+			if _, err := fmt.Fprintf(w, "Password:\t[HIDDEN - Set MATLAS_SHOW_PASSWORD=true to display]\n"); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -245,11 +258,11 @@ func (f *CreateResultFormatter) formatUserCreateResultWithPassword(result interf
 	}
 
 	// Show appropriate tip based on password display
-	if password != "" {
-		if _, err := fmt.Fprintf(w, "\n⚠️  Warning:\tPassword displayed above for convenience. Store it securely!\n"); err != nil {
+	if password != "" && os.Getenv("MATLAS_SHOW_PASSWORD") != "true" {
+		if _, err := fmt.Fprintf(w, "\n💡 Tip:\tPassword hidden for security. Set MATLAS_SHOW_PASSWORD=true to display it\n"); err != nil {
 			return err
 		}
-	} else {
+	} else if password == "" {
 		if _, err := fmt.Fprintf(w, "\n💡 Tip:\tUser password is not shown for security reasons\n"); err != nil {
 			return err
 		}
@@ -515,44 +528,6 @@ func getConnectionStrings(v reflect.Value) map[string]string {
 		}
 	}
 	return result
-}
-
-// maskConnectionString obfuscates credentials within a MongoDB connection string.
-// Examples:
-//   - mongodb+srv://user:pass@host/db -> mongodb+srv://user:***@host/db
-//   - mongodb://user:p%40ss@host/?x=y -> mongodb://user:***@host/?x=y
-//
-// If no credentials are present, returns the input unchanged.
-func maskConnectionString(uri string) string {
-	// Fast path: if there is no '@' there cannot be embedded credentials
-	if !strings.Contains(uri, "@") {
-		return uri
-	}
-	// Split scheme and the rest
-	parts := strings.SplitN(uri, "://", 2)
-	if len(parts) != 2 {
-		return uri
-	}
-	scheme, rest := parts[0], parts[1]
-
-	// Find credentials segment before '@'
-	atIdx := strings.Index(rest, "@")
-	if atIdx == -1 {
-		return uri
-	}
-
-	credsAndHost := rest[:atIdx] // everything before '@'
-	// creds may be in the form user or user:password
-	colonIdx := strings.Index(credsAndHost, ":")
-	if colonIdx == -1 {
-		// No password provided, nothing to mask
-		return uri
-	}
-	user := credsAndHost[:colonIdx]
-	// Replace password with ***
-	maskedCreds := user + ":***"
-	masked := scheme + "://" + maskedCreds + rest[atIdx:]
-	return masked
 }
 
 func getRoles(v reflect.Value) []string {

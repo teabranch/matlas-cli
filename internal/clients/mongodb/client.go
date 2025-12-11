@@ -4,7 +4,10 @@ package mongodb
 import (
 	"context"
 	"crypto/tls"
+	"flag"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -13,6 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 
 	"github.com/teabranch/matlas-cli/internal/logging"
+	"github.com/teabranch/matlas-cli/internal/security"
 	"github.com/teabranch/matlas-cli/internal/types"
 )
 
@@ -53,6 +57,42 @@ func DefaultClientConfig() *ClientConfig {
 	}
 }
 
+// ValidateTLSConfig validates TLS configuration and enforces security requirements
+func (c *ClientConfig) ValidateTLSConfig() error {
+	if c.TLSInsecure && c.TLSEnabled {
+		// Check for explicit override environment variable
+		if os.Getenv("MATLAS_ALLOW_INSECURE_TLS") != "true" {
+			// Check if we're in a test environment
+			if !isTestEnvironment() {
+				return fmt.Errorf(
+					"TLS certificate verification is disabled. " +
+						"This is INSECURE and only allowed for testing. " +
+						"Set MATLAS_ALLOW_INSECURE_TLS=true to override (NOT recommended for production)")
+			}
+		}
+
+		// Log warning even if allowed
+		logging.Default().Warn("TLS certificate verification is DISABLED - this is insecure!")
+	}
+	return nil
+}
+
+// isTestEnvironment checks if we're running in a test context
+func isTestEnvironment() bool {
+	// Check if running under go test
+	if flag.Lookup("test.v") != nil {
+		return true
+	}
+	// Check if binary name suggests test execution
+	if len(os.Args) > 0 {
+		arg0 := os.Args[0]
+		if strings.Contains(arg0, ".test") || strings.Contains(arg0, "/_test/") {
+			return true
+		}
+	}
+	return false
+}
+
 // NewClient creates a new MongoDB client with Atlas-optimized settings
 func NewClient(ctx context.Context, config *ClientConfig, logger *logging.Logger) (*Client, error) {
 	if config == nil {
@@ -61,6 +101,11 @@ func NewClient(ctx context.Context, config *ClientConfig, logger *logging.Logger
 
 	if logger == nil {
 		logger = logging.Default()
+	}
+
+	// SECURITY: Validate TLS configuration before proceeding
+	if err := config.ValidateTLSConfig(); err != nil {
+		return nil, err
 	}
 
 	clientOptions := options.Client().
@@ -106,7 +151,7 @@ func NewClient(ctx context.Context, config *ClientConfig, logger *logging.Logger
 	}
 
 	logger.Info("Successfully connected to MongoDB",
-		"connection_string", maskConnectionString(config.ConnectionString))
+		"connection_string", security.MaskConnectionString(config.ConnectionString))
 
 	return &Client{
 		client: client,
@@ -425,13 +470,4 @@ func (c *Client) ListIndexes(ctx context.Context, dbName, collectionName string)
 		"count", len(indexes))
 
 	return indexes, nil
-}
-
-// maskConnectionString masks sensitive information in connection strings for logging
-func maskConnectionString(connectionString string) string {
-	// Simple masking - in production, use more sophisticated parsing
-	if len(connectionString) > 50 {
-		return connectionString[:20] + "***MASKED***" + connectionString[len(connectionString)-10:]
-	}
-	return "***MASKED***"
 }

@@ -61,7 +61,11 @@ func (m *TempUserManager) CreateTempUser(ctx context.Context, config TempUserCon
 	// Respect a caller-supplied password if provided, otherwise generate one.
 	password := config.Password
 	if password == "" {
-		password = generateSecurePassword()
+		var err error
+		password, err = generateSecurePassword()
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate secure password: %w", err)
+		}
 	}
 
 	// Create Atlas SDK user object
@@ -286,23 +290,27 @@ func generateTempUsername(purpose string) string {
 	return fmt.Sprintf("matlas-%s-%d-%s", purpose, timestamp, randomStr)
 }
 
-func generateSecurePassword() string {
+func generateSecurePassword() (string, error) {
 	// Generate a secure random password using URL-safe characters
 	// Avoiding special characters that could cause URL encoding issues
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	password := make([]byte, 32)
+	const passwordLength = 32
 
-	for i := range password {
-		randomBytes := make([]byte, 1)
-		if _, err := rand.Read(randomBytes); err != nil {
-			// On failure, deterministically fall back to 'a'
-			password[i] = 'a'
-			continue
-		}
-		password[i] = charset[int(randomBytes[0])%len(charset)]
+	password := make([]byte, passwordLength)
+	randomBytes := make([]byte, passwordLength)
+
+	// SECURITY: Read all random bytes at once (more efficient)
+	if _, err := rand.Read(randomBytes); err != nil {
+		// FAIL FAST - never generate weak passwords
+		return "", fmt.Errorf("failed to generate secure random password: %w", err)
 	}
 
-	return string(password)
+	// Convert random bytes to charset
+	for i, b := range randomBytes {
+		password[i] = charset[int(b)%len(charset)]
+	}
+
+	return string(password), nil
 }
 
 func (m *TempUserManager) isTempUser(user admin.CloudDatabaseUser) bool {

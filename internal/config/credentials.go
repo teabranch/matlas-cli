@@ -98,6 +98,23 @@ func (c *Config) CreateAtlasClient() (*atlasclient.Client, error) {
 
 // getCredentialFromPlatformStore retrieves credentials from platform-specific secure storage
 func getCredentialFromPlatformStore(service string) string {
+	// SECURITY: Strict allowlist validation to prevent command injection
+	allowedServices := map[string]bool{
+		"api-key": true,
+		"pub-key": true,
+	}
+
+	if !allowedServices[service] {
+		return ""
+	}
+
+	// Additional validation: only lowercase letters and hyphens allowed
+	for _, r := range service {
+		if !((r >= 'a' && r <= 'z') || r == '-') {
+			return ""
+		}
+	}
+
 	switch runtime.GOOS {
 	case "darwin":
 		return getCredentialFromMacOSKeychain(service)

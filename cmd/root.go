@@ -47,6 +47,17 @@ var (
 		Long:         "matlas-cli enables unified management of MongoDB Atlas resources and standalone MongoDB databases.",
 		SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			// SECURITY: Check if credentials provided via insecure flags
+			if cmd.Flags().Changed("api-key") || cmd.Flags().Changed("pub-key") {
+				return fmt.Errorf(
+					"ERROR: Passing credentials via command-line flags is insecure.\n" +
+						"Command-line arguments are visible in process listings and shell history.\n\n" +
+						"Please use one of these secure methods instead:\n" +
+						"  1. Environment variables: ATLAS_API_KEY and ATLAS_PUB_KEY\n" +
+						"  2. Config file: ~/.matlas/config.yaml\n" +
+						"  3. Platform keychain (see documentation)")
+			}
+
 			// 1. Initialize enhanced logging
 			logConfig := &logging.Config{
 				Level:         logging.LevelInfo,
