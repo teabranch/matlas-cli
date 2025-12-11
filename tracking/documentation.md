@@ -1,198 +1,58 @@
 # Documentation Tracking
 
-This file tracks documentation updates, README changes, and content improvements.
+## [2025-12-11] Documentation Link Fixes
 
-## Template for New Entries
-
-```markdown
-## [YYYY-MM-DD] [Brief Description]
-
-**Status**: [In Progress | Completed | Cancelled]  
-**Developer**: [Name/Username]  
-**Related Issues**: [#123, #456]  
+**Status**: Completed
+**Developer**: Assistant
+**Related Issues**: User reported broken documentation links
 
 ### Summary
-Brief description of the documentation work.
+Fixed all broken and incorrect links in the documentation site to resolve Jekyll routing issues and 404 errors.
 
 ### Tasks
-- [x] Task 1 description
-- [x] Task 2 description  
-- [ ] Task 3 description
+- [x] Add missing permalinks to all example pages
+- [x] Fix broken links to non-existent /examples/advanced/ page
+- [x] Fix raw links missing Jekyll relative_url filter
+- [x] Fix incorrect yaml-kinds permalink references
+- [x] Verify all documentation links are correct
 
 ### Files Modified
-- `path/to/file1.md` - Description of changes
-- `path/to/file2.md` - Description of changes
+
+#### Added Permalinks (7 files)
+- `docs/examples/clusters.md` - Added permalink: /examples/clusters/
+- `docs/examples/discovery.md` - Added permalink: /examples/discovery/
+- `docs/examples/users.md` - Added permalink: /examples/users/
+- `docs/examples/roles.md` - Added permalink: /examples/roles/
+- `docs/examples/network.md` - Added permalink: /examples/network/
+- `docs/examples/infrastructure.md` - Added permalink: /examples/infrastructure/
+- `docs/examples/dag-analysis.md` - Added permalink: /examples/dag-analysis/
+
+#### Fixed Broken Links (2 files)
+- `docs/examples.md` - Changed "Search & VPC" to link to DAG Analysis
+- `docs/examples/network.md` - Changed VPC Endpoints to link to YAML Kinds Reference
+
+#### Fixed Raw Links (5 files)
+- `docs/infra.md` - Fixed 4 links missing relative_url filter
+- `docs/dag-engine.md` - Fixed 3 links in Further Reading
+- `docs/atlas.md` - Fixed 1 link to /infra/
+- `docs/database.md` - Fixed 1 link to /atlas/
+- `docs/examples/dag-analysis.md` - Fixed links in Further Reading
+
+#### Fixed Permalink Paths (3 files)
+- `docs/alerts.md` - Updated /yaml-kinds/ to /reference/
+- `docs/examples/alerts.md` - Updated /yaml-kinds/ to /reference/
+- `docs/yaml-kinds.md` - Fixed malformed Related Documentation links
+
+### Commits
+1. `2493b5e` - docs: add missing permalinks to example pages
+2. `e22a563` - docs: fix broken links to non-existent /examples/advanced/ page
+3. `a44fbc5` - docs: fix raw links missing Jekyll relative_url filter
+4. `054daf5` - docs: fix incorrect yaml-kinds permalink references
 
 ### Notes
-Any important decisions, blockers, or context for future developers.
+- Main issue: Example pages were accessible at incorrect URLs (e.g., /examples/clusters.html vs /examples/clusters/)
+- Root cause: Missing `permalink` frontmatter in Jekyll pages
+- Secondary issues: Links using wrong paths and missing relative_url filters
+- All changes pushed to `fix/security-patches` branch
 
 ---
-```
-
----
-
-## [2025-01-27] Release Process Documentation Update
-
-**Status**: Completed  
-**Developer**: Assistant  
-**Related Issues**: User feedback about outdated release documentation  
-
-### Summary
-Updated release process documentation to accurately reflect the consolidated workflow implementation after the move from separate workflows (ci.yml, semantic-release.yml, release.yml) to a single consolidated release.yml workflow.
-
-### Tasks
-- [x] Analyze differences between documented process and actual workflow implementation
-- [x] Update workflow description to reflect consolidated approach
-- [x] Correct automatic release process documentation
-- [x] Update manual release process documentation  
-- [x] Fix troubleshooting section for single workflow architecture
-- [x] Update manual override instructions
-- [x] Add changelog entry for documentation correction
-
-### Files Modified
-- `docs/release-process.md` - Complete rewrite of workflow section to reflect consolidated release.yml implementation
-- `CHANGELOG.md` - Added entry in Unreleased section for documentation correction
-
-### Notes
-The original documentation described a multi-workflow approach:
-1. Separate CI workflow (ci.yml) for building artifacts
-2. Separate semantic-release workflow (semantic-release.yml) 
-3. Separate release workflow (release.yml) for attaching assets
-
-However, the actual implementation uses a single consolidated workflow (`release.yml`) that includes:
-1. Code quality & linting job
-2. Cross-platform testing job (Ubuntu, macOS, Windows)
-3. Multi-platform build job (Linux, macOS, Windows for multiple architectures)
-4. Checksum generation job
-5. Semantic release job (main branch only) with artifacts attached
-6. Conditional integration & E2E testing jobs
-
-The documentation now accurately reflects this consolidated approach and provides correct troubleshooting guidance for the single-workflow architecture.
-
----
-
-## [2025-01-27] Development Guide Creation
-
-**Status**: Completed  
-**Developer**: Assistant  
-**Related Issues**: User request for development documentation  
-
-### Summary
-Created comprehensive development guide that explains how to use the workspace cursor rules and tracking systems for feature development. This includes task tracking, feature interface consistency, service layer architecture, and documentation standards.
-
-### Tasks
-- [x] Explore existing docs structure and navigation
-- [x] Create comprehensive development guide explaining cursor rules and tracking
-- [x] Update docs navigation to include the new development guide
-- [x] Update permanent tracking with this documentation work
-
-### Files Modified
-- `docs/development.md` - New comprehensive development guide covering workspace rules, tracking systems, and development workflow
-- `docs/_config.yml` - Added "Development Guide" to navigation menu
-
-### Notes
-The development guide provides a complete reference for developers on:
-- Task tracking system (both session-level todos and permanent tracking)
-- Feature interface consistency requirements (CLI + YAML ApplyDocument)
-- Service layer architecture patterns
-- Documentation standards following Jekyll/GitHub Pages setup
-- Changelog and release management with Conventional Commits
-- Code quality standards and acceptance checklists
-
-This ensures all developers follow the established workspace rules and maintain consistency across the codebase.
-
----
-
-## [2025-01-27] Database User Management Documentation Correction
-
-**Status**: Completed  
-**Developer**: Assistant  
-**Related Issues**: User feedback about incorrect documentation  
-
-### Summary
-Corrected misleading documentation in `docs/database.md` that incorrectly claimed there were two different types of user management (Atlas vs Database). Fixed to reflect actual implementation where all users are created via Atlas API and propagate to MongoDB databases.
-
-### Tasks
-- [x] Correct main distinction section between Atlas and Database commands
-- [x] Remove false separation between "Atlas users" and "Database users"
-- [x] Rewrite Database Users section to clarify Atlas-managed nature
-- [x] Update examples to show correct Atlas user creation patterns
-- [x] Add clarifying comments in YAML examples
-
-### Files Modified
-- `docs/database.md` - Major revision to Database Users section and command distinction explanation
-
-### Notes
-The original documentation incorrectly suggested that `matlas database users` commands would create users directly in MongoDB using `createUser` commands. However, the actual implementation shows:
-
-1. All user management goes through Atlas API (`internal/services/atlas/users.go`)
-2. The `cmd/database/users/users.go` commands are stubs that redirect to Atlas commands
-3. Tests in `database-operations.sh` correctly use `matlas atlas users create`
-4. Users created via Atlas automatically propagate to MongoDB databases
-
-This correction eliminates confusion and aligns documentation with the actual codebase behavior. The user management model is: **Atlas API → User Creation → Propagation to MongoDB Databases**.
-
----
-
-## [2025-01-28] Alert System Documentation Update
-
-**Status**: Completed  
-**Developer**: Assistant  
-**Related Issues**: User request to update docs with new alert functionality  
-
-### Summary
-Comprehensive documentation update for the new MongoDB Atlas alerting system, including YAML kinds documentation, CLI command documentation, usage guides, and examples. Added complete alert management and configuration capabilities to the documentation suite.
-
-### Tasks
-- [x] Update YAML kinds documentation to include AlertConfiguration and Alert kinds
-- [x] Add comprehensive alert CLI commands documentation to atlas.md
-- [x] Create dedicated alerts.md documentation page with complete usage guide
-- [x] Update examples documentation to reference alert examples
-- [x] Create dedicated alert examples documentation page
-- [x] Update main index page to feature alerts functionality
-- [x] Add permanent tracking entry for documentation work
-
-### Files Modified
-- `docs/yaml-kinds-reference.md` - Added AlertConfiguration and Alert kinds to supported kinds table and detailed kind documentation
-- `docs/yaml-kinds.md` - Added comprehensive AlertConfiguration and Alert kind documentation with examples
-- `docs/atlas.md` - Added complete alerts section with CLI commands, YAML configuration, and feature documentation
-- `docs/examples.md` - Added alerts & monitoring section to examples categories
-- `docs/examples/alerts.md` - New comprehensive alert examples documentation with usage patterns
-- `docs/alerts.md` - New dedicated alerts documentation page with complete usage guide
-- `docs/index.md` - Added alerts & monitoring feature card and updated examples list
-- `tracking/documentation.md` - This entry documenting the alert documentation work
-
-### Notes
-The alert system documentation covers:
-
-**YAML Kinds Documentation:**
-- AlertConfiguration kind for creating and managing alert rules
-- Alert kind for read-only alert status monitoring
-- Complete field reference and examples for both kinds
-
-**CLI Commands Documentation:**
-- Alert management commands (list, get, acknowledge)
-- Alert configuration management commands (list, get, delete, matcher-fields)
-- Complete command examples with all flags and options
-
-**Usage Documentation:**
-- Comprehensive alerts.md page covering all aspects of alert usage
-- Event types, notification channels, matchers, and thresholds
-- Best practices, troubleshooting, and debugging guidance
-- Integration with infrastructure-as-code workflows
-
-**Examples Documentation:**
-- Dedicated alert examples page with working YAML configurations
-- Basic CPU monitoring, multi-channel notifications, comprehensive monitoring setups
-- Advanced matcher and threshold patterns
-- Environment-specific and escalation patterns
-
-**Feature Integration:**
-- Updated main documentation pages to reference alert functionality
-- Integrated alerts into the overall CLI feature set
-- Cross-referenced with related documentation sections
-
-This documentation update provides complete coverage of the alert system functionality, enabling users to effectively monitor their MongoDB Atlas infrastructure with comprehensive alerting capabilities.
-
----
-
