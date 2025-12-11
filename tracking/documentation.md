@@ -56,3 +56,72 @@ Fixed all broken and incorrect links in the documentation site to resolve Jekyll
 - All changes pushed to `fix/security-patches` branch
 
 ---
+
+## [2025-12-11] GitHub Squash Merge Configuration
+
+**Status**: Completed
+**Developer**: Danny Teller / Assistant
+**Related Issues**: semantic-release not triggering releases due to merge commit format
+
+### Summary
+Configured repository for squash merge only to ensure proper semantic versioning and automated releases. Created comprehensive documentation for contributors on conventional commits and squash merge workflow.
+
+### Tasks
+- [x] Create PR template with conventional commit format guidance
+- [x] Create CONTRIBUTING.md with full development guidelines
+- [x] Create SQUASH_MERGE.md with GitHub configuration instructions
+- [x] Update README.md with contributing section
+- [x] Add tracking entry for documentation changes
+
+### Files Modified
+- `.github/pull_request_template.md` - NEW: PR template enforcing conventional commits
+- `.github/CONTRIBUTING.md` - NEW: Comprehensive contributing guide with squash merge policy
+- `.github/SQUASH_MERGE.md` - NEW: GitHub repository configuration guide
+- `README.md` - Added contributing section linking to new documentation
+- `tracking/documentation.md` - Added this tracking entry
+
+### Notes
+
+**Problem Identified:**
+- Merge commit message "Fix/security patches (#13)" didn't follow Conventional Commits format
+- semantic-release couldn't parse commit type, didn't trigger release
+- Individual commits in PR were correct, but merge commit format was wrong
+
+**Solution Implemented:**
+1. **PR Template**: Guides contributors to provide conventional commit message for squash
+2. **Contributing Guide**: Complete documentation on:
+   - Conventional Commits specification
+   - Commit types and their version impacts
+   - Scope guidelines
+   - Breaking change syntax
+   - Feature development workflow
+   - Testing requirements
+   
+3. **Squash Merge Guide**: Instructions for repository maintainers to:
+   - Configure GitHub settings (disable merge commits and rebase)
+   - Enable squash merge only
+   - Configure branch protection rules
+   - Use PR title/description for commit message
+
+**Benefits:**
+- Clean git history (one commit per feature/fix)
+- Automatic semantic versioning from commit messages
+- Proper changelog generation
+- Easy rollbacks (single commit per feature)
+- Consistent commit format enforcement
+
+**Next Steps:**
+- Configure GitHub repository settings via web UI or CLI
+- Test with a sample PR to verify semantic-release triggers properly
+- Consider adding GitHub Action to validate PR titles (optional enhancement)
+
+**Configuration Required (Manual):**
+```bash
+gh repo edit teabranch/matlas-cli \
+  --allow-merge-commit=false \
+  --allow-rebase-merge=false \
+  --allow-squash-merge=true \
+  --delete-branch-on-merge=true
+```
+
+---
