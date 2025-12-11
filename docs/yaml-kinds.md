@@ -595,10 +595,10 @@ spec:
 
 ## Related Documentation
 
-- {{ '/infra/' | relative_url }} - Infrastructure commands (`apply`, `plan`, `diff`)
-- {{ '/atlas/' | relative_url }} - Atlas resource management
-- {{ '/database/' | relative_url }} - Database operations
-- {{ '/auth/' | relative_url }} - Authentication and configuration
+- [Infrastructure Commands]({{ '/infra/' | relative_url }}) - Infrastructure commands (`apply`, `plan`, `diff`)
+- [Atlas Commands]({{ '/atlas/' | relative_url }}) - Atlas resource management
+- [Database Commands]({{ '/database/' | relative_url }}) - Database operations
+- [Authentication]({{ '/auth/' | relative_url }}) - Authentication and configuration
 - [Examples]({{ '/examples/' | relative_url }}) - Working examples for all kinds
 
 ---

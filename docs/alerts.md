@@ -536,7 +536,7 @@ See the [Alert Examples]({{ '/examples/alerts/' | relative_url }}) for comprehen
 
 - [Alert Examples]({{ '/examples/alerts/' | relative_url }}) - Working YAML examples
 - [Atlas Commands]({{ '/atlas/#alerts' | relative_url }}) - CLI command reference
-- [YAML Kinds Reference]({{ '/yaml-kinds/#alertconfiguration' | relative_url }}) - Complete AlertConfiguration reference
+- [YAML Kinds Reference]({{ '/reference/#alertconfiguration' | relative_url }}) - Complete AlertConfiguration reference
 - [Infrastructure Commands]({{ '/infra/' | relative_url }}) - Apply and manage configurations
 
 ---
