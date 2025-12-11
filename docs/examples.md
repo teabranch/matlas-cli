@@ -79,11 +79,11 @@ Complete infrastructure management workflows
 - Safe operations with preserve-existing
 - Dependency management
 
-### [Search & VPC]({{ '/examples/advanced/' | relative_url }})
-Advanced Atlas features
-- Atlas Search index configurations
-- VPC endpoint setups
-- Vector search for AI applications
+### [DAG Analysis]({{ '/examples/dag-analysis/' | relative_url }})
+Infrastructure optimization and analysis
+- Dependency graph visualization
+- Critical path analysis
+- Bottleneck detection and optimization suggestions
 
 ### [Alerts & Monitoring]({{ '/examples/alerts/' | relative_url }})
 Atlas alert configurations for monitoring and notifications
@@ -145,7 +145,7 @@ matlas infra apply -f current.yaml --preserve-existing
 
 ## Related Documentation
 
-- [YAML Kinds Reference]({{ '/yaml-kinds/' | relative_url }}) - Complete reference for all resource types
+- [YAML Kinds Reference]({{ '/reference/' | relative_url }}) - Complete reference for all resource types
 - [Infrastructure Commands]({{ '/infra/' | relative_url }}) - `plan`, `apply`, `diff`, and `destroy` operations
 - [Atlas Commands]({{ '/atlas/' | relative_url }}) - Direct Atlas resource management
 - [Database Commands]({{ '/database/' | relative_url }}) - MongoDB database operations
