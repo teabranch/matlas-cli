@@ -4,6 +4,7 @@ title: Discovery Examples
 parent: Examples
 nav_order: 1
 description: Convert existing Atlas resources to infrastructure-as-code format
+permalink: /examples/discovery/
 ---
 
 # Discovery Examples

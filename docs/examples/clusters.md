@@ -4,6 +4,7 @@ title: Cluster Examples
 parent: Examples
 nav_order: 2
 description: MongoDB cluster configurations for different environments
+permalink: /examples/clusters/
 ---
 
 # Cluster Examples
