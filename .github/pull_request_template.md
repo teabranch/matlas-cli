@@ -8,6 +8,7 @@
 
 - [ ] `feat`: New feature or enhancement
 - [ ] `fix`: Bug fix
+- [ ] `security`: Security improvements or fixes
 - [ ] `perf`: Performance improvement
 - [ ] `refactor`: Code refactoring
 - [ ] `docs`: Documentation updates

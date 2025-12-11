@@ -11,7 +11,13 @@
           { "type": "perf", "release": "patch" },
           { "type": "revert", "release": "patch" },
           { "type": "docs", "release": "patch" },
-          { "type": "refactor", "release": "patch" }
+          { "type": "refactor", "release": "patch" },
+          { "type": "security", "release": "patch" },
+          { "type": "style", "release": false },
+          { "type": "chore", "release": false },
+          { "type": "test", "release": false },
+          { "type": "build", "release": false },
+          { "type": "ci", "release": false }
         ]
       }
     ],
@@ -40,19 +46,28 @@
     "types": [
       {
         "type": "feat",
-        "section": "Features"
+        "section": "Features",
+        "hidden": false
       },
       {
         "type": "fix",
-        "section": "Bug Fixes"
+        "section": "Bug Fixes",
+        "hidden": false
       },
       {
         "type": "perf",
-        "section": "Performance Improvements"
+        "section": "Performance Improvements",
+        "hidden": false
+      },
+      {
+        "type": "security",
+        "section": "Security",
+        "hidden": false
       },
       {
         "type": "revert",
-        "section": "Reverts"
+        "section": "Reverts",
+        "hidden": false
       },
       {
         "type": "docs",

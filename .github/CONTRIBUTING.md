@@ -114,6 +114,7 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/) specifica
 |------|-------------|----------------|--------------|
 | `feat` | New feature | Minor (0.X.0) | ✅ Features |
 | `fix` | Bug fix | Patch (0.0.X) | ✅ Bug Fixes |
+| `security` | Security improvements | Patch (0.0.X) | ✅ Security |
 | `perf` | Performance improvement | Patch (0.0.X) | ✅ Performance |
 | `refactor` | Code refactoring | Patch (0.0.X) | ✅ Refactoring |
 | `docs` | Documentation only | Patch (0.0.X) | ✅ Documentation |
