@@ -239,7 +239,7 @@ matlas atlas clusters update my-cluster --project-id <id> --pit
 - **Point-in-Time Recovery** (`--pit`): Recovery to any specific moment in time (requires backup)
 - **Cross-Region Backup**: Use multi-region cluster configurations (see YAML examples)
 
-**Note:** For complex cluster configurations with multi-region setups, use [infrastructure workflows](/infra/) with YAML configurations.
+**Note:** For complex cluster configurations with multi-region setups, use [infrastructure workflows]({{ '/infra/' | relative_url }}) with YAML configurations.
 
 ## Atlas Search
 

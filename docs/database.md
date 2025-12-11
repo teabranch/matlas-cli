@@ -386,7 +386,7 @@ All database user management is handled via `matlas atlas users` commands. Users
 
 ### User Management via Atlas API
 
-For complete user management documentation, see the [Atlas Commands](/atlas/) documentation. Here are the essential commands:
+For complete user management documentation, see the [Atlas Commands]({{ '/atlas/' | relative_url }}) documentation. Here are the essential commands:
 
 ```bash
 # Create Atlas database user (propagates to MongoDB databases)
