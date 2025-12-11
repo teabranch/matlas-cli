@@ -12,6 +12,17 @@ import (
 	"time"
 )
 
+// Pre-compiled regex patterns for secret detection (compiled once at package init)
+// These patterns are used in the hot path (WithFields logging), so pre-compilation
+// avoids repeated regex compilation overhead on every log call.
+var (
+	secretPatternJWT        = regexp.MustCompile(`^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.[A-Za-z0-9-_.+/=]+$`)
+	secretPatternBase64Key  = regexp.MustCompile(`^[A-Za-z0-9+/]{32,}={0,2}$`)
+	secretPatternMongoDBURI = regexp.MustCompile(`^mongodb(\+srv)?://.*@`)
+	secretPatternAWSKey     = regexp.MustCompile(`^AKIA[0-9A-Z]{16}$`)
+	secretPatternHexKey     = regexp.MustCompile(`^[a-fA-F0-9]{32,}$`)
+)
+
 // LogLevel represents different log levels.
 type LogLevel int
 
@@ -376,6 +387,8 @@ func (l *Logger) isSecret(key string) bool {
 }
 
 // containsSecretValue performs pattern-based secret detection on values
+// Uses pre-compiled regex patterns (defined at package level) for performance
+// since this method is called frequently in the logging hot path.
 func (l *Logger) containsSecretValue(value interface{}) bool {
 	str, ok := value.(string)
 	if !ok {
@@ -387,22 +400,22 @@ func (l *Logger) containsSecretValue(value interface{}) bool {
 		return false
 	}
 
-	// Check for common secret patterns
-	patterns := []struct {
-		name    string
-		pattern *regexp.Regexp
-	}{
-		{"jwt", regexp.MustCompile(`^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.[A-Za-z0-9-_.+/=]+$`)},
-		{"base64_key", regexp.MustCompile(`^[A-Za-z0-9+/]{32,}={0,2}$`)},
-		{"mongodb_uri", regexp.MustCompile(`^mongodb(\+srv)?://.*@`)},
-		{"aws_key", regexp.MustCompile(`^AKIA[0-9A-Z]{16}$`)},
-		{"hex_key", regexp.MustCompile(`^[a-fA-F0-9]{32,}$`)},
+	// Check against pre-compiled secret patterns
+	// Pattern matching is done in order of likelihood for early exit optimization
+	if secretPatternMongoDBURI.MatchString(str) {
+		return true
 	}
-
-	for _, p := range patterns {
-		if p.pattern.MatchString(str) {
-			return true
-		}
+	if secretPatternJWT.MatchString(str) {
+		return true
+	}
+	if secretPatternBase64Key.MatchString(str) {
+		return true
+	}
+	if secretPatternAWSKey.MatchString(str) {
+		return true
+	}
+	if secretPatternHexKey.MatchString(str) {
+		return true
 	}
 
 	return false
