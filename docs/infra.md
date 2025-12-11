@@ -19,7 +19,7 @@ Terraform-inspired workflows for managing MongoDB Atlas infrastructure as code.
 
 Matlas provides infrastructure-as-code workflows inspired by Terraform and kubectl:
 
-1. **[Discover](/discovery/)** → Enumerate current Atlas resources and optionally include database-level resources
+1. **[Discover]({{ '/discovery/' | relative_url }})** → Enumerate current Atlas resources and optionally include database-level resources
 2. **Plan/Diff** → Preview changes before applying
 3. **Apply** → Reconcile desired state
 4. **Show** → Display current state
@@ -40,7 +40,7 @@ The discovery feature supports comprehensive resource enumeration including clus
 
 Enumerate Atlas resources for a project and optionally convert to ApplyDocument format.
 
-**For comprehensive discovery documentation, see [Discovery](/discovery/)**
+**For comprehensive discovery documentation, see [Discovery]({{ '/discovery/' | relative_url }})**
 
 ### Basic discovery
 ```bash
@@ -76,7 +76,7 @@ matlas discover \
 - **Database discovery**: Include databases, collections, indexes, and custom roles
 - **Authentication flexibility**: Temporary users, manual credentials, or direct connection strings
 
-See [Discovery documentation](/discovery/) for complete usage guide and examples.
+See [Discovery documentation]({{ '/discovery/' | relative_url }}) for complete usage guide and examples.
 
 ---
 
@@ -105,7 +105,7 @@ matlas infra optimize -f config.yaml --project-id <project-id>
 - Generate visual dependency graphs
 - Get actionable optimization recommendations
 
-**For comprehensive documentation, see [DAG Engine](/dag-engine/)**
+**For comprehensive documentation, see [DAG Engine]({{ '/dag-engine/' | relative_url }})**
 
 ---
 

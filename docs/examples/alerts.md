@@ -461,7 +461,7 @@ notifications:
 ## Related Documentation
 
 - [Alert CLI Commands]({{ '/atlas/#alerts' | relative_url }}) - Command-line alert management
-- [YAML Kinds Reference]({{ '/yaml-kinds/#alertconfiguration' | relative_url }}) - Complete AlertConfiguration reference
+- [YAML Kinds Reference]({{ '/reference/#alertconfiguration' | relative_url }}) - Complete AlertConfiguration reference
 - [Infrastructure Commands]({{ '/infra/' | relative_url }}) - Apply and manage alert configurations
 - [Atlas Documentation]({{ '/atlas/' | relative_url }}) - Atlas resource management
 

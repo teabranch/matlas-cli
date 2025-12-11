@@ -7,8 +7,20 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"regexp"
 	"strings"
 	"time"
+)
+
+// Pre-compiled regex patterns for secret detection (compiled once at package init)
+// These patterns are used in the hot path (WithFields logging), so pre-compilation
+// avoids repeated regex compilation overhead on every log call.
+var (
+	secretPatternJWT        = regexp.MustCompile(`^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.[A-Za-z0-9-_.+/=]+$`)
+	secretPatternBase64Key  = regexp.MustCompile(`^[A-Za-z0-9+/]{32,}={0,2}$`)
+	secretPatternMongoDBURI = regexp.MustCompile(`^mongodb(\+srv)?://.*@`)
+	secretPatternAWSKey     = regexp.MustCompile(`^AKIA[0-9A-Z]{16}$`)
+	secretPatternHexKey     = regexp.MustCompile(`^[a-fA-F0-9]{32,}$`)
 )
 
 // LogLevel represents different log levels.
@@ -179,8 +191,8 @@ func (l *Logger) Critical(msg string, args ...any) {
 func (l *Logger) WithFields(fields map[string]any) *Logger {
 	args := make([]any, 0, len(fields)*2)
 	for k, v := range fields {
-		// Mask secrets if enabled
-		if l.config.MaskSecrets && l.isSecret(k) {
+		// SECURITY: Mask if key suggests secret OR value looks like secret
+		if l.config.MaskSecrets && (l.isSecret(k) || l.containsSecretValue(v)) {
 			v = l.maskValue(v)
 		}
 		args = append(args, k, v)
@@ -349,21 +361,63 @@ func (l *Logger) LogMetric(name string, value float64, unit string, tags map[str
 // Helper methods for secret masking
 
 func (l *Logger) isSecret(key string) bool {
-	secretKeys := []string{
+	// Expanded keyword list for comprehensive secret detection
+	secretKeywords := []string{
 		"api_key", "apikey", "api-key",
-		"password", "passwd", "pwd",
-		"token", "auth", "authorization",
-		"secret", "private_key", "private-key",
-		"connection_string", "connection-string",
-		"mongodb_uri", "mongo_uri",
+		"password", "passwd", "pwd", "pass",
+		"token", "auth", "authorization", "bearer",
+		"secret", "private_key", "private-key", "privatekey",
+		"connection_string", "connection-string", "connectionstring",
+		"mongodb_uri", "mongo_uri", "uri",
+		"credential", "creds",
+		"access_key", "accesskey", "access-key",
+		"session", "cookie",
+		"certificate", "cert", "key",
+		"public_key", "publickey", "public-key",
 	}
 
 	lowerKey := strings.ToLower(key)
-	for _, secretKey := range secretKeys {
-		if strings.Contains(lowerKey, secretKey) {
+	for _, keyword := range secretKeywords {
+		if strings.Contains(lowerKey, keyword) {
 			return true
 		}
 	}
+
+	return false
+}
+
+// containsSecretValue performs pattern-based secret detection on values
+// Uses pre-compiled regex patterns (defined at package level) for performance
+// since this method is called frequently in the logging hot path.
+func (l *Logger) containsSecretValue(value interface{}) bool {
+	str, ok := value.(string)
+	if !ok {
+		return false
+	}
+
+	// Minimum length check - very short strings are unlikely to be secrets
+	if len(str) < 8 {
+		return false
+	}
+
+	// Check against pre-compiled secret patterns
+	// Pattern matching is done in order of likelihood for early exit optimization
+	if secretPatternMongoDBURI.MatchString(str) {
+		return true
+	}
+	if secretPatternJWT.MatchString(str) {
+		return true
+	}
+	if secretPatternBase64Key.MatchString(str) {
+		return true
+	}
+	if secretPatternAWSKey.MatchString(str) {
+		return true
+	}
+	if secretPatternHexKey.MatchString(str) {
+		return true
+	}
+
 	return false
 }
 

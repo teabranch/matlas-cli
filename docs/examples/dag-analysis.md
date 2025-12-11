@@ -3,6 +3,8 @@ layout: default
 title: DAG Analysis Examples
 parent: Examples
 nav_order: 8
+description: DAG engine examples for analyzing and visualizing infrastructure deployments
+permalink: /examples/dag-analysis/
 ---
 
 # DAG Analysis Examples
@@ -707,6 +709,6 @@ jq -r '.criticalPathDuration' metrics/analysis-*.json
 
 ## Further Reading
 
-- [DAG Engine Documentation](/dag-engine/) - Complete feature guide
-- [Infrastructure Workflows](/infra/) - Plan, diff, apply workflows
-- [Discovery Documentation](/discovery/) - Enumerating Atlas resources
+- [DAG Engine Documentation]({{ '/dag-engine/' | relative_url }}) - Complete feature guide
+- [Infrastructure Workflows]({{ '/infra/' | relative_url }}) - Plan, diff, apply workflows
+- [Discovery Documentation]({{ '/discovery/' | relative_url }}) - Enumerating Atlas resources

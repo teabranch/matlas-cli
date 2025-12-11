@@ -4,6 +4,7 @@ title: Infrastructure Patterns
 parent: Examples
 nav_order: 6
 description: Complete infrastructure management workflows and patterns
+permalink: /examples/infrastructure/
 ---
 
 # Infrastructure Patterns

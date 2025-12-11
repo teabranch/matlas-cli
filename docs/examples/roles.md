@@ -4,6 +4,7 @@ title: Custom Roles
 parent: Examples
 nav_order: 4
 description: Granular permission management with custom database roles
+permalink: /examples/roles/
 ---
 
 # Custom Roles Examples

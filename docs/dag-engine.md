@@ -794,6 +794,6 @@ For very large configurations (1000+ operations):
 
 ## Further Reading
 
-- [Infrastructure Workflows](/infra/) - General infrastructure management
-- [Discovery Documentation](/discovery/) - Enumerating Atlas resources
-- [YAML Kinds Reference](/yaml-kinds-reference/) - Configuration format details
+- [Infrastructure Workflows]({{ '/infra/' | relative_url }}) - General infrastructure management
+- [Discovery Documentation]({{ '/discovery/' | relative_url }}) - Enumerating Atlas resources
+- [YAML Kinds Reference]({{ '/reference/yaml-kinds/' | relative_url }}) - Configuration format details

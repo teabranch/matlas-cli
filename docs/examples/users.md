@@ -4,6 +4,7 @@ title: User Management
 parent: Examples
 nav_order: 3
 description: Database user and authentication examples
+permalink: /examples/users/
 ---
 
 # User Management Examples

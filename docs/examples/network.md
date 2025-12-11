@@ -4,6 +4,7 @@ title: Network Access
 parent: Examples
 nav_order: 5
 description: IP allowlisting and network security configurations
+permalink: /examples/network/
 ---
 
 # Network Access Examples
@@ -288,4 +289,4 @@ ipAddress: "54.123.45.67"
 
 - [Clusters]({{ '/examples/clusters/' | relative_url }}) - Cluster configurations needing network access
 - [Infrastructure Patterns]({{ '/examples/infrastructure/' | relative_url }}) - Complete infrastructure with network security
-- [VPC Endpoints]({{ '/examples/advanced/' | relative_url }}) - Private network connectivity
+- [YAML Kinds Reference]({{ '/reference/yaml-kinds/' | relative_url }}) - VPC endpoint configuration reference

@@ -11,6 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/teabranch/matlas-cli/internal/config"
+	"github.com/teabranch/matlas-cli/internal/security"
 )
 
 func TestFormatter_FormatJSON(t *testing.T) {
@@ -411,12 +412,12 @@ func TestMaskConnectionString(t *testing.T) {
 		{
 			name: "srv with creds",
 			in:   "mongodb+srv://user:pass@cluster.mongodb.net/db?retryWrites=true&w=majority",
-			want: "mongodb+srv://user:***@cluster.mongodb.net/db?retryWrites=true&w=majority",
+			want: "mongodb+srv://user@cluster.mongodb.net/db?retryWrites=true&w=majority",
 		},
 		{
 			name: "standard with encoded password",
 			in:   "mongodb://alice:p%40ss@localhost:27017/?ssl=true",
-			want: "mongodb://alice:***@localhost:27017/?ssl=true",
+			want: "mongodb://alice@localhost:27017/?ssl=true",
 		},
 		{
 			name: "no creds",
@@ -432,19 +433,23 @@ func TestMaskConnectionString(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			got := maskConnectionString(tt.in)
+			got := security.MaskConnectionString(tt.in)
 			if got != tt.want {
 				t.Fatalf("maskConnectionString() = %q, want %q", got, tt.want)
 			}
-			// Ensure masking occurs only when userinfo contains a password
+			// Ensure password is not present in output
 			parts := strings.SplitN(tt.in, "://", 2)
 			if len(parts) == 2 {
 				rest := parts[1]
 				if at := strings.Index(rest, "@"); at != -1 {
 					userinfo := rest[:at]
 					if strings.Contains(userinfo, ":") {
-						if !strings.Contains(got, ":***@") {
-							t.Fatalf("expected masked credentials in output: %q", got)
+						// Extract password from original
+						passwordStart := strings.Index(userinfo, ":")
+						password := userinfo[passwordStart+1:]
+						// Ensure password is not in masked output
+						if strings.Contains(got, password) {
+							t.Fatalf("password leaked in masked output: %q contains %q", got, password)
 						}
 					}
 				}
