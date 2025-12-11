@@ -377,6 +377,18 @@ matlas completion powershell > matlas.ps1
 
 ## 🛠️ Development
 
+### Contributing
+
+We welcome contributions! Please see our [Contributing Guide](.github/CONTRIBUTING.md) for:
+- Development setup
+- Pull request process
+- Commit message guidelines (Conventional Commits)
+- Code style standards
+- Testing requirements
+- Feature development workflow
+
+**Important:** This repository uses **squash merge only**. All PRs are squashed into a single commit following [Conventional Commits](https://www.conventionalcommits.org/) format for automated versioning and releases.
+
 ### Commands
 ```bash
 # Run tests
