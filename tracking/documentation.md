@@ -125,3 +125,88 @@ gh repo edit teabranch/matlas-cli \
 ```
 
 ---
+
+## [2025-12-11] Semantic-Release Configuration Fix
+
+**Status**: Completed
+**Developer**: Danny Teller / Assistant
+**Related Issues**: #13, #14 - semantic-release not triggering despite properly formatted commits
+
+### Summary
+Fixed semantic-release configuration by adding explicit releaseRules to the commit-analyzer plugin. The root cause was that presetConfig.types only controls changelog visibility, not what triggers releases.
+
+### Tasks
+- [x] Identify root cause of release failures
+- [x] Add releaseRules to @semantic-release/commit-analyzer
+- [x] Add security commit type support
+- [x] Update PR template with security type
+- [x] Update CONTRIBUTING.md with complete commit type table
+- [x] Create comprehensive summary documentation
+
+### Files Modified
+- `.releaserc.json` - Added complete releaseRules configuration
+- `.github/CONTRIBUTING.md` - Added security type to commit types table
+- `.github/pull_request_template.md` - Added security checkbox option
+- `RELEASE_FIX_SUMMARY.md` - NEW: Complete documentation of root cause and solution
+- `tracking/documentation.md` - Added this tracking entry
+
+### Root Cause
+
+The `.releaserc.json` configuration had `presetConfig.types` but no explicit `releaseRules` in the commit-analyzer plugin. This caused semantic-release to use default rules which only trigger releases for `feat` and `fix` commits.
+
+**Key Discovery**: `presetConfig.types` only controls:
+- What sections appear in the changelog
+- Whether commits are hidden (hidden: true/false)
+
+It does NOT control what triggers releases. That requires explicit `releaseRules`.
+
+### Solution Implemented
+
+Added explicit `releaseRules` to `@semantic-release/commit-analyzer`:
+
+**Commits that trigger releases:**
+- feat → minor (0.X.0)
+- fix → patch (0.0.X)
+- security → patch (0.0.X) [NEW]
+- perf → patch (0.0.X) [NEW]
+- docs → patch (0.0.X) [NEW]
+- refactor → patch (0.0.X) [NEW]
+- revert → patch (0.0.X) [NEW]
+
+**Commits that don't trigger releases:**
+- style → release: false
+- chore → release: false
+- test → release: false
+- build → release: false
+- ci → release: false
+
+### Commits Made
+
+1. `b57ac9a` - fix(ci): add releaseRules to commit-analyzer to trigger releases for docs commits
+2. `32b1931` - fix(ci): add security type and explicit release rules for all commit types
+
+### Impact
+
+Now all properly formatted conventional commits will correctly trigger releases:
+- docs commits (like PR #14) will trigger patch releases
+- security commits (like in PR #13) will trigger patch releases
+- perf commits (like in PR #13) will trigger patch releases
+- Previous docs/perf/security commits were properly formatted but ignored
+
+### Expected Result
+
+Push to main should trigger v4.0.1 release including:
+- 2 CI fixes (releaseRules additions)
+- 2 documentation updates (squash merge docs)
+- Changelog with both Bug Fixes and Documentation sections
+
+### Notes
+
+This explains why:
+1. PR #13 didn't trigger a release (bad merge commit format + missing releaseRules)
+2. PR #14 didn't trigger a release (missing releaseRules for docs type)
+3. Manual commit amendments didn't help (still missing releaseRules)
+
+The squash merge configuration is still valuable for ensuring clean commit messages, but it couldn't fix the underlying missing releaseRules configuration.
+
+---
